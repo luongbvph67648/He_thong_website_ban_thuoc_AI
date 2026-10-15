@@ -63,15 +63,23 @@ _Dựng khung dự án, CSDL đúng ERD, seed, hạ tầng test. Chưa có chứ
   - **Thêm phụ thuộc `tzdata`** để `zoneinfo` có dữ liệu múi giờ trên Windows.
   - **Fixture test:** `engine_tam` tạo database tạm cho từng test; T0.6 sẽ thay bằng DB test dựng từ migration.
 
-### [ ] T0.3 · Model SQLAlchemy cho 65 bảng
+### [x] T0.3 · Model SQLAlchemy cho 65 bảng
 - **Phụ thuộc:** T0.2
 - **Bảng:** (toàn bộ ERD)
 - **Tiêu chí chấp nhận:**
-  - [ ] `app/models/` chia theo nhóm ERD (`enums.py`, `san_pham.py`, `kho.py`, `ban_hang.py`, `khach_hang.py`, `he_thong.py`, `ai.py`), khớp từng cột/kiểu/nullable/default/khóa ngoại với `docs/database/ERD_da_chinh_sua.dbml`.
-  - [ ] 33 enum dùng `sqlalchemy.Enum(..., name=<tên enum ERD>, native_enum=True)` với đúng thứ tự giá trị.
-  - [ ] Cột `embedding` dùng kiểu `Vector(1024)` của gói `pgvector`.
-  - [ ] Không có logic nghiệp vụ trong model (chỉ khai báo + quan hệ cần thiết).
-- **Ghi chú triển khai:** _(trống)_
+  - [x] `app/models/` chia theo nhóm ERD (`enums.py`, `san_pham.py`, `kho.py`, `ban_hang.py`, `khach_hang.py`, `he_thong.py`, `ai.py`), khớp từng cột/kiểu/nullable/default/khóa ngoại với `docs/database/ERD_da_chinh_sua.dbml`.
+  - [x] 33 enum dùng `sqlalchemy.Enum(..., name=<tên enum ERD>, native_enum=True)` với đúng thứ tự giá trị.
+  - [x] Cột `embedding` dùng kiểu `Vector(1024)` của gói `pgvector`.
+  - [x] Không có logic nghiệp vụ trong model (chỉ khai báo + quan hệ cần thiết).
+- **Ghi chú triển khai:**
+  - **Cách làm:** model được sinh bằng script từ ERD (khung ban đầu), sau đó bảo trì bằng tay qua `/doi-schema`. Chứng minh khớp bằng `scripts/so_sanh_schema.py`: `create_all()` từ model vào một DB, nạp `ERD_da_chinh_sua.sql` vào DB khác, so sánh qua catalog của PostgreSQL (bảng, cột gồm kiểu/nullable/default/identity, khóa ngoại, index, enum gồm thứ tự giá trị). Kết quả **0 khác biệt**. Test `test_cong_cu_so_sanh_phat_hien_duoc_khac_biet` chứng minh công cụ thật sự bắt được lỗi. T0.4 dùng lại công cụ này.
+  - **Lỗi do so sánh bắt được:** lần sinh đầu, tên collection `khuyen_mai.pham_vi` trùng tên cột nên đè mất cột; đã đổi thành `ds_pham_vi`.
+  - **Khóa chính dùng `Identity`** (khớp DDL của ERD) thay vì serial.
+  - **Enum:** mỗi enum có lớp `StrEnum` và kiểu `KIEU_<TEN>` gắn vào `Base.metadata` (tạo/xóa kiểu ở cấp metadata, không bị lỗi khi nhiều bảng dùng chung một enum).
+  - **Quan hệ:** mọi `relationship` có `lazy="raise"` (không lazy load ngầm trong async, phải `selectinload`). Có quan hệ nhiều-một cho mọi khóa ngoại đơn cột và 23 collection một-nhiều chọn lọc (chi tiết đơn, đơn vị quy đổi...). Khóa ngoại kép (`ct_don_hang`, `ct_gio_hang` → `don_vi_quy_doi`) không có quan hệ vì chồng cột với khóa ngoại `san_pham_id`; vẫn tạo ràng buộc ở DB và đã có test chứng minh nó chặn đơn vị của sản phẩm khác.
+  - **Chưa có ở model (để T0.4):** CHECK, partial unique, index GIN/HNSW, hàm `f_unaccent`, sequence mã chứng từ (spec 02 mục 4); DBML không biểu diễn được.
+  - **Cột `metadata`** của `tai_lieu_tri_thuc` có thuộc tính Python `metadata_` (tránh đè `Base.metadata`).
+  - Thêm phụ thuộc `pgvector`. Fixture `engine_co_bang` (DB tạm có đủ 65 bảng) dùng cho test các task sau.
 
 ### [ ] T0.4 · Migration nền và ràng buộc bổ sung
 - **Phụ thuộc:** T0.3

@@ -66,13 +66,17 @@ async def don_cua_toi(ma_don: str, kh: KhachHang = Depends(khach_hien_tai), db=D
 
 ## CSDL
 - **SQLAlchemy 2 async:** dùng `select()`, không dùng Query API cũ.
-- **Tải quan hệ:** dùng `selectinload` rõ ràng, tránh lazy load trong async.
+- **Model** ở `app/models/` (7 file theo nhóm ERD, `from app.models import Base` nạp đủ 65 bảng). Model chỉ khai báo cấu trúc, không có logic nghiệp vụ.
+- **Enum:** mỗi enum PostgreSQL có một lớp `StrEnum` cùng tên PascalCase trong `app/models/enums.py` (`TrangThaiDon.cho_xac_nhan`, so sánh bằng `is` hoặc `==`) và một kiểu `KIEU_<TEN>` dùng trong `mapped_column`. Giá trị trả về từ DB đã là thành viên enum.
+- **Tải quan hệ:** mọi `relationship` đặt `lazy="raise"`, truy cập quan hệ chưa nạp sẽ báo lỗi thay vì âm thầm chạy truy vấn (không dùng được trong async). Phải nạp rõ ràng: `select(DonHang).options(selectinload(DonHang.chi_tiet))`. Tên quan hệ nhiều-một lấy từ cột khóa ngoại bỏ đuôi `_id` (`DonHang.khach_hang`); quan hệ một-nhiều chọn lọc (`DonHang.chi_tiet`, `SanPham.don_vi_quy_doi`...) xem trong model. Khóa ngoại kép (`ct_don_hang.(don_vi_id, san_pham_id)`) không có quan hệ, dùng join tường minh.
+- **Khóa chính** dùng `Identity` (như DDL của ERD), không dùng serial. Giá trị mặc định (`created_at`, trạng thái, số lượng 0...) là `server_default`; sau `flush()`/`refresh()` ORM đọc lại từ DB.
+- **Cột tên `metadata`** (`tai_lieu_tri_thuc`) có thuộc tính Python là `metadata_`, vì `metadata` bị `DeclarativeBase` giữ riêng.
 - **Khóa ghi:** `select(LoThuoc).where(...).order_by(LoThuoc.id).with_for_update()`. Luôn khóa theo thứ tự id tăng để tránh deadlock.
 - **Xóa mềm:** truy vấn mặc định lọc `deleted_at IS NULL` qua helper `chua_xoa(Model)`.
 - **Tiền:** `Decimal`, làm tròn qua `core.tien.lam_tron_vnd()` (half-up). `cong()`/`tru()` cộng trừ rồi làm tròn một lần; hàm tiền từ chối `float`. Trong schema Pydantic dùng kiểu `Tien` (không âm, dưới 10^12, số đồng nguyên, xuất JSON dạng chuỗi `"125000.00"`); chênh lệch có thể âm thì dùng `TienCoDau`.
 - **Thời gian:** `core.thoi_gian.bay_gio_utc()`, `hom_nay_vn()`.
 - **Phân trang:** route nhận `tp: PhanTrang`, truy vấn đã có `ORDER BY` thì `dong, tong = await lay_trang(db, stmt, tp)`, trả `tao_trang(dong, tong, tp)` với `response_model=Trang[Schema]`.
-- **Schema:** thay đổi phải theo `/doi-schema`. Migration mới đặt tên `NNNN_<mo_ta>.py`.
+- **Schema:** thay đổi phải theo `/doi-schema`. Migration mới đặt tên `NNNN_<mo_ta>.py`. Sau khi sửa model hoặc migration, chạy `uv run python scripts/so_sanh_schema.py` để chắc model vẫn khớp DDL của ERD (test `test_model_khop_ddl_cua_erd` cũng kiểm tra).
 
 ## Job nền (`app/jobs/`)
 - Mỗi job là một hàm `async def chay(db)` trong file `htXX_<ten>.py`, đăng ký lịch trong `app/jobs/__main__.py`.
@@ -82,7 +86,7 @@ async def don_cua_toi(ma_don: str, kh: KhachHang = Depends(khach_hien_tai), db=D
 ## Test
 - Cấu trúc `tests/` giống `app/modules/`. Dùng fixture `client`, `db`, `dang_nhap_khach`, `dang_nhap_duoc_si`, `dang_nhap_kho`, `dang_nhap_admin` và factories trong `tests/factories.py`.
 - Test API qua HTTP (`AsyncClient`); test bất biến/tranh chấp gọi service trực tiếp với nhiều session.
-- Fixture `engine_tam` tạo một database tạm cho riêng test (xóa sau test); fixture `mo_client(app, raise_app_exceptions=False)` gọi thẳng vào app, dùng tham số `False` khi test lỗi 500.
+- Fixture `engine_tam` tạo một database tạm cho riêng test (xóa sau test), `engine_co_bang` là database tạm đã có đủ 65 bảng từ model; fixture `mo_client(app, raise_app_exceptions=False)` gọi thẳng vào app, dùng tham số `False` khi test lỗi 500.
 - Không gọi dịch vụ ngoài: `AI_GIA_LAP=true`, adapter tích hợp ở chế độ `gia`.
 - Chạy nhanh một phần: `uv run pytest tests/ban_hang -q -x`.
 

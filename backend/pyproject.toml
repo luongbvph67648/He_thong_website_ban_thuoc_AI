@@ -10,6 +10,7 @@ dependencies = [
     "asyncpg",
     "pydantic-settings",
     "tzdata>=2026.5",
+    "pgvector>=0.5.1",
 ]
 
 [dependency-groups]

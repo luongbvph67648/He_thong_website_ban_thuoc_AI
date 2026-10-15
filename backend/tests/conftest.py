@@ -3,36 +3,28 @@
 import io
 import json
 import logging
-import uuid
 from contextlib import asynccontextmanager
 
 import httpx
 import pytest
-from sqlalchemy import text
-from sqlalchemy.engine import make_url
-from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.core.config import settings
-from app.core.db import tao_engine
 from app.core.log import BoLocRequestId, JsonFormatter
+from scripts.so_sanh_schema import cau_truc_tu_model, db_tam
 
 
 @pytest.fixture
 async def engine_tam():
     """CSDL tạm riêng cho một test: tạo mới trước test, xóa sau test (không đụng DB dev)."""
-    goc = make_url(settings.DATABASE_URL)
-    ten = f"nha_thuoc_t_{uuid.uuid4().hex[:12]}"
-    admin = create_async_engine(goc.set(database="postgres"), isolation_level="AUTOCOMMIT")
-    async with admin.connect() as conn:
-        await conn.execute(text(f'CREATE DATABASE "{ten}"'))
-    engine = tao_engine(goc.set(database=ten))  # cùng cấu hình với engine production
-    try:
+    async with db_tam(settings.DATABASE_URL, "nha_thuoc_t") as engine:
         yield engine
-    finally:
-        await engine.dispose()
-        async with admin.connect() as conn:
-            await conn.execute(text(f'DROP DATABASE IF EXISTS "{ten}" WITH (FORCE)'))
-        await admin.dispose()
+
+
+@pytest.fixture
+async def engine_co_bang(engine_tam):
+    """CSDL tạm đã có đủ 65 bảng tạo từ model (create_all)."""
+    await cau_truc_tu_model(engine_tam)
+    return engine_tam
 
 
 @pytest.fixture
