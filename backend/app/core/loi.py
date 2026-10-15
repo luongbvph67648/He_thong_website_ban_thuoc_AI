@@ -129,9 +129,7 @@ async def _xu_ly_loi_nghiep_vu(request: Request, loi: LoiNghiepVu) -> JSONRespon
 
 
 async def _xu_ly_loi_validate(request: Request, loi: RequestValidationError) -> JSONResponse:
-    chi_tiet = [
-        {"truong": _truong(e), "loi": _LOI_VALIDATE_TIENG_VIET.get(e["type"], e["msg"])} for e in loi.errors()
-    ]
+    chi_tiet = [{"truong": _truong(e), "loi": _LOI_VALIDATE_TIENG_VIET.get(e["type"], e["msg"])} for e in loi.errors()]
     return phan_hoi_loi(400, "DU_LIEU_KHONG_HOP_LE", "Dữ liệu không hợp lệ", chi_tiet)
 
 
@@ -153,4 +151,3 @@ def dang_ky_xu_ly_loi(app: FastAPI) -> None:
     app.add_exception_handler(StarletteHTTPException, _xu_ly_loi_http)  # type: ignore[arg-type]
     # Lỗi không bắt được (500) do RequestIdMiddleware xử lý, không đăng ký ở đây: handler cho Exception chạy trong
     # ServerErrorMiddleware, nơi luôn ném lại ngoại lệ sau khi gửi response khiến uvicorn in thêm một traceback thô.
-

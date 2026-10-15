@@ -4,7 +4,10 @@ So sánh: bảng, cột (kiểu, nullable, default, identity), khóa ngoại, in
 Dùng để chứng minh model (T0.3) và migration (T0.4) khớp đúng DDL của ERD (`docs/database/ERD_da_chinh_sua.sql`).
 Bỏ qua: tên ràng buộc/index, comment, thuộc tính DEFERRABLE của khóa ngoại.
 
-    uv run python scripts/so_sanh_schema.py            # so sánh create_all() từ model với DDL của ERD
+    uv run python scripts/so_sanh_schema.py            # so sánh create_all() từ model VÀ `alembic upgrade head` với ERD
+
+Khi so sánh kết quả migration, bỏ bảng `alembic_version` và các index mà DBML không biểu diễn được (một phần, biểu
+thức, không phải btree); chúng do migration 0002 tạo và có test riêng.
 """
 
 import asyncio
@@ -13,11 +16,14 @@ import uuid
 from contextlib import asynccontextmanager
 from pathlib import Path
 
+from alembic import command
+from alembic.config import Config
 from sqlalchemy import text
 from sqlalchemy.engine import make_url
 from sqlalchemy.ext.asyncio import AsyncEngine, create_async_engine
 
 GOC_REPO = Path(__file__).resolve().parents[2]
+GOC_BACKEND = GOC_REPO / "backend"
 ERD_SQL = GOC_REPO / "docs" / "database" / "ERD_da_chinh_sua.sql"
 
 _TRUY_VAN_COT = """
@@ -49,9 +55,14 @@ SELECT i.indrelid::regclass::text,
        i.indisunique, i.indisprimary, i.indpred IS NOT NULL, i.indexprs IS NOT NULL
 FROM pg_index i
 JOIN pg_class c ON c.oid = i.indrelid
+JOIN pg_class ic ON ic.oid = i.indexrelid
+JOIN pg_am am ON am.oid = ic.relam
 JOIN pg_namespace n ON n.oid = c.relnamespace
 WHERE n.nspname = 'public'
 """
+
+# Index mà DBML không biểu diễn được: một phần (WHERE), biểu thức, hoặc không phải btree (GIN, HNSW).
+_LOC_BO_INDEX_DAC_BIET = " AND i.indpred IS NULL AND i.indexprs IS NULL AND am.amname = 'btree'"
 
 _TRUY_VAN_ENUM = """
 SELECT t.typname, array_agg(e.enumlabel ORDER BY e.enumsortorder)
@@ -63,17 +74,26 @@ GROUP BY t.typname
 """
 
 
-async def lay_cau_truc(engine: AsyncEngine) -> dict:
-    """Đọc cấu trúc của database mà engine trỏ tới thành các tập/từ điển dễ so sánh."""
+async def lay_cau_truc(engine: AsyncEngine, *, ket_qua_migration: bool = False) -> dict:
+    """Đọc cấu trúc của database mà engine trỏ tới thành các tập/từ điển dễ so sánh.
+
+    `ket_qua_migration=True` dùng cho database sau `alembic upgrade head`: bỏ bảng `alembic_version` và các index
+    đặc biệt do migration 0002 tạo (xem docstring đầu file).
+    """
+    truy_van_cot = _TRUY_VAN_COT
+    truy_van_fk = _TRUY_VAN_FK
+    truy_van_index = _TRUY_VAN_INDEX
+    if ket_qua_migration:
+        truy_van_cot += " AND c.relname <> 'alembic_version'"
+        truy_van_index += _LOC_BO_INDEX_DAC_BIET + " AND c.relname <> 'alembic_version'"
     async with engine.connect() as conn:
         cot = {
             (r[0], r[1]): {"kieu": r[2], "bat_buoc": r[3], "mac_dinh": r[4], "identity": r[5]}
-            for r in (await conn.execute(text(_TRUY_VAN_COT))).all()
+            for r in (await conn.execute(text(truy_van_cot))).all()
         }
-        fk = {(r[0], tuple(r[1]), r[2], tuple(r[3])) for r in (await conn.execute(text(_TRUY_VAN_FK))).all()}
+        fk = {(r[0], tuple(r[1]), r[2], tuple(r[3])) for r in (await conn.execute(text(truy_van_fk))).all()}
         index = {
-            (r[0], tuple(r[1] or ()), r[2], r[3], r[4], r[5])
-            for r in (await conn.execute(text(_TRUY_VAN_INDEX))).all()
+            (r[0], tuple(r[1] or ()), r[2], r[3], r[4], r[5]) for r in (await conn.execute(text(truy_van_index))).all()
         }
         enum = {r[0]: tuple(r[1]) for r in (await conn.execute(text(_TRUY_VAN_ENUM))).all()}
     return {"cot": cot, "fk": fk, "index": index, "enum": enum, "bang": {b for b, _ in cot}}
@@ -149,6 +169,29 @@ async def cau_truc_tu_erd(engine: AsyncEngine) -> dict:
     return await lay_cau_truc(engine)
 
 
+def cau_hinh_alembic(url: str) -> Config:
+    """Cấu hình Alembic trỏ vào `url` (không phụ thuộc thư mục đang đứng), không ghi đè cấu hình log của tiến trình."""
+    cfg = Config(str(GOC_BACKEND / "alembic.ini"))
+    cfg.set_main_option("sqlalchemy.url", url.replace("%", "%%"))  # configparser coi % là nội suy
+    cfg.attributes["configure_logger"] = False
+    return cfg
+
+
+async def chay_alembic(engine: AsyncEngine, lenh: str, *tham_so) -> None:
+    """Chạy một lệnh Alembic (`upgrade`, `downgrade`, `check`...) trên database của engine.
+
+    env.py tự dựng vòng lặp asyncio riêng nên phải chạy ở luồng khác khi đang ở trong vòng lặp của test.
+    """
+    cfg = cau_hinh_alembic(engine.url.render_as_string(hide_password=False))
+    await asyncio.to_thread(getattr(command, lenh), cfg, *tham_so)
+
+
+async def cau_truc_tu_migration(engine: AsyncEngine) -> dict:
+    """`alembic upgrade head` vào database rồi đọc cấu trúc (đã bỏ phần migration 0002 mà ERD không có)."""
+    await chay_alembic(engine, "upgrade", "head")
+    return await lay_cau_truc(engine, ket_qua_migration=True)
+
+
 async def so_sanh_model_voi_erd(url_goc: str) -> list[str]:
     async with db_tam(url_goc, "so_sanh_model") as e_model, db_tam(url_goc, "so_sanh_erd") as e_erd:
         tu_model = await cau_truc_tu_model(e_model)
@@ -156,15 +199,28 @@ async def so_sanh_model_voi_erd(url_goc: str) -> list[str]:
     return so_sanh(tu_model, tu_erd, "model", "ERD")
 
 
+async def so_sanh_migration_voi_erd(url_goc: str) -> list[str]:
+    async with db_tam(url_goc, "so_sanh_migr") as e_migr, db_tam(url_goc, "so_sanh_erd") as e_erd:
+        tu_migration = await cau_truc_tu_migration(e_migr)
+        tu_erd = await cau_truc_tu_erd(e_erd)
+    return so_sanh(tu_migration, tu_erd, "migration", "ERD")
+
+
 async def _main() -> int:
-    sys.path.insert(0, str(GOC_REPO / "backend"))
+    sys.path.insert(0, str(GOC_BACKEND))
     from app.core.config import settings
 
-    loi = await so_sanh_model_voi_erd(settings.DATABASE_URL)
-    for dong in loi:
-        print(dong)
-    print(f"{len(loi)} khác biệt" if loi else "0 khác biệt: model khớp DDL của ERD")
-    return 1 if loi else 0
+    ket_qua = {
+        "model": await so_sanh_model_voi_erd(settings.DATABASE_URL),
+        "alembic upgrade head": await so_sanh_migration_voi_erd(settings.DATABASE_URL),
+    }
+    tong = 0
+    for nguon, loi in ket_qua.items():
+        for dong in loi:
+            print(f"[{nguon}] {dong}")
+        print(f"{nguon}: {len(loi)} khác biệt" if loi else f"{nguon}: 0 khác biệt so với DDL của ERD")
+        tong += len(loi)
+    return 1 if tong else 0
 
 
 if __name__ == "__main__":

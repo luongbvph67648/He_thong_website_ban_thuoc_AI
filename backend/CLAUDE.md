@@ -76,7 +76,12 @@ async def don_cua_toi(ma_don: str, kh: KhachHang = Depends(khach_hien_tai), db=D
 - **Tiền:** `Decimal`, làm tròn qua `core.tien.lam_tron_vnd()` (half-up). `cong()`/`tru()` cộng trừ rồi làm tròn một lần; hàm tiền từ chối `float`. Trong schema Pydantic dùng kiểu `Tien` (không âm, dưới 10^12, số đồng nguyên, xuất JSON dạng chuỗi `"125000.00"`); chênh lệch có thể âm thì dùng `TienCoDau`.
 - **Thời gian:** `core.thoi_gian.bay_gio_utc()`, `hom_nay_vn()`.
 - **Phân trang:** route nhận `tp: PhanTrang`, truy vấn đã có `ORDER BY` thì `dong, tong = await lay_trang(db, stmt, tp)`, trả `tao_trang(dong, tong, tp)` với `response_model=Trang[Schema]`.
-- **Schema:** thay đổi phải theo `/doi-schema`. Migration mới đặt tên `NNNN_<mo_ta>.py`. Sau khi sửa model hoặc migration, chạy `uv run python scripts/so_sanh_schema.py` để chắc model vẫn khớp DDL của ERD (test `test_model_khop_ddl_cua_erd` cũng kiểm tra).
+- **Schema:** thay đổi phải theo `/doi-schema`. Migration mới đặt tên `NNNN_<mo_ta>.py`. Sau khi sửa model hoặc migration, chạy `uv run python scripts/so_sanh_schema.py` để chắc cả model lẫn kết quả `alembic upgrade head` vẫn khớp DDL của ERD (test `test_model_khop_ddl_cua_erd` và `test_migration_khop_ddl_cua_erd` cũng kiểm tra).
+- **Migration (Alembic):** `0001_nen` (bảng, enum, extension) và `0002_rang_buoc` (hàm `f_unaccent`, CHECK, partial unique, index GIN/HNSW, sequence) là bản chụp bất biến, không sửa. Quy ước khi thêm migration mới:
+  - Enum tạo bằng `op.execute("CREATE TYPE ...")` và cột dùng `postgresql.ENUM(..., create_type=False)`; autogenerate sinh `sa.Enum` inline sẽ tạo kiểu hai lần.
+  - CHECK, partial unique, index biểu thức/GIN/HNSW, hàm và sequence **viết tay bằng SQL** và đặt tên rõ (`ck_<bảng>_<mô tả>`). Model và `alembic check` không biết chúng: `env.py::include_object` bỏ qua index một phần, biểu thức, không phải btree; Alembic không so CHECK/hàm/sequence.
+  - Thêm CHECK mới thì thêm một case vào `tests/test_rang_buoc.py` (test `test_moi_check_trong_db_deu_co_test` fail nếu thiếu); thêm partial unique thì thêm vào `CAC_PARTIAL_UNIQUE`.
+  - Test chạy Alembic qua `scripts.so_sanh_schema.chay_alembic(engine, "upgrade", "head")` (chạy trong luồng riêng, không ghi đè log). Không gọi `command.upgrade` trực tiếp trong test async vì `env.py` tự dựng vòng lặp asyncio.
 
 ## Job nền (`app/jobs/`)
 - Mỗi job là một hàm `async def chay(db)` trong file `htXX_<ten>.py`, đăng ký lịch trong `app/jobs/__main__.py`.
@@ -87,6 +92,7 @@ async def don_cua_toi(ma_don: str, kh: KhachHang = Depends(khach_hien_tai), db=D
 - Cấu trúc `tests/` giống `app/modules/`. Dùng fixture `client`, `db`, `dang_nhap_khach`, `dang_nhap_duoc_si`, `dang_nhap_kho`, `dang_nhap_admin` và factories trong `tests/factories.py`.
 - Test API qua HTTP (`AsyncClient`); test bất biến/tranh chấp gọi service trực tiếp với nhiều session.
 - Fixture `engine_tam` tạo một database tạm cho riêng test (xóa sau test), `engine_co_bang` là database tạm đã có đủ 65 bảng từ model; fixture `mo_client(app, raise_app_exceptions=False)` gọi thẳng vào app, dùng tham số `False` khi test lỗi 500.
+- Test cần chạy nhiều case trên cùng database đã migrate (ví dụ `test_rang_buoc.py`) dùng fixture phạm vi module với `loop_scope="module"` và `pytestmark = pytest.mark.asyncio(loop_scope="module")`; mỗi case chạy trong transaction rồi rollback. Muốn chèn dòng mà không dựng khóa ngoại: `SET LOCAL session_replication_role = replica` (cần superuser).
 - Không gọi dịch vụ ngoài: `AI_GIA_LAP=true`, adapter tích hợp ở chế độ `gia`.
 - Chạy nhanh một phần: `uv run pytest tests/ban_hang -q -x`.
 

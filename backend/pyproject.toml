@@ -11,6 +11,7 @@ dependencies = [
     "pydantic-settings",
     "tzdata>=2026.5",
     "pgvector>=0.5.1",
+    "alembic>=1.20.0",
 ]
 
 [dependency-groups]
@@ -18,6 +19,7 @@ dev = [
     "pytest",
     "pytest-asyncio",
     "httpx",
+    "ruff>=0.17.1",
 ]
 
 [tool.uv]
@@ -27,3 +29,22 @@ package = false
 asyncio_mode = "auto"
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["alembic/README"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM"]
+
+[tool.ruff.lint.isort]
+# Thư mục backend/alembic/ (cấu hình migration) trùng tên gói alembic; ruff sẽ tưởng là mã của dự án.
+known-third-party = ["alembic"]
+
+[tool.ruff.lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path", "fastapi.Header"]
+
+[tool.ruff.lint.per-file-ignores]
+# Migration là bản chụp bất biến, một phần do alembic sinh (Optional/Union, dòng dài); không viết lại theo style mới.
+"alembic/versions/*.py" = ["E501", "UP007", "UP035", "I001"]

@@ -16,7 +16,8 @@ Thay đổi schema theo yêu cầu: **$ARGUMENTS**
 4. Sửa model trong `backend/app/models/`.
 5. Tạo migration mới: `cd backend && uv run alembic revision --autogenerate -m "<mo_ta>"`.
    - Rà file sinh ra: enum mới cần `ALTER TYPE`, có backfill nếu cột NOT NULL, có `downgrade`.
-   - CHECK, partial unique, index đặc biệt viết tay bằng `op.execute`.
+   - CHECK, partial unique, index đặc biệt (một phần, biểu thức, GIN, HNSW), hàm, sequence viết tay bằng `op.execute`, đặt tên rõ; thêm case tương ứng vào `backend/tests/test_rang_buoc.py`.
+   - Enum mới tạo bằng `CREATE TYPE` và cột dùng `postgresql.ENUM(create_type=False)`, không để autogenerate sinh `sa.Enum` inline.
    - Tuyệt đối không sửa migration cũ.
 6. Chạy `uv run alembic upgrade head`, `uv run python scripts/so_sanh_schema.py` (phải 0 lệch), `uv run alembic check`, `uv run pytest -q`.
 7. Cập nhật spec:

@@ -81,16 +81,28 @@ _Dựng khung dự án, CSDL đúng ERD, seed, hạ tầng test. Chưa có chứ
   - **Cột `metadata`** của `tai_lieu_tri_thuc` có thuộc tính Python `metadata_` (tránh đè `Base.metadata`).
   - Thêm phụ thuộc `pgvector`. Fixture `engine_co_bang` (DB tạm có đủ 65 bảng) dùng cho test các task sau.
 
-### [ ] T0.4 · Migration nền và ràng buộc bổ sung
+### [x] T0.4 · Migration nền và ràng buộc bổ sung
 - **Phụ thuộc:** T0.3
 - **Bảng:** (toàn bộ ERD)
 - **Tiêu chí chấp nhận:**
-  - [ ] Migration `0001`: `CREATE EXTENSION IF NOT EXISTS vector, unaccent, pg_trgm` + toàn bộ bảng/enum/khóa ngoại/index sinh từ model (autogenerate rồi rà tay).
-  - [ ] Migration `0002`: hàm `f_unaccent`, mọi CHECK, partial unique, index GIN/HNSW, sequence mã chứng từ liệt kê ở spec 02 mục 4.
-  - [ ] `backend/scripts/so_sanh_schema.py`: nạp `docs/database/ERD_da_chinh_sua.sql` vào một database tạm, so sánh với database sau `alembic upgrade head` (bảng, cột, kiểu, nullable, khóa ngoại theo tập cột, unique theo tập cột, giá trị enum) và in danh sách lệch. Kết quả: 0 lệch.
-  - [ ] `alembic upgrade head` trên DB rỗng thành công; `alembic downgrade base` rồi `upgrade head` lại thành công; `alembic check` không còn thay đổi.
-  - [ ] Test: chèn dữ liệu vi phạm từng CHECK/partial unique ở mục 4 spec 02 đều bị từ chối.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Migration `0001`: `CREATE EXTENSION IF NOT EXISTS vector, unaccent, pg_trgm` + toàn bộ bảng/enum/khóa ngoại/index sinh từ model (autogenerate rồi rà tay).
+  - [x] Migration `0002`: hàm `f_unaccent`, mọi CHECK, partial unique, index GIN/HNSW, sequence mã chứng từ liệt kê ở spec 02 mục 4.
+  - [x] `backend/scripts/so_sanh_schema.py`: nạp `docs/database/ERD_da_chinh_sua.sql` vào một database tạm, so sánh với database sau `alembic upgrade head` (bảng, cột, kiểu, nullable, khóa ngoại theo tập cột, unique theo tập cột, giá trị enum) và in danh sách lệch. Kết quả: 0 lệch.
+  - [x] `alembic upgrade head` trên DB rỗng thành công; `alembic downgrade base` rồi `upgrade head` lại thành công; `alembic check` không còn thay đổi.
+  - [x] Test: chèn dữ liệu vi phạm từng CHECK/partial unique ở mục 4 spec 02 đều bị từ chối.
+- **Ghi chú triển khai:**
+  - **Migration `0001_nen`** autogenerate từ model rồi rà tay: thêm 3 `CREATE EXTENSION`, tạo 33 enum bằng `CREATE TYPE` (câu lệnh lấy từ DDL của ERD) và cho các cột dùng `postgresql.ENUM(create_type=False)`, vì autogenerate sinh `sa.Enum` inline sẽ tạo kiểu hai lần; thêm `import pgvector.sqlalchemy` cho cột `Vector(1024)`. `downgrade` xóa bảng rồi kiểu enum; ba extension giữ nguyên.
+  - **Migration `0002_rang_buoc`** viết tay bằng SQL thuần: hàm `f_unaccent`, 10 index đặc biệt (3 GIN trgm, 1 HNSW, 1 index một phần, 5 partial unique), 42 CHECK, 7 sequence. Tên CHECK theo mẫu `ck_<bảng>_<mô tả>` (spec chỉ ghi biểu thức); tên index đúng như spec 02 mục 4. Dữ liệu CHECK/index nằm ở hai hằng đầu file để test đối chiếu.
+  - **`alembic/env.py`:** hàm `include_object` bỏ qua index một phần, index biểu thức và index không phải btree khi so model với DB, nếu không `alembic check` luôn báo lệch vì DBML/model không biểu diễn được chúng. Alembic cũng **không so sánh CHECK, hàm và sequence**; lưới an toàn là `test_moi_check_trong_db_deu_co_test` (số CHECK trong DB phải đúng bằng danh sách case đã test).
+  - **`scripts/so_sanh_schema.py`** thêm chế độ `alembic upgrade head` (bỏ `alembic_version` và index đặc biệt khi so). Chạy `uv run python scripts/so_sanh_schema.py` in kết quả cho cả hai nguồn: model và migration đều **0 khác biệt** so với DDL của ERD. Hàm `chay_alembic()` chạy lệnh Alembic trong luồng riêng (env.py tự dựng vòng lặp asyncio) và đặt `configure_logger=False` để không ghi đè cấu hình log JSON.
+  - **Test (69 test mới, tổng 210 xanh):**
+    - `test_migration.py`: đi/về/đi lại, `alembic check`, về từng bước `0001`, khớp ERD, chuỗi revision một head, công cụ so sánh vẫn bắt được lỗi thật sau khi lọc index, env.py không ghi đè log.
+    - `test_rang_buoc.py`: mỗi CHECK thử cả dòng hợp lệ (sát biên) lẫn dòng sai. Khi thử "đúng ràng buộc này" test gỡ các CHECK khác của bảng trong transaction (Postgres báo ràng buộc theo thứ tự tên nên không gỡ thì không phân biệt được `ton_ge_0` với `giu_ge_0`/`giu_le_ton`). Có test cho 5 partial unique (kể cả đơn `da_huy` không chiếm chỗ của yêu cầu đơn thuốc), `f_unaccent` ("Đau đầu" → "Dau dau"), 7 sequence, và `EXPLAIN` chứng minh planner dùng được 5 index tìm kiếm khi viết đúng biểu thức.
+    - Test dựng dòng bằng `session_replication_role = replica` (tắt trigger khóa ngoại, cần superuser; `postgres` của compose/CI có quyền) để khỏi dựng cả đồ thị khóa ngoại. CHECK và unique vẫn chạy.
+    - Đã kiểm chứng test bằng cách phá thử: sửa `giu_le_ton`, `tong_tien_dung`, `anh_mot_anh_chinh`, `don_thuoc_mot_don_mo` trong migration thì 4 test tương ứng fail; sửa env.py luôn gọi `fileConfig` thì test log fail. Đã hoàn lại.
+  - **Cấu hình `ruff` làm sớm** (thuộc T0.6 nhưng cần để lint file mới): `[tool.ruff]` trong `pyproject.toml` (dòng 120, E/F/W/I/B/UP/SIM, `alembic` khai báo third-party vì thư mục `backend/alembic/` trùng tên gói, bỏ qua E501/UP trong `alembic/versions`, `Depends` coi là immutable cho B008). `ruff check` và `ruff format --check` sạch. T0.6 chỉ còn gắn vào CI.
+  - **Chưa chạy trên Docker** (không có daemon): kiểm trên PostgreSQL 16 cài máy; migration chỉ dùng extension có sẵn trong image `pgvector/pgvector:pg16` (`vector`, `unaccent`, `pg_trgm` đều có trong contrib).
+  - **Bỏ qua `/review-nghiep-vu` ở task này:** không có logic nghiệp vụ, chỉ chép ràng buộc từ spec 02 mục 4 (đã đếm 42 CHECK, 10 index, 7 sequence khớp từng dòng và có test từng mục). Rà soát chạy ở task đầu tiên có logic (T1.x).
 
 ### [ ] T0.5 · Seed dữ liệu
 - **Phụ thuộc:** T0.4
