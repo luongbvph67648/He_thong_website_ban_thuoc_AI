@@ -3,7 +3,15 @@
 import re
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, StringConstraints, field_validator
+from pydantic import (
+    BaseModel,
+    BeforeValidator,
+    ConfigDict,
+    Field,
+    StringConstraints,
+    field_validator,
+    model_validator,
+)
 
 from app.core.bao_mat import mat_khau_du_manh
 from app.core.dien_thoai import chuan_hoa_sdt
@@ -33,8 +41,16 @@ EmailTuyChon = Annotated[str | None, BeforeValidator(_chuan_hoa_email)]
 
 class OtpYeuCau(BaseModel):
     so_dien_thoai: SoDienThoai
-    # Mở rộng ở T1.2 (quen_mat_khau) và khi làm đơn thuốc của khách vãng lai (don_thuoc_khach)
-    muc_dich: Literal["dang_ky"]
+    # `don_thuoc_khach` thêm khi làm đơn thuốc của khách vãng lai (T5.x)
+    muc_dich: Literal["dang_ky", "quen_mat_khau"]
+    # Gửi mã qua email của tài khoản (chỉ để lấy lại mật khẩu). Tài khoản chưa có email thì tự gửi SMS.
+    kenh: Literal["sms", "email"] = "sms"
+
+    @model_validator(mode="after")
+    def _email_chi_de_lay_lai_mat_khau(self) -> "OtpYeuCau":
+        if self.kenh == "email" and self.muc_dich != "quen_mat_khau":
+            raise ValueError("Chỉ gửi mã qua email khi lấy lại mật khẩu")
+        return self
 
 
 class OtpPhanHoi(BaseModel):
@@ -74,3 +90,39 @@ class KhachHangDoc(BaseModel):
     ho_ten: str
     so_dien_thoai: str
     email: str | None
+
+
+class DangNhapYeuCau(BaseModel):
+    """`ten_dang_nhap` là số điện thoại hoặc email đã đăng ký."""
+
+    ten_dang_nhap: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, max_length=150)]
+    mat_khau: Annotated[str, Field(min_length=1, max_length=128)]
+
+
+class CapTokenPhanHoi(BaseModel):
+    """Refresh token KHÔNG nằm trong thân phản hồi: nó chỉ đi trong cookie httpOnly."""
+
+    access_token: str
+    token_type: Literal["bearer"] = "bearer"
+    het_han_giay: int
+
+
+class DangNhapPhanHoi(CapTokenPhanHoi):
+    khach_hang: KhachHangDoc
+
+
+class DatLaiMatKhauYeuCau(BaseModel):
+    so_dien_thoai: SoDienThoai
+    otp: Annotated[str, Field(pattern=r"^[0-9]{6}$")]
+    mat_khau_moi: Annotated[str, Field(max_length=128)]
+
+    @field_validator("mat_khau_moi")
+    @classmethod
+    def _mat_khau_du_manh(cls, gia_tri: str) -> str:
+        if not mat_khau_du_manh(gia_tri):
+            raise ValueError("Mật khẩu cần tối thiểu 8 ký tự, gồm cả chữ và số")
+        return gia_tri
+
+
+class DatLaiMatKhauPhanHoi(BaseModel):
+    da_dat_lai: bool

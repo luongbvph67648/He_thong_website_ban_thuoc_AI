@@ -18,6 +18,9 @@ class Settings(BaseSettings):
     # Khóa ký access token (HS256), tối thiểu 32 ký tự. Không có giá trị mặc định: để trống thì không tạo/giải mã token.
     JWT_SECRET: SecretStr = SecretStr("")
     JWT_ACCESS_PHUT: int = 15
+    REFRESH_NGAY: int = 14
+    # Cookie refresh token luôn `HttpOnly; SameSite=Lax`; `Secure` mặc định bật (trình duyệt hiện đại vẫn nhận trên http://localhost).
+    COOKIE_SECURE: bool = True
     # Tin nhắn (OTP, thông báo): `gia` ghi SMS ra log, email qua SMTP tới Mailpit; `that` cần nhà cung cấp (spec 08).
     TIN_NHAN_CHE_DO: Literal["gia", "that"] = "gia"
     SMTP_HOST: str = "localhost"

@@ -47,8 +47,14 @@ class GioiHanCuaSoTruot:
 
 
 _bo_otp_toan_cuc = GioiHanCuaSoTruot()
+_bo_dang_nhap_toan_cuc = GioiHanCuaSoTruot()
 
 
 def lay_bo_gioi_han_otp() -> GioiHanCuaSoTruot:
     """Bộ đếm theo IP cho việc xin OTP, dùng chung cả tiến trình. Là dependency để test thay bằng bộ riêng."""
     return _bo_otp_toan_cuc
+
+
+def lay_bo_gioi_han_dang_nhap() -> GioiHanCuaSoTruot:
+    """Bộ đếm theo IP cho các lần thử đăng nhập, làm chậm việc dò mật khẩu và dò tài khoản trên diện rộng."""
+    return _bo_dang_nhap_toan_cuc

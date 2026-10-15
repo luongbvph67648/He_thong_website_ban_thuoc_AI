@@ -31,7 +31,7 @@ export interface paths {
         get?: never;
         put?: never;
         /**
-         * Gửi mã OTP đăng ký (KVL09)
+         * Gửi mã OTP đăng ký hoặc lấy lại mật khẩu (KVL09, KVL10)
          * @description Phản hồi luôn giống nhau dù số đã đăng ký hay chưa (chống dò tài khoản).
          */
         post: operations["gui_ma_otp_api_v1_auth_otp_post"];
@@ -58,10 +58,120 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/dang-nhap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Đăng nhập khách (KVL10) */
+        post: operations["dang_nhap_khach_api_v1_auth_dang_nhap_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/lam-moi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Làm mới access token bằng refresh token (KVL10)
+         * @description Xoay vòng refresh token. Dùng lại token đã thu hồi thì thu hồi toàn bộ phiên (nghi bị đánh cắp).
+         */
+        post: operations["lam_moi_api_v1_auth_lam_moi_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/dang-xuat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Đăng xuất khách (KVL10)
+         * @description Thu hồi phiên hiện tại và xóa cookie. Gọi nhiều lần, hoặc không có cookie, vẫn trả 204.
+         */
+        post: operations["dang_xuat_api_v1_auth_dang_xuat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/dat-lai-mat-khau": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Đặt lại mật khẩu bằng OTP (KVL10)
+         * @description Đặt lại mật khẩu: đúng OTP `quen_mat_khau` thì đổi mật khẩu, mở khóa tạm và thu hồi mọi phiên đăng nhập.
+         */
+        post: operations["dat_lai_mat_khau_api_v1_auth_dat_lai_mat_khau_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/toi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Hồ sơ của tôi (KTV01) */
+        get: operations["ho_so_cua_toi_api_v1_toi_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * CapTokenPhanHoi
+         * @description Refresh token KHÔNG nằm trong thân phản hồi: nó chỉ đi trong cookie httpOnly.
+         */
+        CapTokenPhanHoi: {
+            /** Access Token */
+            access_token: string;
+            /**
+             * Token Type
+             * @default bearer
+             * @constant
+             */
+            token_type: "bearer";
+            /** Het Han Giay */
+            het_han_giay: number;
+        };
         /** DangKyYeuCau */
         DangKyYeuCau: {
             /** So Dien Thoai */
@@ -76,6 +186,44 @@ export interface components {
             email?: string | null;
             /** Dong Y Chinh Sach */
             dong_y_chinh_sach: boolean;
+        };
+        /** DangNhapPhanHoi */
+        DangNhapPhanHoi: {
+            /** Access Token */
+            access_token: string;
+            /**
+             * Token Type
+             * @default bearer
+             * @constant
+             */
+            token_type: "bearer";
+            /** Het Han Giay */
+            het_han_giay: number;
+            khach_hang: components["schemas"]["KhachHangDoc"];
+        };
+        /**
+         * DangNhapYeuCau
+         * @description `ten_dang_nhap` là số điện thoại hoặc email đã đăng ký.
+         */
+        DangNhapYeuCau: {
+            /** Ten Dang Nhap */
+            ten_dang_nhap: string;
+            /** Mat Khau */
+            mat_khau: string;
+        };
+        /** DatLaiMatKhauPhanHoi */
+        DatLaiMatKhauPhanHoi: {
+            /** Da Dat Lai */
+            da_dat_lai: boolean;
+        };
+        /** DatLaiMatKhauYeuCau */
+        DatLaiMatKhauYeuCau: {
+            /** So Dien Thoai */
+            so_dien_thoai: string;
+            /** Otp */
+            otp: string;
+            /** Mat Khau Moi */
+            mat_khau_moi: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -109,9 +257,15 @@ export interface components {
             so_dien_thoai: string;
             /**
              * Muc Dich
-             * @constant
+             * @enum {string}
              */
-            muc_dich: "dang_ky";
+            muc_dich: "dang_ky" | "quen_mat_khau";
+            /**
+             * Kenh
+             * @default sms
+             * @enum {string}
+             */
+            kenh: "sms" | "email";
         };
         /** SucKhoe */
         SucKhoe: {
@@ -239,6 +393,152 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dang_nhap_khach_api_v1_auth_dang_nhap_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DangNhapYeuCau"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DangNhapPhanHoi"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lam_moi_api_v1_auth_lam_moi_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                refresh_token?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapTokenPhanHoi"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dang_xuat_api_v1_auth_dang_xuat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                refresh_token?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dat_lai_mat_khau_api_v1_auth_dat_lai_mat_khau_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DatLaiMatKhauYeuCau"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DatLaiMatKhauPhanHoi"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ho_so_cua_toi_api_v1_toi_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KhachHangDoc"];
                 };
             };
         };

@@ -78,7 +78,7 @@ describe('TrangDangKy', () => {
     dung()
     await sangBuoc2(nguoi, '+84 912 345 678')
     expect(POST).toHaveBeenCalledWith('/api/v1/auth/otp', {
-      body: { so_dien_thoai: '0912345678', muc_dich: 'dang_ky' },
+      body: { so_dien_thoai: '0912345678', muc_dich: 'dang_ky', kenh: 'sms' },
     })
     expect(screen.getByText(/0912345678/)).toBeInTheDocument()
   })
@@ -255,7 +255,7 @@ describe('TrangDangKy', () => {
 
     POST.mockResolvedValueOnce(ok({ da_gui: true, het_han_giay: 300 }))
     await nguoi.click(screen.getByRole('button', { name: /Gửi lại mã/ }))
-    expect(POST).toHaveBeenLastCalledWith('/api/v1/auth/otp', { body: { so_dien_thoai: '0912345678', muc_dich: 'dang_ky' } })
+    expect(POST).toHaveBeenLastCalledWith('/api/v1/auth/otp', { body: { so_dien_thoai: '0912345678', muc_dich: 'dang_ky', kenh: 'sms' } })
     await waitFor(() => expect(screen.getByRole('button', { name: /Gửi lại mã/ })).toBeDisabled())
   })
 

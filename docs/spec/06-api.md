@@ -53,6 +53,19 @@
 - SĐT nhận dạng `+84 912 345 678`, `0912.345.678`... và lưu dạng `0xxxxxxxxx`; chỉ số di động Việt Nam.
 - Route cần giữ thay đổi dù trả lỗi (đếm lần thử OTP, đếm đăng nhập sai) phải TRẢ VỀ lỗi bằng `core.loi.tra_loi(...)`, không `raise` (raise làm rollback).
 
+### 3.2 Đăng nhập, phiên và lấy lại mật khẩu của khách (KVL10)
+- `POST /api/v1/auth/dang-nhap` `{ten_dang_nhap, mat_khau}` -> 200 `{access_token, token_type: "bearer", het_han_giay, khach_hang: {id, ho_ten, so_dien_thoai, email}}` và cookie refresh token. `ten_dang_nhap` là số điện thoại (mọi dạng được chuẩn hóa như ở 3.1) hoặc email (không phân biệt hoa thường).
+  - `401 SAI_THONG_TIN_DANG_NHAP` cho mọi trường hợp sai: sai mật khẩu, tài khoản không tồn tại hoặc đã xóa, định danh không phải số/email. Cùng thân phản hồi và cùng chi phí tính toán (luôn băm một lần), để không dò được tài khoản.
+  - `403 TAI_KHOAN_BI_KHOA` (kèm `chi_tiet.thu_lai_sau_giay`) khi đang bị khóa tạm: sai `cau_hinh.so_lan_dang_nhap_sai_toi_da` lần liên tiếp thì khóa `cau_hinh.thoi_gian_khoa_dang_nhap_phut` phút (mặc định 5 lần, 15 phút). Đang khóa thì mật khẩu đúng cũng bị từ chối và không kéo dài thời gian khóa. Đăng nhập đúng xóa bộ đếm. Tài khoản Admin khóa (`trang_thai = bi_khoa`) chỉ trả `403 TAI_KHOAN_BI_KHOA` (không kèm thời gian) khi nhập ĐÚNG mật khẩu; sai mật khẩu vẫn là 401 như trên.
+  - `429 QUA_GIOI_HAN` (kèm `Retry-After`) khi một IP thử quá 20 lần trong 10 phút, tính cả lần đúng.
+- `POST /api/v1/auth/lam-moi` (cookie refresh, không thân) -> 200 `{access_token, token_type, het_han_giay}` và cookie refresh mới; token cũ bị thu hồi. Dùng lại token đã thu hồi thì thu hồi toàn bộ phiên của tài khoản. Mọi lỗi (`401 CHUA_DANG_NHAP` không có cookie/token lạ/đã thu hồi hoặc của loại tài khoản khác, `401 TOKEN_HET_HAN` quá `REFRESH_NGAY`, `403 TAI_KHOAN_BI_KHOA` đang khóa) đều kèm lệnh xóa cookie. Tài khoản bị khóa giữa chừng thì mọi phiên bị thu hồi.
+- `POST /api/v1/auth/dang-xuat` -> 204: thu hồi đúng phiên của cookie hiện tại và xóa cookie. Gọi lại, không có cookie hay cookie lạ vẫn 204.
+- `POST /api/v1/auth/otp` với `muc_dich: "quen_mat_khau"`, `kenh: "sms" | "email"` (mặc định `sms`; `email` chỉ hợp lệ với `quen_mat_khau`) -> 200 `{da_gui: true, het_han_giay: 300}`, giống hệt dù số có tài khoản hay không. Số chưa có tài khoản (hoặc đã xóa) nhận một SMS "chưa có tài khoản" thay cho mã. `kenh = email` mà tài khoản chưa có email thì mã gửi qua SMS. Giới hạn gửi tính riêng cho từng mục đích.
+- `POST /api/v1/auth/dat-lai-mat-khau` `{so_dien_thoai, otp, mat_khau_moi}` -> 200 `{da_dat_lai: true}`. Lỗi `422 OTP_SAI` / `OTP_HET_HAN` như 3.1; mật khẩu yếu là `400` (kiểm tra trước OTP nên không tiêu mã). Thành công thì đổi mật khẩu, xóa bộ đếm sai và `khoa_den`, thu hồi MỌI phiên của khách đó. Không mở khóa tài khoản Admin đã khóa.
+- **Cookie refresh token:** tên `refresh_token`, `HttpOnly; SameSite=Lax; Secure` (tắt `Secure` bằng `COOKIE_SECURE=false` khi dev qua http), `Path=/api/v1/auth`, `Max-Age = REFRESH_NGAY` ngày. Refresh token không bao giờ nằm trong thân JSON.
+- `GET /api/v1/toi` -> 200 `{id, ho_ten, so_dien_thoai, email}` của khách trong token. Mọi route `/api/v1/toi/*` phải dùng `Depends(khach_hien_tai)` (có test duyệt OpenAPI: không token thì 401).
+- **Guard (`core/phan_quyen.py`):** `khach_hien_tai` đòi access token `aud = khach`, rồi đọc tài khoản từ DB ở MỖI request (tài khoản phải tồn tại, `hoat_dong`, không `khoa_den`) nên khóa tài khoản có hiệu lực ngay chứ không đợi token hết hạn. Token hết hạn là `401 TOKEN_HET_HAN`; mọi token sai khác là `401 CHUA_DANG_NHAP`; tài khoản bị khóa là `403 TAI_KHOAN_BI_KHOA`. `khach_tuy_chon` cho route công khai: không token, token vô nghĩa, token nội bộ hoặc tài khoản bị khóa thì coi là khách vãng lai; chỉ token khách hết hạn mới trả `TOKEN_HET_HAN` để client làm mới.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

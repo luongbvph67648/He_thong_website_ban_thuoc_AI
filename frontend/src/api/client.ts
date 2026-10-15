@@ -9,6 +9,8 @@ import { lamMoiAccessToken, taoMiddlewareXacThuc } from './xacThuc'
  */
 export const api = createClient<paths>({
   baseUrl: import.meta.env.VITE_API_URL ?? globalThis.location?.origin ?? '',
+  // Gửi/nhận cookie refresh token cả khi API khác origin (VITE_API_URL); CORS phía backend đã bật allow_credentials.
+  credentials: 'include',
 })
 
 api.use(

@@ -1,6 +1,8 @@
-import { ShoppingCartOutlined, UserOutlined } from '@ant-design/icons'
-import { Input, Layout, Space, Typography } from 'antd'
+import { LogoutOutlined, ShoppingCartOutlined, UserOutlined } from '@ant-design/icons'
+import { useQueryClient } from '@tanstack/react-query'
+import { Button, Input, Layout, Skeleton, Space, Typography } from 'antd'
 import { Link, Outlet, useNavigate } from 'react-router-dom'
+import { dangXuatKhach } from '../../api/dangXuat'
 import { usePhien } from '../../stores/phien'
 
 const { Header, Content, Footer } = Layout
@@ -11,7 +13,16 @@ const { Header, Content, Footer } = Layout
  */
 export default function CuaHangLayout() {
   const khachDaDangNhap = usePhien((s) => s.loai === 'khach')
+  const hoTen = usePhien((s) => s.hoSo?.hoTen)
+  const daKhoiPhuc = usePhien((s) => s.daKhoiPhuc)
   const dieuHuong = useNavigate()
+  const queryClient = useQueryClient()
+
+  async function dangXuat() {
+    await dangXuatKhach()
+    queryClient.clear() // bỏ dữ liệu của khách vừa đăng xuất khỏi bộ nhớ đệm
+    dieuHuong('/')
+  }
 
   return (
     <Layout style={{ minHeight: '100vh' }}>
@@ -43,10 +54,19 @@ export default function CuaHangLayout() {
           <Link to="/gio-hang">
             <ShoppingCartOutlined /> Giỏ hàng
           </Link>
-          {khachDaDangNhap ? (
-            <Link to="/tai-khoan">
-              <UserOutlined /> Tài khoản
-            </Link>
+          {!daKhoiPhuc ? (
+            <span role="status" aria-label="Đang tải tài khoản">
+              <Skeleton.Button active size="small" />
+            </span>
+          ) : khachDaDangNhap ? (
+            <Space>
+              <Link to="/tai-khoan">
+                <UserOutlined /> {hoTen ?? 'Tài khoản'}
+              </Link>
+              <Button type="link" icon={<LogoutOutlined />} onClick={() => void dangXuat()} style={{ padding: 0 }}>
+                Đăng xuất
+              </Button>
+            </Space>
           ) : (
             <Link to="/dang-nhap">
               <UserOutlined /> Đăng nhập

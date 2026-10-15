@@ -2,7 +2,7 @@ import type { Middleware } from 'openapi-fetch'
 import type { LoaiPhien } from '../stores/phien'
 
 /** Các endpoint không cần đăng nhập: 401 ở đây là sai thông tin hoặc OTP, không phải hết phiên nên không làm mới. */
-const DUONG_KHONG_LAM_MOI = /\/auth\/(dang-nhap|dang-ky|lam-moi|dang-xuat|quen-mat-khau|otp)(\/|$)/
+const DUONG_KHONG_LAM_MOI = /\/auth\/(dang-nhap|dang-ky|lam-moi|dang-xuat|dat-lai-mat-khau|otp)(\/|$)/
 
 export interface ThamSoXacThuc {
   layToken: () => string | null
@@ -73,20 +73,44 @@ export function taoMiddlewareXacThuc(ts: ThamSoXacThuc): Middleware {
   }
 }
 
+export interface KetQuaLamMoi {
+  token: string | null
+  /** Máy chủ trả lời rõ là phiên không còn (401/403); khác với lỗi mạng hay lỗi máy chủ có thể thử lại sau. */
+  hetPhien: boolean
+}
+
+const TEN_KHOA_LAM_MOI = 'nha-thuoc-lam-moi-phien'
+
+/**
+ * Chạy `viec` độc quyền giữa mọi tab cùng origin (Web Locks API). Refresh token xoay vòng: hai tab cùng làm mới bằng
+ * một cookie thì tab đến sau bị coi là dùng lại token cũ và mọi phiên bị thu hồi. Tuần tự hóa để tab sau đọc cookie
+ * mới nhất. Trình duyệt không có Web Locks thì chạy thẳng.
+ */
+function docQuyen<T>(viec: () => Promise<T>): Promise<T> {
+  const khoa = globalThis.navigator?.locks
+  return khoa ? khoa.request(TEN_KHOA_LAM_MOI, viec) : viec()
+}
+
 /** Làm mới access token bằng refresh token trong cookie httpOnly. Khách và nhân viên dùng hai endpoint khác nhau. */
-export async function lamMoiAccessToken(
+export async function lamMoiPhien(
   loai: LoaiPhien | null,
   fetchFn: typeof fetch = (...tham_so) => fetch(...tham_so),
-): Promise<string | null> {
-  if (!loai) return null
+): Promise<KetQuaLamMoi> {
+  if (!loai) return { token: null, hetPhien: false }
   const duong = loai === 'noi_bo' ? '/api/v1/noi-bo/auth/lam-moi' : '/api/v1/auth/lam-moi'
-  try {
-    const phanHoi = await fetchFn(duong, { method: 'POST', credentials: 'include' })
-    if (!phanHoi.ok) return null
-    const than: unknown = await phanHoi.json()
-    const token = (than as { access_token?: unknown } | null)?.access_token
-    return typeof token === 'string' && token !== '' ? token : null
-  } catch {
-    return null
-  }
+  return docQuyen(async () => {
+    try {
+      const phanHoi = await fetchFn(duong, { method: 'POST', credentials: 'include' })
+      if (!phanHoi.ok) return { token: null, hetPhien: phanHoi.status === 401 || phanHoi.status === 403 }
+      const than: unknown = await phanHoi.json()
+      const token = (than as { access_token?: unknown } | null)?.access_token
+      return typeof token === 'string' && token !== '' ? { token, hetPhien: false } : { token: null, hetPhien: false }
+    } catch {
+      return { token: null, hetPhien: false }
+    }
+  })
+}
+
+export async function lamMoiAccessToken(loai: LoaiPhien | null, fetchFn?: typeof fetch): Promise<string | null> {
+  return (await lamMoiPhien(loai, fetchFn)).token
 }

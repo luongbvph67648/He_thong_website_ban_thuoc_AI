@@ -195,19 +195,28 @@ _Đăng ký/đăng nhập 2 loại tài khoản, RBAC, nhật ký, cấu hình._
   - **Phụ thuộc mới:** `aiosmtpd` (dev), `pyjwt` đã có từ T0.6. Fixture test mới: `kenh_tin_nhan` (ghi nhớ tin gửi, `ma_otp_cuoi()`), `gioi_han_ip` (bộ đếm IP riêng mỗi test), `thoi_gian` (vá `bay_gio_utc` để tua thời gian). Env: `TIN_NHAN_CHE_DO`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_NGUOI_GUI`.
   - **Chưa làm:** mục đích OTP `quen_mat_khau` (T1.2) và `don_thuoc_khach` (T5.x); chế độ `that` của kênh tin nhắn.
 
-### [ ] T1.2 · Đăng nhập khách, phiên và quên mật khẩu
+### [x] T1.2 · Đăng nhập khách, phiên và quên mật khẩu
 - **Chức năng:** KVL10 (Đăng nhập, quên mật khẩu)
 - **Phụ thuộc:** T1.1
 - **Bảng:** `khach_hang`, `ma_otp`, `phien_dang_nhap`
 - **Tiêu chí chấp nhận:**
-  - [ ] `POST /api/v1/auth/dang-nhap`: access JWT (15 phút, `aud = "khach"`) + refresh token trong cookie httpOnly; lưu hash vào `phien_dang_nhap`.
-  - [ ] `POST /api/v1/auth/lam-moi` xoay vòng refresh token (token cũ bị thu hồi; dùng lại token đã thu hồi thì thu hồi toàn bộ phiên của tài khoản).
-  - [ ] `POST /api/v1/auth/dang-xuat`, quên mật khẩu bằng OTP (mục đích `quen_mat_khau`) → thu hồi mọi phiên.
-  - [ ] Khóa tạm sau `so_lan_dang_nhap_sai_toi_da` lần sai (`khoa_den`). Tài khoản `bi_khoa` không đăng nhập/làm mới được.
-  - [ ] `GET /api/v1/toi` trả hồ sơ khách. Dependency `khach_hien_tai`, `khach_tuy_chon`.
+  - [x] `POST /api/v1/auth/dang-nhap`: access JWT (15 phút, `aud = "khach"`) + refresh token trong cookie httpOnly; lưu hash vào `phien_dang_nhap`.
+  - [x] `POST /api/v1/auth/lam-moi` xoay vòng refresh token (token cũ bị thu hồi; dùng lại token đã thu hồi thì thu hồi toàn bộ phiên của tài khoản).
+  - [x] `POST /api/v1/auth/dang-xuat`, quên mật khẩu bằng OTP (mục đích `quen_mat_khau`) → thu hồi mọi phiên.
+  - [x] Khóa tạm sau `so_lan_dang_nhap_sai_toi_da` lần sai (`khoa_den`). Tài khoản `bi_khoa` không đăng nhập/làm mới được.
+  - [x] `GET /api/v1/toi` trả hồ sơ khách. Dependency `khach_hien_tai`, `khach_tuy_chon`.
 - **Giao diện:**
-  - [ ] Trang đăng nhập, quên mật khẩu; store phiên (Zustand).
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Trang đăng nhập, quên mật khẩu; store phiên (Zustand).
+- **Ghi chú triển khai:**
+  - **Backend** (`modules/tai_khoan/{phien,dang_nhap,cookie,router_cong_khai,router_khach}.py`, `core/phan_quyen.py`): đủ 5 endpoint của spec 06 mục 3.2 (`dang-nhap`, `lam-moi`, `dang-xuat`, `dat-lai-mat-khau`, `otp` mở rộng `quen_mat_khau` + `kenh`) và `GET /api/v1/toi`. `khach_hien_tai` đọc tài khoản từ DB mỗi request nên khóa tài khoản có hiệu lực ngay. Mọi bộ đếm cần ở lại sau lỗi (lần sai, khóa tạm, thu hồi phiên khi dùng lại token) đều do route TRẢ VỀ lỗi bằng `tra_loi`, không raise.
+  - **Chống dò tài khoản:** sai mật khẩu, số lạ, đã xóa, định danh vô nghĩa cho cùng phản hồi và cùng một lần băm Argon2 (test đếm số lần băm); OTP `quen_mat_khau` cho số lạ vẫn tạo dòng giữ chỗ đếm lần thử và gửi SMS "chưa có tài khoản" (test so sánh chuỗi phản hồi hai nhánh). **Giới hạn đã chấp nhận:** khóa tạm lộ tài khoản có thật sau 5 lần sai (QĐ-11).
+  - **Phiên:** refresh token 256 bit, lưu SHA-256, xoay vòng, dùng lại thì thu hồi toàn bộ; hạn tính từ lần làm mới gần nhất (`REFRESH_NGAY` = 14); token của loại tài khoản khác bị từ chối mà không thu hồi nhầm; đặt lại mật khẩu thu hồi mọi phiên và xóa khóa tạm nhưng không mở khóa tài khoản Admin đã khóa. Biến mới `COOKIE_SECURE` (mặc định `true`; `.env.example` đặt `false` cho dev http). Giới hạn đăng nhập theo IP: 20 lần/10 phút (`lay_bo_gioi_han_dang_nhap`).
+  - **Test** (backend 566 xanh, thêm 79 so với T1.1): `test_dang_nhap.py`, `test_phien.py` (kể cả tranh chấp hai lần làm mới đồng thời bằng `db_that`), `test_quen_mat_khau.py`, `test_khach_hien_tai.py` (kể cả test duyệt OpenAPI: mọi route `/api/v1/toi*` không token thì 401). Fixture mới: `gioi_han_dang_nhap`, `client_https` (giữ cookie `Secure`), `KenhGhiNho.ma_otp_email_cuoi`, `thoi_gian` vá thêm các module phiên/đăng nhập; autouse `cau_hinh_co_dinh_cho_test` ghim `COOKIE_SECURE`, `REFRESH_NGAY`, `JWT_ACCESS_PHUT` để test không phụ thuộc `.env` (một lần suýt sai vì cookie không `Secure` bị jar tự gửi lại; helper `lam_moi(client, None)` giờ xóa jar). Đã sửa test T1.1 từng khẳng định `quen_mat_khau` bị từ chối.
+  - **Kiểm chứng bằng phá thử:** 17 đột biến (raise thay vì return làm mất bộ đếm, bỏ thu hồi toàn bộ khi dùng lại, bỏ `FOR UPDATE`, đặt lại không thu hồi phiên/không mở khóa tạm, số lạ không băm, bỏ kiểm tra khóa tạm, bộ đếm không reset, guard bỏ kiểm tra khóa, `/toi` không đòi đăng nhập, cookie không HttpOnly, nhận refresh token của loại khác, làm mới không kiểm tra khóa, đăng xuất không thu hồi, bỏ giới hạn IP, `quen_mat_khau` coi như đăng ký) đều bị ít nhất một test bắt.
+  - **Frontend:** trang `/dang-nhap` (`?tiep=` chỉ nhận đường dẫn nội bộ), `/quen-mat-khau` (2 bước, chọn SMS/email), nút Đăng xuất và tên khách ở header, `api/goi.ts` dùng chung với đăng ký, `useDemNguoc`. Khôi phục phiên khi tải trang (`api/khoiPhuc.ts`): có "gợi ý" `phien_goi_y` trong localStorage (chỉ `khach`/`noi_bo`, không token, không hồ sơ) thì làm mới + lấy `/toi`; chạy đúng một lần mỗi lần tải; header chờ `daKhoiPhuc` để không nhấp nháy "Đăng nhập". Làm mới tuần tự giữa các tab bằng Web Locks (QĐ-11). `api/client.ts` thêm `credentials: 'include'`. 199 test vitest xanh (cả khi `TZ=America/Los_Angeles`), `tsc`, oxlint, build sạch.
+  - **Đã chạy thật trên Chromium (390px) với backend + Vite + seed mẫu, 24/24 kiểm tra đạt:** vãng lai không gọi làm mới; sai mật khẩu; đăng nhập quay lại `?tiep=`; cookie `refresh_token` HttpOnly/SameSite=Lax/Path=/api/v1/auth, localStorage chỉ có `phien_goi_y`, `document.cookie` không thấy token; tải lại khôi phục phiên với đúng 1 lần làm mới và token xoay vòng; 4 tab mở cùng lúc đều còn đăng nhập (tắt Web Locks thì chỉ 1/4); đăng xuất xóa cookie và gợi ý; quên mật khẩu bằng OTP SMS (đọc mã từ log SMS giả), mật khẩu cũ bị từ chối, mật khẩu mới đăng nhập được; `?tiep=//trang-lua-dao.example` bị bỏ qua; không cuộn ngang.
+  - **Chưa làm / để task sau:** trang `/tai-khoan` vẫn là trang giữ chỗ (T2.x–T4.x), khôi phục phiên nội bộ cùng đăng nhập nội bộ (T1.3), `don_thuoc_khach` cho OTP (T5.x). Chạy `/review-nghiep-vu` gộp T1.1–T1.3 sau T1.3 (phần phân quyền thật nằm ở T1.3).
+
 
 ### [ ] T1.3 · Xác thực nhân viên, RBAC và nhật ký
 - **Chức năng:** NV01 (Đăng nhập, đổi mật khẩu), NV02 (Xem thông báo, cập nhật hồ sơ cá nhân)

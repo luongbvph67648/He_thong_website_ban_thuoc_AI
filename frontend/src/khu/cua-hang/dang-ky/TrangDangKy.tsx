@@ -1,10 +1,12 @@
 import { Alert, Button, Card, Checkbox, Form, Input, Result, Typography } from 'antd'
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../../api/client'
-import { laLoiApi, loiTheoTruong, type LoiApi } from '../../../api/loi'
+import { goi, thongDiepChoDoiLai, thongDiepChung, thongDiepOtpSai } from '../../../api/goi'
+import { loiTheoTruong } from '../../../api/loi'
 import { chuanHoaSdt } from '../../../lib/dienThoai'
 import { matKhauDuManh } from '../../../lib/matKhau'
+import { useDemNguoc } from '../../../lib/useDemNguoc'
 
 const GIAY_CHO_GUI_LAI = 60
 
@@ -21,52 +23,23 @@ interface FormThongTin {
   dong_y_chinh_sach: boolean
 }
 
-type KetQuaGoi<T> = { ok: true; data: T } | { ok: false; loi: LoiApi | null }
-
-/** Gọi API và quy mọi kết quả (kể cả lỗi mạng) về một dạng; `loi = null` nghĩa là không nhận được phản hồi hợp lệ. */
-async function goi<T>(thucHien: () => Promise<{ data?: T; error?: unknown }>): Promise<KetQuaGoi<T>> {
-  try {
-    const { data, error } = await thucHien()
-    if (data !== undefined && !error) return { ok: true, data }
-    return { ok: false, loi: laLoiApi(error) ? error : null }
-  } catch {
-    return { ok: false, loi: null }
-  }
-}
-
-function thongDiepChung(loi: LoiApi | null): string {
-  return loi ? loi.thong_diep : 'Không kết nối được máy chủ, vui lòng thử lại.'
-}
-
-function thongDiepChoDoiLai(loi: LoiApi): string {
-  const giay = (loi.chi_tiet as { thu_lai_sau_giay?: number } | null)?.thu_lai_sau_giay
-  return giay ? `${loi.thong_diep}. Hãy thử lại sau ${Math.ceil(giay / 60)} phút.` : loi.thong_diep
-}
-
 /** Đăng ký khách hàng 2 bước (KVL09): nhập số điện thoại để nhận OTP, rồi nhập mã cùng thông tin tài khoản. */
 export default function TrangDangKy() {
   const [buoc, setBuoc] = useState<'sdt' | 'thong-tin' | 'xong'>('sdt')
   const [sdt, setSdt] = useState('')
   const [dangGui, setDangGui] = useState(false)
   const [thongBao, setThongBao] = useState<string | null>(null)
-  const [giayCon, setGiayCon] = useState(0)
+  const [giayCon, batDauDem] = useDemNguoc()
   const [formSdt] = Form.useForm<FormSdt>()
   const [formThongTin] = Form.useForm<FormThongTin>()
-
-  const dangDem = giayCon > 0
-  useEffect(() => {
-    if (!dangDem) return
-    const dong = setInterval(() => setGiayCon((g) => Math.max(0, g - 1)), 1000)
-    return () => clearInterval(dong)
-  }, [dangDem])
 
   async function guiOtp(so: string): Promise<boolean> {
     setDangGui(true)
     setThongBao(null)
-    const kq = await goi(() => api.POST('/api/v1/auth/otp', { body: { so_dien_thoai: so, muc_dich: 'dang_ky' } }))
+    const kq = await goi(() => api.POST('/api/v1/auth/otp', { body: { so_dien_thoai: so, muc_dich: 'dang_ky', kenh: 'sms' } }))
     setDangGui(false)
     if (kq.ok) {
-      setGiayCon(GIAY_CHO_GUI_LAI)
+      batDauDem(GIAY_CHO_GUI_LAI)
       return true
     }
     if (kq.loi?.ma_loi === 'QUA_GIOI_HAN') setThongBao(thongDiepChoDoiLai(kq.loi))
@@ -108,9 +81,7 @@ export default function TrangDangKy() {
 
     const loi = kq.loi
     if (loi?.ma_loi === 'OTP_SAI') {
-      const conLai = (loi.chi_tiet as { so_lan_con_lai?: number } | null)?.so_lan_con_lai
-      const noiDung = conLai && conLai > 0 ? `${loi.thong_diep}. Bạn còn ${conLai} lần thử.` : loi.thong_diep
-      formThongTin.setFields([{ name: 'otp', errors: [noiDung] }])
+      formThongTin.setFields([{ name: 'otp', errors: [thongDiepOtpSai(loi)] }])
     } else if (loi?.ma_loi === 'OTP_HET_HAN') {
       formThongTin.setFields([{ name: 'otp', errors: [loi.thong_diep] }])
     } else if (loi && Object.keys(loiTheoTruong(loi)).length > 0) {

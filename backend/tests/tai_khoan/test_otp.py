@@ -68,8 +68,8 @@ async def test_so_dien_thoai_sai_tra_400_dung_truong(client, kenh_tin_nhan, sdt)
     assert kenh_tin_nhan.sms == []
 
 
-@pytest.mark.parametrize("muc_dich", ["quen_mat_khau", "don_thuoc_khach", "khac", ""])
-async def test_t1_1_chi_ho_tro_muc_dich_dang_ky(client, kenh_tin_nhan, muc_dich):
+@pytest.mark.parametrize("muc_dich", ["don_thuoc_khach", "khac", ""])
+async def test_t1_1_chi_ho_tro_muc_dich_da_lam(client, kenh_tin_nhan, muc_dich):
     phan_hoi = await xin_otp(client, muc_dich=muc_dich)
     assert phan_hoi.status_code == 400 and phan_hoi.json()["chi_tiet"][0]["truong"] == "muc_dich"
     assert kenh_tin_nhan.sms == []

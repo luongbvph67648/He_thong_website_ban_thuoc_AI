@@ -7,6 +7,8 @@ import { YeuCauQuyen } from './components/YeuCauQuyen'
 import type { MucDieuHuong } from './lib/dieuHuong'
 import CuaHangLayout from './khu/cua-hang/CuaHangLayout'
 import TrangDangKy from './khu/cua-hang/dang-ky/TrangDangKy'
+import TrangDangNhap from './khu/cua-hang/dang-nhap/TrangDangNhap'
+import TrangQuenMatKhau from './khu/cua-hang/quen-mat-khau/TrangQuenMatKhau'
 import { TRANG_CUA_HANG } from './khu/cua-hang/trang'
 import TrangChu from './khu/cua-hang/TrangChu'
 import NhanVienLayout, { TrangDauNhanVien } from './khu/nhan-vien/NhanVienLayout'
@@ -30,6 +32,8 @@ function routeCuaKhu(muc: readonly MucDieuHuong[]): RouteObject[] {
 /** Trang khu cửa hàng đã làm thật; các trang còn lại trong `TRANG_CUA_HANG` là trang giữ chỗ. */
 const TRANG_THAT: Record<string, ReactNode> = {
   '/dang-ky': <TrangDangKy />,
+  '/dang-nhap': <TrangDangNhap />,
+  '/quen-mat-khau': <TrangQuenMatKhau />,
 }
 
 /** Toàn bộ route của ứng dụng (tách khỏi `createBrowserRouter` để test dựng bằng memory router). */

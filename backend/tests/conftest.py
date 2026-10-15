@@ -11,7 +11,8 @@ Database:
 - `engine_migration`, `db_chua_seed`: database tạm đã migrate nhưng CHƯA seed, cho test về migration/seed.
 - `engine_tam`, `engine_co_bang`: database tạm riêng cho một test.
 
-HTTP: `app` (ứng dụng thật, request dùng chung transaction của test), `client`, `dang_nhap_khach`,
+HTTP: `app` (ứng dụng thật, request dùng chung transaction của test), `client`, `client_https` (giữ cookie refresh
+`Secure`), `dang_nhap_khach`,
 `dang_nhap_duoc_si`, `dang_nhap_kho`, `dang_nhap_admin` (client đã gắn access token của tài khoản vừa tạo).
 """
 
@@ -31,7 +32,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from app.core.bao_mat import tao_access_token
 from app.core.config import settings
 from app.core.db import PhienRequest, get_db, get_engine, tao_engine
-from app.core.gioi_han import GioiHanCuaSoTruot, lay_bo_gioi_han_otp
+from app.core.gioi_han import GioiHanCuaSoTruot, lay_bo_gioi_han_dang_nhap, lay_bo_gioi_han_otp
 from app.core.log import BoLocRequestId, JsonFormatter
 from app.main import create_app
 from app.seed.co_ban import seed_co_ban
@@ -48,6 +49,14 @@ def khoa_jwt_cho_test():
     settings.JWT_SECRET = SecretStr("khoa-jwt-chi-dung-trong-test-" + "0" * 32)
     yield
     settings.JWT_SECRET = cu
+
+
+@pytest.fixture(autouse=True)
+def cau_hinh_co_dinh_cho_test(monkeypatch):
+    """Ghim các cấu hình ảnh hưởng hành vi mà `backend/.env` của máy dev có thể đổi (ví dụ `COOKIE_SECURE=false`)."""
+    monkeypatch.setattr(settings, "COOKIE_SECURE", True)
+    monkeypatch.setattr(settings, "REFRESH_NGAY", 14)
+    monkeypatch.setattr(settings, "JWT_ACCESS_PHUT", 15)
 
 
 # --- Database -------------------------------------------------------------------------------------------------------
@@ -168,6 +177,12 @@ class KenhGhiNho:
         assert khop, f"SMS không có mã OTP: {self.sms[-1][1]!r}"
         return khop.group(1)
 
+    def ma_otp_email_cuoi(self) -> str:
+        """Mã 6 số trong email gần nhất."""
+        khop = re.search(r"\b(\d{6})\b", self.email[-1][2])
+        assert khop, "Email không có mã OTP"
+        return khop.group(1)
+
 
 @pytest.fixture
 def kenh_tin_nhan() -> KenhGhiNho:
@@ -189,9 +204,20 @@ class MocThoiGian:
 
 @pytest.fixture
 def thoi_gian(monkeypatch) -> MocThoiGian:
-    """Vá `bay_gio_utc` ở các module tài khoản; trả về đồng hồ để test chủ động tua thời gian."""
+    """Vá `bay_gio_utc` ở các module tài khoản; trả về đồng hồ để test chủ động tua thời gian.
+
+    Chỉ vá thời gian của server (OTP, khóa tạm, hạn refresh token). Hạn của access token (JWT `exp`) do thư viện JWT
+    tính theo đồng hồ thật nên không bị tua.
+    """
     moc = MocThoiGian(datetime.now(UTC))
-    for module in ("app.modules.tai_khoan.otp", "app.modules.tai_khoan.dang_ky"):
+    for module in (
+        "app.modules.tai_khoan.otp",
+        "app.modules.tai_khoan.dang_ky",
+        "app.modules.tai_khoan.dang_nhap",
+        "app.modules.tai_khoan.phien",
+        "app.modules.tai_khoan.router_cong_khai",
+        "app.core.phan_quyen",
+    ):
         monkeypatch.setattr(f"{module}.bay_gio_utc", moc, raising=False)
     return moc
 
@@ -201,11 +227,16 @@ def gioi_han_ip() -> GioiHanCuaSoTruot:
     return GioiHanCuaSoTruot()
 
 
+@pytest.fixture
+def gioi_han_dang_nhap() -> GioiHanCuaSoTruot:
+    return GioiHanCuaSoTruot()
+
+
 # --- HTTP -----------------------------------------------------------------------------------------------------------
 
 
 @pytest.fixture
-def app(engine_test, ket_noi, kenh_tin_nhan, gioi_han_ip):
+def app(engine_test, ket_noi, kenh_tin_nhan, gioi_han_ip, gioi_han_dang_nhap):
     """Ứng dụng thật. Session của mỗi request chạy trên cùng transaction ngoài của test, nên thấy dữ liệu factory đã
     `flush()` và mọi thay đổi bị rollback cuối test. Vẫn giữ nguyên ngữ nghĩa của `get_db`: request thành công thì
     "commit" (giải phóng savepoint), request lỗi thì hoàn tác phần của request đó."""
@@ -220,6 +251,7 @@ def app(engine_test, ket_noi, kenh_tin_nhan, gioi_han_ip):
     ung_dung.dependency_overrides[get_engine] = lambda: engine_test
     ung_dung.dependency_overrides[lay_kenh_tin_nhan] = lambda: kenh_tin_nhan
     ung_dung.dependency_overrides[lay_bo_gioi_han_otp] = lambda: gioi_han_ip
+    ung_dung.dependency_overrides[lay_bo_gioi_han_dang_nhap] = lambda: gioi_han_dang_nhap
     return ung_dung
 
 
@@ -237,6 +269,13 @@ def _tao_client(app, token: str | None = None) -> httpx.AsyncClient:
 @pytest_asyncio.fixture
 async def client(app):
     async with _tao_client(app) as c:
+        yield c
+
+
+@pytest_asyncio.fixture
+async def client_https(app):
+    """Như `client` nhưng gọi qua https: cookie refresh có cờ `Secure` nên chỉ được gửi lại qua https."""
+    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="https://test") as c:
         yield c
 
 

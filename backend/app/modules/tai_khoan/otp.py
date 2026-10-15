@@ -1,8 +1,8 @@
 """OTP (spec 06 mục 3): 6 chữ số, lưu HMAC, hiệu lực 5 phút, tối đa 5 lần thử, giới hạn gửi theo SĐT và IP.
 
-Chống dò tài khoản: với số đã có tài khoản, API vẫn trả y hệt và vẫn tạo một dòng giữ chỗ đếm lần thử y như OTP thật
-(chỉ không có mã nào khớp được), nên không có cách nào phân biệt từ bên ngoài. Chủ số nhận một tin nhắn báo "đã có
-tài khoản" thay cho mã.
+Chống dò tài khoản: với số không hợp lệ cho mục đích đó (đăng ký mà số đã có tài khoản, lấy lại mật khẩu mà số chưa có),
+API vẫn trả y hệt và vẫn tạo một dòng giữ chỗ đếm lần thử y như OTP thật (chỉ không có mã nào khớp được), nên không có
+cách nào phân biệt từ bên ngoài. Chủ số nhận một tin nhắn báo tình trạng tài khoản thay cho mã.
 
 Lần thử sai phải được ghi dù request trả lỗi: route gọi `kiem_tra_otp` rồi TRẢ VỀ lỗi bằng `core.loi.tra_loi` (không
 raise) để `get_db` commit bộ đếm.
@@ -26,7 +26,7 @@ from app.core.loi import LoiNghiepVu, tra_loi
 from app.core.thoi_gian import bay_gio_utc
 from app.models.khach_hang import KhachHang, MaOtp
 from app.tich_hop.tin_nhan import KenhTinNhan, LoiGuiTinNhan
-from app.tich_hop.tin_nhan.mau.otp import sms_da_co_tai_khoan, sms_otp
+from app.tich_hop.tin_nhan.mau.otp import email_otp, sms_chua_co_tai_khoan, sms_da_co_tai_khoan, sms_otp
 
 HIEU_LUC_PHUT = 5
 SO_LAN_THU_TOI_DA = 5
@@ -67,8 +67,12 @@ async def gui_otp(
     muc_dich: str,
     ip: str,
     bo_gioi_han_ip: GioiHanCuaSoTruot,
+    kenh_gui: str = "sms",
 ) -> None:
-    """Tạo và gửi OTP qua SMS. Ném `QUA_GIOI_HAN` (kèm `Retry-After`) hoặc `LOI_DOI_TAC` khi không gửi được."""
+    """Tạo và gửi OTP qua SMS (hoặc email nếu `kenh_gui="email"` và tài khoản có email).
+
+    Ném `QUA_GIOI_HAN` (kèm `Retry-After`) hoặc `LOI_DOI_TAC` khi không gửi được.
+    """
     gioi_han = GIOI_HAN_MAC_DINH | dict(await doc_cau_hinh(db, "gioi_han_otp", {}))
     await _khoa_theo_dich_den(db, muc_dich, so_dien_thoai)
 
@@ -95,10 +99,17 @@ async def gui_otp(
         het_cho = cac_lan_gui[len(cac_lan_gui) - toi_da_sdt] + CUA_SO_GIOI_HAN
         raise _qua_gioi_han(max(1, math.ceil((het_cho - bay_gio).total_seconds())))
 
-    da_co_tai_khoan = (
-        await db.execute(select(KhachHang.id).where(KhachHang.so_dien_thoai == so_dien_thoai))
-    ).first() is not None
-    ma = None if da_co_tai_khoan else f"{secrets.randbelow(10**6):06d}"
+    tai_khoan = (
+        await db.execute(
+            select(KhachHang.id, KhachHang.email).where(
+                KhachHang.so_dien_thoai == so_dien_thoai, KhachHang.deleted_at.is_(None)
+            )
+        )
+    ).first()
+    # Đăng ký cần số CHƯA có tài khoản; lấy lại mật khẩu cần số ĐÃ có. Số không hợp lệ cho mục đích đó nhận tin báo thay
+    # cho mã và một dòng giữ chỗ không khớp được.
+    hop_le = (tai_khoan is not None) == (muc_dich == "quen_mat_khau")
+    ma = f"{secrets.randbelow(10**6):06d}" if hop_le else None
 
     # Vô hiệu mã cũ chưa dùng: chỉ mã mới nhất có hiệu lực.
     await db.execute(
@@ -110,7 +121,7 @@ async def gui_otp(
         MaOtp(
             dich_den=so_dien_thoai,
             muc_dich=muc_dich,
-            # Số đã đăng ký: dòng giữ chỗ với "mã" ngẫu nhiên dài không bao giờ khớp đầu vào 6 chữ số.
+            # Dòng giữ chỗ dùng "mã" ngẫu nhiên dài, không bao giờ khớp đầu vào 6 chữ số.
             ma_hash=bam_otp(so_dien_thoai, muc_dich, ma or secrets.token_hex(16)),
             het_han=bay_gio + timedelta(minutes=HIEU_LUC_PHUT),
             created_at=bay_gio,
@@ -119,7 +130,14 @@ async def gui_otp(
     await db.flush()
 
     try:
-        await kenh.gui_sms(so_dien_thoai, sms_da_co_tai_khoan() if ma is None else sms_otp(ma, HIEU_LUC_PHUT))
+        if ma is None:
+            thong_bao = sms_da_co_tai_khoan() if muc_dich == "dang_ky" else sms_chua_co_tai_khoan()
+            await kenh.gui_sms(so_dien_thoai, thong_bao)
+        elif kenh_gui == "email" and tai_khoan is not None and tai_khoan.email:
+            tieu_de, html = email_otp(ma, HIEU_LUC_PHUT)
+            await kenh.gui_email(tai_khoan.email, tieu_de, html)
+        else:  # SMS, hoặc xin email nhưng tài khoản chưa có email: gửi SMS để người dùng vẫn lấy được mã
+            await kenh.gui_sms(so_dien_thoai, sms_otp(ma, HIEU_LUC_PHUT))
     except LoiGuiTinNhan as loi:
         # Không lộ chi tiết nhà cung cấp cho client; raise để request rollback, không để lại OTP không ai nhận được.
         raise LoiNghiepVu("LOI_DOI_TAC", "Không gửi được tin nhắn, vui lòng thử lại sau") from loi

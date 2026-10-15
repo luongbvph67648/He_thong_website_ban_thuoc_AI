@@ -7,7 +7,10 @@
 src/
   main.tsx, App.tsx          # router gốc, QueryClientProvider, ConfigProvider (vi_VN)
   api/schema.d.ts            # SINH TỰ ĐỘNG bằng `npm run gen:api`, không sửa tay
-  api/client.ts              # openapi-fetch: gắn access token, refresh 1 lần khi 401
+  api/client.ts              # openapi-fetch: gắn access token, refresh 1 lần khi 401, credentials: 'include'
+  api/goi.ts                 # goi(): quy mọi kết quả (kể cả lỗi mạng) về {ok, data|loi}; thongDiep* cho lỗi thường gặp
+  api/khoiPhuc.ts            # khoiPhucPhien(): lấy lại phiên khi tải trang (chạy đúng một lần)
+  api/dangXuat.ts            # dangXuatKhach(): thu hồi phiên phía máy chủ rồi xóa store
   khu/cua-hang/              # layout + trang của khách (/)
   khu/nhan-vien/             # layout + trang dược sĩ, kho (/nhan-vien)
   khu/quan-tri/              # layout + trang Admin (/quan-tri)
@@ -22,6 +25,10 @@ src/
   - Backend đổi schema thì chạy `npm run gen:api` (backend phải đang chạy ở :8000) và commit `schema.d.ts`. Route backend mới nhớ khai `response_model` để type có dữ liệu thay vì `{}`.
   - Client tự gắn `Authorization` và làm mới token khi 401 (`api/xacThuc.ts`, QĐ-08); đừng tự `fetch` ngoài client.
 - **Phiên đăng nhập** (`stores/phien.ts`): chỉ ở bộ nhớ, không persist, không đặt token hay hồ sơ vào localStorage/sessionStorage.
+  - Ngoại lệ duy nhất: khóa `phien_goi_y` (`khach` hoặc `noi_bo`, `lib/goiYPhien.ts`) để biết có nên thử lấy lại phiên khi tải trang. Store tự ghi/xóa khóa này trong `dangNhap`/`dangXuat`.
+  - `daKhoiPhuc` là `false` khi đang lấy lại phiên lúc tải trang. Trang hay thành phần phân biệt "đã đăng nhập" với "chưa" (header, trang bắt đăng nhập) phải chờ cờ này, nếu không sẽ nhấp nháy hoặc chuyển hướng nhầm.
+  - Làm mới token phải đi qua `lamMoiPhien` (có Web Locks): refresh token xoay vòng, hai lần làm mới cùng lúc bằng một cookie sẽ bị đăng xuất khắp nơi (QĐ-11). Không tự gọi `/auth/lam-moi` ở chỗ khác.
+  - `?tiep=` sau đăng nhập đi qua `duongTiepTheo` (chỉ đường dẫn nội bộ).
 - **Dữ liệu server**
   - Dùng TanStack Query (`useQuery`, `useMutation`) và invalidate theo query key sau mỗi mutation.
   - Zustand chỉ giữ phiên đăng nhập và giỏ hàng local.

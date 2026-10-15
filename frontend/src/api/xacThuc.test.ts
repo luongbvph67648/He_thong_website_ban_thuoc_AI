@@ -1,7 +1,7 @@
 import createClient from 'openapi-fetch'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { paths } from './schema'
-import { lamMoiAccessToken, taoMiddlewareXacThuc } from './xacThuc'
+import { lamMoiAccessToken, lamMoiPhien, taoMiddlewareXacThuc } from './xacThuc'
 
 /** Server giả: mỗi lần gọi lấy phản hồi kế tiếp theo hàm quyết định, ghi lại mọi request đã nhận. */
 function dungServerGia(quyetDinh: (req: Request, lanThu: number) => Response | Promise<Response>) {
@@ -112,7 +112,14 @@ describe('middleware xác thực', () => {
     expect(daNhan[1].method).toBe('POST')
   })
 
-  it.each(['/api/v1/auth/dang-nhap', '/api/v1/auth/lam-moi', '/api/v1/noi-bo/auth/dang-nhap', '/api/v1/auth/dang-ky'])(
+  it.each([
+    '/api/v1/auth/dang-nhap',
+    '/api/v1/auth/lam-moi',
+    '/api/v1/noi-bo/auth/dang-nhap',
+    '/api/v1/auth/dang-ky',
+    '/api/v1/auth/dat-lai-mat-khau',
+    '/api/v1/auth/otp',
+  ])(
     '401 ở %s không kích hoạt làm mới (sai mật khẩu không phải hết phiên)',
     async (duong) => {
       const { fetchGia, daNhan } = dungServerGia(() => json(401))
@@ -198,6 +205,54 @@ describe('lamMoiAccessToken', () => {
       throw new TypeError('Failed to fetch')
     }) as unknown as typeof fetch
     expect(await lamMoiAccessToken('noi_bo', fetchGia)).toBeNull()
+  })
+
+  it('phân biệt hết phiên (401/403) với lỗi tạm thời (mạng, 500) để biết có xóa gợi ý đăng nhập không', async () => {
+    const lam = (tao: () => Response | Promise<Response>) => lamMoiPhien('khach', (async () => tao()) as unknown as typeof fetch)
+    expect(await lam(() => json(401))).toEqual({ token: null, hetPhien: true })
+    expect(await lam(() => json(403))).toEqual({ token: null, hetPhien: true })
+    expect(await lam(() => json(500))).toEqual({ token: null, hetPhien: false })
+    expect(await lam(() => json(200, { access_token: 'tok' }))).toEqual({ token: 'tok', hetPhien: false })
+    expect(
+      await lam(() => {
+        throw new TypeError('Failed to fetch')
+      }),
+    ).toEqual({ token: null, hetPhien: false })
+  })
+
+  describe('khi trình duyệt có Web Locks', () => {
+    const goc = Object.getOwnPropertyDescriptor(globalThis.navigator, 'locks')
+    afterEach(() => {
+      if (goc) Object.defineProperty(globalThis.navigator, 'locks', goc)
+      else delete (globalThis.navigator as { locks?: unknown }).locks
+    })
+
+    it('hai lần làm mới đồng thời (hai tab) chạy lần lượt, không chồng nhau', async () => {
+      // Khóa giả giống thật: yêu cầu sau chờ yêu cầu trước xong.
+      let hangDoi: Promise<unknown> = Promise.resolve()
+      const request = vi.fn((_ten: string, viec: () => Promise<unknown>) => {
+        const chay = hangDoi.then(viec)
+        hangDoi = chay.catch(() => undefined)
+        return chay
+      })
+      Object.defineProperty(globalThis.navigator, 'locks', { value: { request }, configurable: true })
+
+      const nhatKy: string[] = []
+      let dangChay = 0
+      const fetchGia = (async () => {
+        dangChay += 1
+        nhatKy.push(`vao${dangChay}`)
+        await new Promise((r) => setTimeout(r, 10))
+        nhatKy.push(`ra${dangChay}`)
+        dangChay -= 1
+        return json(200, { access_token: 'tok' })
+      }) as unknown as typeof fetch
+
+      await Promise.all([lamMoiAccessToken('khach', fetchGia), lamMoiAccessToken('khach', fetchGia)])
+      expect(request).toHaveBeenCalledTimes(2)
+      expect(request.mock.calls[0][0]).toBe('nha-thuoc-lam-moi-phien')
+      expect(nhatKy).toEqual(['vao1', 'ra1', 'vao1', 'ra1']) // không bao giờ có hai lần chạy cùng lúc
+    })
   })
 
   it('chưa biết loại phiên thì không gọi gì', async () => {

@@ -97,7 +97,8 @@ describe('khu cửa hàng', () => {
 
   it('khách đã đăng nhập thấy liên kết tài khoản thay vì đăng nhập', async () => {
     renderTai('/', { loai: 'khach' })
-    expect(await screen.findByRole('link', { name: /Tài khoản/ })).toHaveAttribute('href', '/tai-khoan')
+    expect(await screen.findByRole('link', { name: /Người dùng thử/ })).toHaveAttribute('href', '/tai-khoan')
+    expect(screen.getByRole('button', { name: /Đăng xuất/ })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: /Đăng nhập/ })).not.toBeInTheDocument()
   })
 

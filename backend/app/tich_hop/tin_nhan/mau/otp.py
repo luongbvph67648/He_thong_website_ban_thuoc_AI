@@ -10,6 +10,11 @@ def sms_da_co_tai_khoan() -> str:
     return "Nha thuoc AI: so dien thoai nay da co tai khoan. Hay dang nhap hoac chon Quen mat khau neu can."
 
 
+def sms_chua_co_tai_khoan() -> str:
+    """Gửi khi ai đó xin OTP lấy lại mật khẩu cho số chưa đăng ký (chỉ chủ số đọc được; phản hồi API giống hệt)."""
+    return "Nha thuoc AI: so dien thoai nay chua co tai khoan. Hay dang ky tai khoan moi neu ban can."
+
+
 def email_otp(ma: str, so_phut: int) -> tuple[str, str]:
     """(tiêu đề, nội dung HTML). Mã không đưa vào tiêu đề vì tiêu đề hiện ở thông báo trên màn hình khóa."""
     tieu_de = "Mã xác thực Nhà thuốc AI"

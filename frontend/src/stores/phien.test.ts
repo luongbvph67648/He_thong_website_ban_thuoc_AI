@@ -4,7 +4,10 @@ import { usePhien } from './phien'
 const hoSo = { id: 7, hoTen: 'Nguyễn Thị Mai', vaiTro: 'PHARMACIST' }
 
 describe('usePhien', () => {
-  beforeEach(() => usePhien.getState().dangXuat())
+  beforeEach(() => {
+    localStorage.clear()
+    usePhien.getState().dangXuat()
+  })
 
   it('ban đầu chưa đăng nhập', () => {
     const p = usePhien.getState()
@@ -37,10 +40,20 @@ describe('usePhien', () => {
   })
 
   it('không ghi token hay hồ sơ vào localStorage/sessionStorage (token chỉ ở bộ nhớ)', () => {
-    usePhien.getState().dangNhap({ accessToken: 'bi-mat', loai: 'noi_bo', hoSo, quyen: {} })
+    usePhien.getState().dangNhap({ accessToken: 'bi-mat', loai: 'noi_bo', hoSo, quyen: { 'order.view': 'day_du' } })
     const kho = JSON.stringify({ ...localStorage }) + JSON.stringify({ ...sessionStorage })
     expect(kho).not.toContain('bi-mat')
     expect(kho).not.toContain('Nguyễn')
-    expect(localStorage.length + sessionStorage.length).toBe(0)
+    expect(kho).not.toContain('order.view')
+    expect(sessionStorage.length).toBe(0)
+    // Ngoại lệ duy nhất: gợi ý loại phiên để biết có nên thử lấy lại phiên khi tải trang.
+    expect({ ...localStorage }).toEqual({ phien_goi_y: 'noi_bo' })
+  })
+
+  it('đăng xuất xóa gợi ý phiên', () => {
+    usePhien.getState().dangNhap({ accessToken: 't', loai: 'khach', hoSo, quyen: {} })
+    expect(localStorage.getItem('phien_goi_y')).toBe('khach')
+    usePhien.getState().dangXuat()
+    expect(localStorage.length).toBe(0)
   })
 })

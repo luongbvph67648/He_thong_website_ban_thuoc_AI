@@ -93,7 +93,8 @@ docker-compose.yml
 | `DATABASE_URL_TEST` | `postgresql+asyncpg://postgres:postgres@localhost:5432/nha_thuoc_test` | |
 | `JWT_SECRET` | (chuỗi ngẫu nhiên ≥ 32 ký tự) | |
 | `JWT_ACCESS_PHUT` | `15` | |
-| `REFRESH_NGAY` | `14` | |
+| `REFRESH_NGAY` | `14` | Hạn refresh token (ngày), tính từ lần làm mới gần nhất |
+| `COOKIE_SECURE` | `true` | Cờ `Secure` của cookie refresh token; chỉ đặt `false` khi dev qua http |
 | `FRONTEND_URL`, `CORS_ORIGINS` | `http://localhost:5173` | |
 | `ADMIN_EMAIL`, `ADMIN_MAT_KHAU` | | Dùng cho seed Admin đầu tiên |
 | `KHOA_MA_HOA` | (khóa Fernet) | Mã hóa `ho_so_suc_khoe.benh_nen` |

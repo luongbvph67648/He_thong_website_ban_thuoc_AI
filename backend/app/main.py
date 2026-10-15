@@ -7,6 +7,7 @@ from app.core.loi import dang_ky_xu_ly_loi
 from app.core.middleware import HEADER_REQUEST_ID, RequestIdMiddleware
 from app.health import router as health_router
 from app.modules.tai_khoan.router_cong_khai import router as tai_khoan_cong_khai_router
+from app.modules.tai_khoan.router_khach import router as tai_khoan_khach_router
 
 
 def create_app() -> FastAPI:
@@ -25,6 +26,7 @@ def create_app() -> FastAPI:
     app.add_middleware(RequestIdMiddleware)
     app.include_router(health_router, prefix="/api/v1")
     app.include_router(tai_khoan_cong_khai_router, prefix="/api/v1")
+    app.include_router(tai_khoan_khach_router, prefix="/api/v1")
     return app
 
 
