@@ -10,6 +10,7 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from pydantic_core import to_jsonable_python
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 logger = logging.getLogger(__name__)
@@ -43,6 +44,11 @@ MA_LOI: dict[str, int] = {
     "LOI_DOI_TAC": 502,
     "LOI_HE_THONG": 500,
 }
+
+MA_LOI_THEO_STATUS_HTTP: frozenset[str] = frozenset({"LOI_HTTP"})
+"""Mã lỗi không gắn với một HTTP status cố định (giữ nguyên status của lỗi HTTP 4xx do framework phát sinh)."""
+
+THONG_DIEP_LOI_HE_THONG = "Lỗi hệ thống, vui lòng thử lại sau"
 
 # Lỗi HTTP do framework tự phát sinh (route không có, sai phương thức...) quy về mã lỗi của hệ thống.
 _MA_LOI_THEO_HTTP = {
@@ -100,7 +106,8 @@ def phan_hoi_loi(
 ) -> JSONResponse:
     return JSONResponse(
         status_code=http_status,
-        content={"ma_loi": ma_loi, "thong_diep": thong_diep, "chi_tiet": chi_tiet},
+        # to_jsonable_python hiểu Decimal, date, model Pydantic (kể cả kiểu Tien) mà json.dumps thuần không hiểu.
+        content={"ma_loi": ma_loi, "thong_diep": thong_diep, "chi_tiet": to_jsonable_python(chi_tiet)},
         headers=headers,
     )
 
@@ -110,6 +117,11 @@ def _truong(loi: dict[str, Any]) -> str:
         return "body"
     duong_dan = ".".join(str(phan) for phan in loi["loc"][1:])  # bỏ phần đầu (body/query/path/header)
     return duong_dan or str(loi["loc"][0])
+
+
+def phan_hoi_loi_he_thong(request_id: str | None) -> JSONResponse:
+    """Lỗi 500: không lộ chi tiết, chỉ trả request_id để người dùng báo lại và dev tra log."""
+    return phan_hoi_loi(500, "LOI_HE_THONG", THONG_DIEP_LOI_HE_THONG, {"request_id": request_id})
 
 
 async def _xu_ly_loi_nghiep_vu(request: Request, loi: LoiNghiepVu) -> JSONResponse:
@@ -124,23 +136,21 @@ async def _xu_ly_loi_validate(request: Request, loi: RequestValidationError) -> 
 
 
 async def _xu_ly_loi_http(request: Request, loi: StarletteHTTPException) -> JSONResponse:
-    ma_loi = _MA_LOI_THEO_HTTP.get(loi.status_code, "LOI_HTTP")
-    thong_diep = _THONG_DIEP_THEO_HTTP.get(loi.status_code) or str(loi.detail)
-    return phan_hoi_loi(loi.status_code, ma_loi, thong_diep, headers=dict(loi.headers or {}))
-
-
-async def _xu_ly_loi_he_thong(request: Request, loi: Exception) -> JSONResponse:
-    # Handler này chạy ngoài RequestIdMiddleware nên đọc request_id từ scope và truyền tường minh vào log.
-    request_id = getattr(request.state, "request_id", None)
-    logger.error("Lỗi hệ thống không bắt được", exc_info=loi, extra={"request_id": request_id})
-    headers = {"X-Request-ID": request_id} if request_id else None
-    return phan_hoi_loi(
-        500, "LOI_HE_THONG", "Lỗi hệ thống, vui lòng thử lại sau", {"request_id": request_id}, headers
-    )
+    ma_loi = _MA_LOI_THEO_HTTP.get(loi.status_code)
+    if ma_loi:
+        return phan_hoi_loi(
+            loi.status_code, ma_loi, _THONG_DIEP_THEO_HTTP[loi.status_code], headers=dict(loi.headers or {})
+        )
+    if loi.status_code >= 500:  # không echo detail (có thể là thông tin nội bộ) cho client
+        logger.warning("HTTPException %s không ánh xạ được: %s", loi.status_code, loi.detail)
+        return phan_hoi_loi_he_thong(getattr(request.state, "request_id", None))
+    return phan_hoi_loi(loi.status_code, "LOI_HTTP", str(loi.detail), headers=dict(loi.headers or {}))
 
 
 def dang_ky_xu_ly_loi(app: FastAPI) -> None:
     app.add_exception_handler(LoiNghiepVu, _xu_ly_loi_nghiep_vu)  # type: ignore[arg-type]
     app.add_exception_handler(RequestValidationError, _xu_ly_loi_validate)  # type: ignore[arg-type]
     app.add_exception_handler(StarletteHTTPException, _xu_ly_loi_http)  # type: ignore[arg-type]
-    app.add_exception_handler(Exception, _xu_ly_loi_he_thong)
+    # Lỗi không bắt được (500) do RequestIdMiddleware xử lý, không đăng ký ở đây: handler cho Exception chạy trong
+    # ServerErrorMiddleware, nơi luôn ném lại ngoại lệ sau khi gửi response khiến uvicorn in thêm một traceback thô.
+

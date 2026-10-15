@@ -2,11 +2,18 @@ from collections.abc import AsyncIterator
 from typing import Annotated
 
 from fastapi import Depends
+from sqlalchemy import URL
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engine
 
 from app.core.config import settings
 
-engine = create_async_engine(settings.DATABASE_URL, pool_pre_ping=True)
+
+def tao_engine(url: str | URL) -> AsyncEngine:
+    """Tạo engine. `hide_parameters=True` để lỗi SQL không ghi giá trị tham số (có thể là SĐT, dữ liệu sức khỏe...)."""
+    return create_async_engine(url, pool_pre_ping=True, hide_parameters=True)
+
+
+engine = tao_engine(settings.DATABASE_URL)
 
 
 def get_engine() -> AsyncEngine:

@@ -5,6 +5,7 @@ Quy tắc: không ghi mật khẩu, OTP, token, dữ liệu sức khỏe, và kh
 
 import json
 import logging
+import re
 import sys
 from contextvars import ContextVar
 from datetime import UTC, datetime
@@ -23,7 +24,14 @@ class BoLocRequestId(logging.Filter):
         return True
 
 
+# PostgreSQL ghi giá trị vi phạm vào các dòng này, ví dụ "DETAIL:  Key (sdt)=(0912345678) already exists."
+_DONG_CSDL_NHAY_CAM = re.compile(r"^(DETAIL|HINT|CONTEXT):.*$", re.MULTILINE)
+
+
 class JsonFormatter(logging.Formatter):
+    def formatException(self, ei) -> str:  # noqa: N802 - tên do thư viện logging quy định
+        return _DONG_CSDL_NHAY_CAM.sub(r"\1: (đã ẩn)", super().formatException(ei))
+
     def format(self, record: logging.LogRecord) -> str:
         du_lieu: dict[str, object] = {
             "thoi_gian": datetime.fromtimestamp(record.created, UTC).isoformat(timespec="milliseconds"),
@@ -51,3 +59,5 @@ def cau_hinh_log(muc: int | str = logging.INFO) -> None:
     handler.addFilter(BoLocRequestId())
     goc.addHandler(handler)
     goc.setLevel(muc)
+    # Log truy cập của uvicorn in cả query string (?otp=...&token=...). RequestIdMiddleware đã ghi log truy cập an toàn.
+    logging.getLogger("uvicorn.access").disabled = True

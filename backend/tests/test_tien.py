@@ -5,7 +5,7 @@ from decimal import Decimal
 import pytest
 from pydantic import BaseModel, ValidationError
 
-from app.core.tien import Tien, cong, lam_tron_vnd, tru
+from app.core.tien import Tien, TienCoDau, cong, lam_tron_vnd, tru
 
 
 @pytest.mark.parametrize(
@@ -86,3 +86,49 @@ def test_tien_tu_choi_so_le_khi_doc_tu_json():
     with pytest.raises(ValidationError):
         _Gia.model_validate_json('{"gia": 125000.5}')
     assert _Gia.model_validate_json('{"gia": 125000}').gia == Decimal("125000")
+
+
+def test_khong_bao_gio_tra_ve_am_khong():
+    """-0 serialize ra "-0.00", dễ làm hiển thị sai (Decimal("-0.4") làm tròn về 0 vẫn mang dấu âm)."""
+    for kq in (lam_tron_vnd(Decimal("-0.4")), lam_tron_vnd("-0"), tru(100, Decimal("100.4"))):
+        assert kq == 0
+        assert not kq.is_signed()
+
+
+@pytest.mark.parametrize("qua_lon", [10**30, "1e30", "99999999999999999999999999999"])
+def test_so_qua_lon_la_value_error_khong_phai_invalid_operation(qua_lon):
+    with pytest.raises(ValueError):
+        lam_tron_vnd(qua_lon)
+
+
+@pytest.mark.parametrize("sai", [10**12, "1000000000000", 10**30, "1e30", "99999999999999999999999999999"])
+def test_tien_tu_choi_so_vuot_gioi_han_bang_loi_validate(sai):
+    """Phải là ValidationError (400) chứ không phải lỗi hệ thống (500) hay lỗi tràn NUMERIC ở DB."""
+    with pytest.raises(ValidationError):
+        _Gia(gia=sai)
+
+
+def test_tien_nhan_so_sat_gioi_han():
+    assert _Gia(gia=10**12 - 1).gia == Decimal(10**12 - 1)
+
+
+@pytest.mark.parametrize("sai", [-1, "-5000", Decimal("-1")])
+def test_tien_mac_dinh_khong_nhan_so_am(sai):
+    with pytest.raises(ValidationError):
+        _Gia(gia=sai)
+
+
+def test_tien_am_khong_duoc_chuan_hoa_thanh_khong():
+    m = _Gia(gia="-0")
+    assert not m.gia.is_signed()
+    assert m.model_dump(mode="json") == {"gia": "0.00"}
+
+
+class _GiaCoDau(BaseModel):
+    gia: TienCoDau
+
+
+def test_tien_co_dau_nhan_so_am_va_van_gioi_han_do_lon():
+    assert _GiaCoDau(gia=-5000).model_dump(mode="json") == {"gia": "-5000.00"}
+    with pytest.raises(ValidationError):
+        _GiaCoDau(gia=-(10**12))

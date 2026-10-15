@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 KICH_THUOC_MAC_DINH = 20
 KICH_THUOC_TOI_DA = 100
+TRANG_TOI_DA = 1_000_000  # OFFSET quá lớn gây tràn int64 ở CSDL
 
 
 @dataclass(frozen=True)
@@ -28,7 +29,7 @@ class ThamSoPhanTrang:
 
 
 def tham_so_phan_trang(
-    trang: Annotated[int, Query(ge=1, description="Số trang, bắt đầu từ 1")] = 1,
+    trang: Annotated[int, Query(ge=1, le=TRANG_TOI_DA, description="Số trang, bắt đầu từ 1")] = 1,
     kich_thuoc: Annotated[
         int, Query(ge=1, le=KICH_THUOC_TOI_DA, description="Số dòng mỗi trang")
     ] = KICH_THUOC_MAC_DINH,

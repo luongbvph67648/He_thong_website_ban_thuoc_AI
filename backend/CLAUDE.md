@@ -17,6 +17,7 @@ app/modules/<module>/
 - **Service không commit.** Route khai báo `db: Db` (`from app.core.db import Db`); session này tự commit khi route trả về thành công và rollback khi có ngoại lệ.
   - `db.commit()` và `db.rollback()` bị chặn và raise `RuntimeError`, vì commit giữa chừng làm phần đã commit ở lại dù sau đó request lỗi.
   - Cần ID của dòng vừa thêm: `await db.flush()`. Cần hoàn tác một phần: `async with db.begin_nested():` (savepoint). Muốn hủy cả request: raise `LoiNghiepVu`.
+  - Dependency (ví dụ `khach_hien_tai`) dùng `Db` phải là hàm async thường, không `yield`; dependency có `yield` với scope mặc định mà phụ thuộc `Db` sẽ báo `DependencyScopeError` ngay khi dựng app.
   - Luôn dùng alias `Db`, **không** tự viết `Depends(get_db)`: alias đã đặt `scope="function"` để commit chạy **trước** khi gửi response (mặc định commit chạy sau, client nhận 200 dù commit lỗi).
   - Response streaming (SSE) không dùng `db` của request bên trong generator vì session đã đóng; generator tự mở `AsyncSession(engine)` riêng.
   - Việc phải lưu dù request thất bại (ví dụ ghi payload IPN trước khi xử lý) cũng dùng session riêng.
@@ -59,14 +60,16 @@ async def don_cua_toi(ma_don: str, kh: KhachHang = Depends(khach_hien_tai), db=D
 ## Log
 - Log JSON một dòng (`core/log.py`), mọi dòng tự có `request_id`. Dùng `logging.getLogger(__name__)`, không dùng `print`.
 - Thêm trường riêng qua `extra={...}`, ví dụ `logger.info("Đã tạo đơn", extra={"ma_don": ma})`.
-- **Không ghi** mật khẩu, OTP, token, dữ liệu sức khỏe, và không ghi query string. Middleware chỉ log `path`.
+- **Không ghi** mật khẩu, OTP, token, dữ liệu sức khỏe, và không ghi query string. Log truy cập chỉ ghi **mẫu route** (`/xac-nhan-don/{token}`), không ghi giá trị trong path; log truy cập của uvicorn bị tắt vì nó in cả query string.
+- Tạo engine qua `core.db.tao_engine()` (đã bật `hide_parameters`) để lỗi SQL không ghi tham số. Log lỗi tự che các dòng `DETAIL:`/`HINT:`/`CONTEXT:` của PostgreSQL (chứa giá trị vi phạm).
+- Lỗi không bắt được do `RequestIdMiddleware` xử lý (log + trả 500), không ném lại cho uvicorn.
 
 ## CSDL
 - **SQLAlchemy 2 async:** dùng `select()`, không dùng Query API cũ.
 - **Tải quan hệ:** dùng `selectinload` rõ ràng, tránh lazy load trong async.
 - **Khóa ghi:** `select(LoThuoc).where(...).order_by(LoThuoc.id).with_for_update()`. Luôn khóa theo thứ tự id tăng để tránh deadlock.
 - **Xóa mềm:** truy vấn mặc định lọc `deleted_at IS NULL` qua helper `chua_xoa(Model)`.
-- **Tiền:** `Decimal`, làm tròn qua `core.tien.lam_tron_vnd()` (half-up). `cong()`/`tru()` cộng trừ rồi làm tròn một lần; hàm tiền từ chối `float`. Trong schema Pydantic dùng kiểu `Tien`: nhận số đồng nguyên, xuất JSON dạng chuỗi `"125000.00"`.
+- **Tiền:** `Decimal`, làm tròn qua `core.tien.lam_tron_vnd()` (half-up). `cong()`/`tru()` cộng trừ rồi làm tròn một lần; hàm tiền từ chối `float`. Trong schema Pydantic dùng kiểu `Tien` (không âm, dưới 10^12, số đồng nguyên, xuất JSON dạng chuỗi `"125000.00"`); chênh lệch có thể âm thì dùng `TienCoDau`.
 - **Thời gian:** `core.thoi_gian.bay_gio_utc()`, `hom_nay_vn()`.
 - **Phân trang:** route nhận `tp: PhanTrang`, truy vấn đã có `ORDER BY` thì `dong, tong = await lay_trang(db, stmt, tp)`, trả `tao_trang(dong, tong, tp)` với `response_model=Trang[Schema]`.
 - **Schema:** thay đổi phải theo `/doi-schema`. Migration mới đặt tên `NNNN_<mo_ta>.py`.

@@ -1,5 +1,7 @@
 """core/db.py: get_db mở transaction theo request, commit trước khi gửi response, rollback khi lỗi."""
 
+import json
+
 import pytest
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
@@ -18,8 +20,16 @@ async def app_db(engine_tam):
             text("CREATE TABLE thu_hoan (k int, CONSTRAINT duy_nhat UNIQUE (k) DEFERRABLE INITIALLY DEFERRED)")
         )
 
+        await conn.execute(text("CREATE TABLE thu_ten (ten text UNIQUE)"))
+
     app = create_app()
     app.dependency_overrides[get_engine] = lambda: engine_tam
+
+    @app.post("/thu/trung-ten")
+    async def trung_ten(db: Db, ten: str):  # giá trị đi vào từ request, như dữ liệu thật của người dùng
+        for _ in range(2):  # lần 2 vi phạm UNIQUE, ném IntegrityError không được dịch sang LoiNghiepVu
+            await db.execute(text("INSERT INTO thu_ten VALUES (:t)"), {"t": ten})
+        return {"ok": True}
 
     @app.post("/thu/ghi/{id_}")
     async def ghi(id_: int, db: Db):
@@ -135,3 +145,17 @@ async def test_savepoint_hoan_tac_mot_phan_van_hop_le(app_db, engine_tam, mo_cli
         resp = await c.post("/thu/savepoint")
     assert resp.status_code == 200
     assert await _dem(engine_tam, "thu") == 1
+
+
+async def test_log_loi_csdl_khong_chua_tham_so_sql_va_detail_cua_postgres(app_db, mo_client, bat_log):
+    """PostgreSQL ghi giá trị vi phạm vào DETAIL, SQLAlchemy ghi tham số vào [parameters]: đều là dữ liệu nhạy cảm."""
+    async with mo_client(app_db) as c:
+        resp = await c.post("/thu/trung-ten", params={"ten": "GIA-TRI-NHAY-CAM-0912345678"})
+    assert resp.status_code == 500
+    assert "NHAY-CAM" not in resp.text
+    log = json.dumps(bat_log(), ensure_ascii=False)
+    assert "IntegrityError" in log  # vẫn đủ thông tin để chẩn đoán
+    assert "unique" in log.lower()
+    assert "DETAIL: (đã ẩn)" in log  # chứng tỏ bộ che đã chạy chứ không phải log vốn không có DETAIL
+    assert "NHAY-CAM" not in log
+    assert "0912345678" not in log

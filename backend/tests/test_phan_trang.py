@@ -45,7 +45,14 @@ async def test_nhan_tham_so_tu_query(app_ds, mo_client):
 
 @pytest.mark.parametrize(
     ("query", "truong"),
-    [("trang=0", "trang"), ("trang=-1", "trang"), ("kich_thuoc=0", "kich_thuoc"), ("kich_thuoc=101", "kich_thuoc")],
+    [
+        ("trang=0", "trang"),
+        ("trang=-1", "trang"),
+        ("trang=1000001", "trang"),
+        ("trang=99999999999999999999", "trang"),  # vượt int64 sẽ làm OFFSET lỗi ở DB
+        ("kich_thuoc=0", "kich_thuoc"),
+        ("kich_thuoc=101", "kich_thuoc"),
+    ],
 )
 async def test_tu_choi_tham_so_ngoai_gioi_han(app_ds, mo_client, query, truong):
     async with mo_client(app_ds) as c:
@@ -54,6 +61,12 @@ async def test_tu_choi_tham_so_ngoai_gioi_han(app_ds, mo_client, query, truong):
     body = resp.json()
     assert body["ma_loi"] == "DU_LIEU_KHONG_HOP_LE"
     assert [e["truong"] for e in body["chi_tiet"]] == [truong]
+
+
+async def test_trang_toi_da_van_hop_le(app_ds, mo_client):
+    async with mo_client(app_ds) as c:
+        resp = await c.get("/thu/ds?trang=1000000&kich_thuoc=100")
+    assert resp.status_code == 200
 
 
 async def test_tham_so_khong_phai_so(app_ds, mo_client):

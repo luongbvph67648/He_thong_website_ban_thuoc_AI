@@ -26,7 +26,7 @@
 | Chủ đề | Quy ước |
 |---|---|
 | Khóa chính | `int` tự tăng (`bigint` cho bảng log lớn) đúng như ERD. Không lộ `id` cho khách nếu có mã (`ma_don`, `ma_yeu_cau`) |
-| Tiền | `NUMERIC(14,2)` hoặc `(16,2)`; giá trị luôn là số đồng nguyên (phần thập phân `.00`); Python dùng `Decimal`, làm tròn `ROUND_HALF_UP` về 0 chữ số lẻ |
+| Tiền | `NUMERIC(14,2)` hoặc `(16,2)`; giá trị luôn là số đồng nguyên (phần thập phân `.00`); Python dùng `Decimal`, làm tròn `ROUND_HALF_UP` về 0 chữ số lẻ. Số tiền nhận từ bên ngoài (kiểu `Tien`): không âm, dưới 10^12 (vừa cột NUMERIC(14,2)); `TienCoDau` cho phép âm |
 | Thời gian | `timestamptz` lưu UTC; `date` cho HSD/NSX; ngày "hôm nay" tính theo Asia/Ho_Chi_Minh |
 | Enum | Enum PostgreSQL native, tên và thứ tự đúng ERD. Thêm giá trị mới bằng `ALTER TYPE ... ADD VALUE` trong migration riêng |
 | Xóa mềm | Bảng có `deleted_at` không xóa cứng. Danh sách mặc định lọc `deleted_at IS NULL`. Dữ liệu tài chính và chứng từ không bao giờ xóa |

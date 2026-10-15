@@ -1,13 +1,13 @@
 """core/log.py + core/middleware.py: X-Request-ID và log JSON."""
 
-import io
 import json
 import logging
 import re
 
 import pytest
+from fastapi import APIRouter
 
-from app.core.log import BoLocRequestId, JsonFormatter, cau_hinh_log
+from app.core.log import JsonFormatter, cau_hinh_log
 from app.main import create_app
 
 HEX32 = re.compile(r"^[0-9a-f]{32}$")
@@ -26,27 +26,20 @@ def app_log():
     async def no():
         raise RuntimeError("hong")
 
+    @app.get("/thu/token/{token}")
+    async def theo_token(token: str):
+        return {"ok": True}
+
+    # Mọi route thật của dự án nằm trong router có tiền tố (/api/v1/toi, /api/v1/noi-bo...)
+    router = APIRouter()
+
+    @router.get("/don/{ma_don}/dong/{so_dong:int}")
+    async def don_co_tien_to(ma_don: str, so_dong: int):
+        return {"ok": True}
+
+    app.include_router(router, prefix="/thu/toi")
+
     return app
-
-
-@pytest.fixture
-def bat_log():
-    """Gắn handler JSON vào logger "app" để đọc lại các dòng log trong test."""
-    buf = io.StringIO()
-    handler = logging.StreamHandler(buf)
-    handler.setFormatter(JsonFormatter())
-    handler.addFilter(BoLocRequestId())
-    logger = logging.getLogger("app")
-    cu = logger.level
-    logger.addHandler(handler)
-    logger.setLevel(logging.INFO)
-
-    def doc_dong():
-        return [json.loads(d) for d in buf.getvalue().splitlines() if d.strip()]
-
-    yield doc_dong
-    logger.removeHandler(handler)
-    logger.setLevel(cu)
 
 
 # ---------- Header ----------
@@ -67,7 +60,14 @@ async def test_giu_nguyen_request_id_hop_le_cua_client(app_log, mo_client):
 @pytest.mark.parametrize(
     "sai",
     # Phần tử cuối là bytes để gửi được header non-ASCII.
-    ["ngan", "co khoang trang 12345", "a;b<script>12345678", "x" * 65, "tiếng-việt-12345".encode()],
+    [
+        "ngan",
+        "co khoang trang 12345",
+        "a;b<script>12345678",
+        "x" * 65,
+        "tiếng-việt-12345".encode(),
+        b"abcdefgh\n",  # `$` trong regex cho phép \n ở cuối, fullmatch thì không
+    ],
 )
 async def test_thay_request_id_khong_hop_le(app_log, mo_client, sai):
     async with mo_client(app_log) as c:
@@ -153,3 +153,46 @@ def test_cau_hinh_log_chay_nhieu_lan_chi_co_mot_handler():
     cau_hinh_log()
     dem = [h for h in logging.getLogger().handlers if getattr(h, "_nha_thuoc", False)]
     assert len(dem) == 1
+
+
+# ---------- Không để lọt dữ liệu nhạy cảm vào log ----------
+
+
+async def test_log_truy_cap_ghi_mau_route_khong_ghi_gia_tri_token(app_log, mo_client, bat_log):
+    """Token nằm trong path (vd /xac-nhan-don/{token}) cho phép mở đơn của khách, không được lộ ra log."""
+    async with mo_client(app_log) as c:
+        await c.get("/thu/token/TOKEN-BI-MAT-abc123")
+    dong = [d for d in bat_log() if d["logger"] == "app.truy_cap"]
+    assert dong[0]["path"] == "/thu/token/{token}"
+    assert "TOKEN-BI-MAT" not in json.dumps(dong, ensure_ascii=False)
+
+
+async def test_log_truy_cap_route_khong_khop(app_log, mo_client, bat_log):
+    async with mo_client(app_log) as c:
+        await c.get("/thu/token-nhay-cam-123456/lung-tung")
+    dong = [d for d in bat_log() if d["logger"] == "app.truy_cap"]
+    assert dong[0]["path"] == "<khong-khop>"
+    assert dong[0]["trang_thai"] == 404
+    assert "nhay-cam" not in json.dumps(dong)
+
+
+async def test_log_truy_cap_giu_tien_to_router_va_che_moi_tham_so_trong_path(app_log, mo_client, bat_log):
+    async with mo_client(app_log) as c:
+        resp = await c.get("/thu/toi/don/DH-BI-MAT-1/dong/7")
+    assert resp.status_code == 200
+    d = next(d for d in bat_log() if d["logger"] == "app.truy_cap")
+    assert d["path"] == "/thu/toi/don/{ma_don}/dong/{so_dong}"
+    assert "BI-MAT" not in json.dumps(d)
+
+
+def test_tat_log_truy_cap_cua_uvicorn_vi_no_ghi_ca_query_string():
+    cau_hinh_log()
+    assert logging.getLogger("uvicorn.access").disabled
+
+
+async def test_loi_he_thong_khong_nem_lai_cho_server(app_log, mo_client):
+    """Ném lại ngoại lệ thì uvicorn tự in thêm một traceback dạng text, không có request_id, không qua bộ che."""
+    async with mo_client(app_log) as c:  # mặc định raise_app_exceptions=True: nếu có ném lại, dòng này sẽ nổ
+        resp = await c.get("/thu/no")
+    assert resp.status_code == 500
+    assert resp.json()["ma_loi"] == "LOI_HE_THONG"

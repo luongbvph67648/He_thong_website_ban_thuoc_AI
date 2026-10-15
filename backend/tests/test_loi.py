@@ -1,12 +1,16 @@
 """core/loi.py: LoiNghiepVu và định dạng lỗi thống nhất (spec 06 mục 4)."""
 
 import re
+from datetime import date
+from decimal import Decimal
 from pathlib import Path
 
 import pytest
+from fastapi import HTTPException
 from pydantic import BaseModel, Field
 
-from app.core.loi import MA_LOI, LoiNghiepVu
+from app.core.loi import MA_LOI, MA_LOI_THEO_STATUS_HTTP, LoiNghiepVu
+from app.core.tien import Tien
 from app.main import create_app
 
 SPEC_06 = Path(__file__).resolve().parents[2] / "docs" / "spec" / "06-api.md"
@@ -19,6 +23,10 @@ class _Dong(BaseModel):
 
 class _Don(BaseModel):
     dong: list[_Dong]
+
+
+class _GioHang(BaseModel):
+    tong_tien: Tien
 
 
 @pytest.fixture
@@ -44,6 +52,18 @@ def app_loi():
     @app.get("/thu/no")
     async def no():
         raise RuntimeError("mat-khau-bi-mat-khong-duoc-lo")
+
+    @app.get("/thu/gia-da-doi")
+    async def gia_da_doi():
+        raise LoiNghiepVu(
+            "GIA_DA_THAY_DOI",
+            "Giá đã thay đổi",
+            chi_tiet={"tong_cu": Decimal("125000"), "ngay": date(2026, 10, 15), "gio_moi": _GioHang(tong_tien=130000)},
+        )
+
+    @app.get("/thu/http/{status}")
+    async def http_loi(status: int):
+        raise HTTPException(status, detail="chi-tiet-noi-bo-khong-duoc-lo")
 
     return app
 
@@ -75,13 +95,19 @@ def test_bang_ma_loi_khop_spec_06():
     spec = SPEC_06.read_text(encoding="utf-8")
     phan = spec.split("**Mã lỗi dùng chung**")[1].split("## 5.")[0]
     trong_spec: dict[str, int] = {}
+    theo_status_http: set[str] = set()  # dòng có cột HTTP không phải số, ví dụ "khác"
     for dong in phan.splitlines():
         cot = [c.strip() for c in dong.strip().strip("|").split("|")]
-        if dong.startswith("|") and cot[0].isdigit():
-            for ma in re.findall(r"`([A-Z_]+)`", cot[1]):
+        if not dong.startswith("|") or cot[0] == "HTTP" or set(cot[0]) <= {"-"}:
+            continue
+        for ma in re.findall(r"`([A-Z_]+)`", cot[1]):
+            if cot[0].isdigit():
                 trong_spec[ma] = int(cot[0])
+            else:
+                theo_status_http.add(ma)
     assert trong_spec, "không đọc được bảng mã lỗi trong spec 06"
     assert trong_spec == MA_LOI
+    assert theo_status_http == set(MA_LOI_THEO_STATUS_HTTP)
 
 
 # ---------- Handler ----------
@@ -165,4 +191,35 @@ async def test_loi_he_thong_khong_lo_chi_tiet_va_co_request_id(app_loi, mo_clien
     assert body["ma_loi"] == "LOI_HE_THONG"
     assert "mat-khau-bi-mat" not in resp.text
     assert "Traceback" not in resp.text
+    assert body["chi_tiet"] == {"request_id": resp.headers["x-request-id"]}
+
+
+async def test_chi_tiet_chua_decimal_date_va_model_van_tra_dung_loi_nghiep_vu(app_loi, mo_client):
+    """GIA_DA_THAY_DOI phải kèm giỏ đã tính lại (spec 04 mục 4), mà tiền là Decimal: không được thành 500."""
+    async with mo_client(app_loi) as c:
+        resp = await c.get("/thu/gia-da-doi")
+    assert resp.status_code == 409
+    assert resp.json()["chi_tiet"] == {
+        "tong_cu": "125000",
+        "ngay": "2026-10-15",
+        "gio_moi": {"tong_tien": "130000.00"},  # kiểu Tien giữ định dạng "x.00"
+    }
+
+
+@pytest.mark.parametrize("status", [400, 413, 418])
+async def test_loi_http_4xx_khac_dung_ma_loi_http_va_giu_status(app_loi, mo_client, status):
+    async with mo_client(app_loi) as c:
+        resp = await c.get(f"/thu/http/{status}")
+    assert resp.status_code == status
+    assert resp.json()["ma_loi"] == "LOI_HTTP"
+
+
+@pytest.mark.parametrize("status", [500, 502, 503, 504])
+async def test_loi_http_5xx_khong_duoc_lo_detail(app_loi, mo_client, status):
+    async with mo_client(app_loi) as c:
+        resp = await c.get(f"/thu/http/{status}")
+    assert resp.status_code == 500
+    assert "chi-tiet-noi-bo" not in resp.text
+    body = resp.json()
+    assert body["ma_loi"] == "LOI_HE_THONG"
     assert body["chi_tiet"] == {"request_id": resp.headers["x-request-id"]}
