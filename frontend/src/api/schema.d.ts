@@ -472,6 +472,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/noi-bo/khach-hang": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Danh sách khách hàng (AD02)
+         * @description `sap_xep` nhận `created_at` (mặc định, giảm dần), `ho_ten`, `email`, `so_dien_thoai`; thêm `-` để giảm dần.
+         */
+        get: operations["danh_sach_api_v1_noi_bo_khach_hang_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/khach-hang/{khach_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chi tiết khách hàng (AD02) */
+        get: operations["chi_tiet_api_v1_noi_bo_khach_hang__khach_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/khach-hang/{khach_id}/don-hang": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lịch sử mua của khách (AD02) */
+        get: operations["lich_su_mua_api_v1_noi_bo_khach_hang__khach_id__don_hang_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/khach-hang/{khach_id}/khoa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Khóa khách, thu hồi phiên (AD02) */
+        post: operations["khoa_api_v1_noi_bo_khach_hang__khach_id__khoa_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/khach-hang/{khach_id}/mo-khoa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mở khóa khách (AD02) */
+        post: operations["mo_khoa_api_v1_noi_bo_khach_hang__khach_id__mo_khoa_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -587,10 +675,65 @@ export interface components {
             /** Mat Khau Moi */
             mat_khau_moi: string;
         };
+        /**
+         * DonHangCuaKhach
+         * @description Một dòng lịch sử mua. Không có địa chỉ giao, người nhận, ghi chú hay token truy cập.
+         */
+        DonHangCuaKhach: {
+            /** Id */
+            id: number;
+            /** Ma Don */
+            ma_don: string;
+            kenh_ban: components["schemas"]["KenhBan"];
+            trang_thai: components["schemas"]["TrangThaiDon"];
+            trang_thai_tt: components["schemas"]["TrangThaiThanhToan"];
+            /** Tong Tien */
+            tong_tien: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * KenhBan
+         * @enum {string}
+         */
+        KenhBan: "online" | "dien_thoai" | "tai_quay";
+        /** KhachHangChiTiet */
+        KhachHangChiTiet: {
+            /** Id */
+            id: number;
+            /** Ho Ten */
+            ho_ten: string;
+            /** Email */
+            email: string | null;
+            /** So Dien Thoai */
+            so_dien_thoai: string;
+            trang_thai: components["schemas"]["TrangThaiTaiKhoan"];
+            /** Khoa Den */
+            khoa_den: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Gioi Tinh */
+            gioi_tinh: string | null;
+            /**
+             * Dong Y Chinh Sach Luc
+             * Format: date-time
+             */
+            dong_y_chinh_sach_luc: string;
+            /** Updated At */
+            updated_at: string | null;
+            /** So Don Hang */
+            so_don_hang: number;
         };
         /**
          * KhachHangDoc
@@ -605,6 +748,33 @@ export interface components {
             so_dien_thoai: string;
             /** Email */
             email: string | null;
+        };
+        /** KhachHangTomTat */
+        KhachHangTomTat: {
+            /** Id */
+            id: number;
+            /** Ho Ten */
+            ho_ten: string;
+            /** Email */
+            email: string | null;
+            /** So Dien Thoai */
+            so_dien_thoai: string;
+            trang_thai: components["schemas"]["TrangThaiTaiKhoan"];
+            /** Khoa Den */
+            khoa_den: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * KhoaKhachYeuCau
+         * @description Thân (tùy chọn) của `POST /khoa`. `ly_do` chỉ ghi vào nhật ký hệ thống, không lưu ở hồ sơ khách.
+         */
+        KhoaKhachYeuCau: {
+            /** Ly Do */
+            ly_do?: string | null;
         };
         /**
          * NhanVienCoMatKhauTam
@@ -808,10 +978,42 @@ export interface components {
             created_at: string;
         };
         /**
+         * TrangThaiDon
+         * @enum {string}
+         */
+        TrangThaiDon: "cho_khach_xac_nhan" | "cho_thanh_toan" | "cho_xac_nhan" | "da_xac_nhan" | "dang_soan_hang" | "cho_lay_hang" | "dang_giao" | "da_giao" | "hoan_tat" | "giao_that_bai" | "hoan_ve_kho" | "da_huy";
+        /**
          * TrangThaiTaiKhoan
          * @enum {string}
          */
         TrangThaiTaiKhoan: "hoat_dong" | "bi_khoa";
+        /**
+         * TrangThaiThanhToan
+         * @enum {string}
+         */
+        TrangThaiThanhToan: "chua_thanh_toan" | "da_thanh_toan" | "cho_hoan_tien" | "hoan_tien_mot_phan" | "da_hoan_tien";
+        /** Trang[DonHangCuaKhach] */
+        Trang_DonHangCuaKhach_: {
+            /** Du Lieu */
+            du_lieu: components["schemas"]["DonHangCuaKhach"][];
+            /** Tong */
+            tong: number;
+            /** Trang */
+            trang: number;
+            /** Kich Thuoc */
+            kich_thuoc: number;
+        };
+        /** Trang[KhachHangTomTat] */
+        Trang_KhachHangTomTat_: {
+            /** Du Lieu */
+            du_lieu: components["schemas"]["KhachHangTomTat"][];
+            /** Tong */
+            tong: number;
+            /** Trang */
+            trang: number;
+            /** Kich Thuoc */
+            kich_thuoc: number;
+        };
         /** Trang[NhanVienQuanTriDoc] */
         Trang_NhanVienQuanTriDoc_: {
             /** Du Lieu */
@@ -1757,6 +1959,178 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VaiTroChiTiet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    danh_sach_api_v1_noi_bo_khach_hang_get: {
+        parameters: {
+            query?: {
+                /** @description Tìm theo tên (không phân biệt dấu), email, số điện thoại */
+                q?: string | null;
+                trang_thai?: components["schemas"]["TrangThaiTaiKhoan"] | null;
+                /** @description Sắp xếp theo một trường, dấu `-` phía trước là giảm dần, ví dụ `-created_at` */
+                sap_xep?: string | null;
+                /** @description Số trang, bắt đầu từ 1 */
+                trang?: number;
+                /** @description Số dòng mỗi trang */
+                kich_thuoc?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Trang_KhachHangTomTat_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chi_tiet_api_v1_noi_bo_khach_hang__khach_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                khach_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KhachHangChiTiet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lich_su_mua_api_v1_noi_bo_khach_hang__khach_id__don_hang_get: {
+        parameters: {
+            query?: {
+                /** @description Số trang, bắt đầu từ 1 */
+                trang?: number;
+                /** @description Số dòng mỗi trang */
+                kich_thuoc?: number;
+            };
+            header?: never;
+            path: {
+                khach_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Trang_DonHangCuaKhach_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    khoa_api_v1_noi_bo_khach_hang__khach_id__khoa_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                khach_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["KhoaKhachYeuCau"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KhachHangChiTiet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mo_khoa_api_v1_noi_bo_khach_hang__khach_id__mo_khoa_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                khach_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KhachHangChiTiet"];
                 };
             };
             /** @description Validation Error */

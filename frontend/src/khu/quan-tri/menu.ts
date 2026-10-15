@@ -6,6 +6,7 @@ export const MUC_QUAN_TRI: readonly MucDieuHuong[] = [
   { duong: '/nhan-vien', nhan: 'Nhân viên', nhom: 'Tài khoản', quyen: ['staff.manage'], chucNang: ['AD01'] },
   { duong: '/vai-tro', nhan: 'Vai trò và phân quyền', nhom: 'Tài khoản', quyen: ['role.manage'], chucNang: ['AD18'] },
   { duong: '/khach-hang', nhan: 'Khách hàng', nhom: 'Tài khoản', quyen: ['customer.manage'], chucNang: ['AD02'] },
+  { duong: '/khach-hang/:id', nhan: 'Chi tiết khách hàng', quyen: ['customer.manage'], chucNang: ['AD02'], trongMenu: false },
   { duong: '/danh-muc', nhan: 'Danh mục', nhom: 'Cửa hàng', quyen: ['category.manage'], chucNang: ['AD03'] },
   { duong: '/san-pham', nhan: 'Sản phẩm', nhom: 'Cửa hàng', quyen: ['product.commercial.manage'], chucNang: ['AD04'] },
   { duong: '/du-lieu-chung', nhan: 'Dữ liệu chung', nhom: 'Cửa hàng', quyen: ['master_data.manage'], chucNang: ['AD05'] },

@@ -120,3 +120,17 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
   - Không có xóa cứng nhân viên: chứng từ, phiếu và nhật ký cũ vẫn trỏ tới người lập.
   - Id trong path dùng `IdInt`/`IdBigInt` (`core/tham_so.py`): id ngoài khoảng của cột là 400.
 - **Hệ quả:** spec 03 mục 7, 8; spec 06 mục 3.4, 3.5 và bảng mã lỗi; spec 09 mục 2.3; spec 10 mục 3; `backend/CLAUDE.md`, `frontend/CLAUDE.md`.
+
+## QĐ-14: Quản lý khách hàng của Admin (2026-10-15, task T1.5)
+- **Quyết định:**
+  - **Admin không bao giờ nhận dữ liệu sức khỏe qua AD02, bảo đảm bằng schema chứ không bằng lọc:** `schemas_quan_tri_khach.py` khai báo từng trường (không dùng chung schema của khách hay `model_validate` toàn bộ dòng). Test quét mọi khóa JSON và mọi giá trị (bệnh nền, ghi chú dị ứng, tên hoạt chất) ở danh sách, chi tiết, lịch sử mua và phản hồi khóa với một khách có hồ sơ sức khỏe thật. Thêm trường vào các schema này là quyết định có chủ ý.
+  - **Lịch sử mua là bản tóm tắt** (mã đơn, kênh, trạng thái đơn và thanh toán, tổng tiền, ngày đặt), không có người nhận, địa chỉ giao, ghi chú hay token truy cập. Spec 03 mục 6 cho Admin xem mọi đơn, nhưng chi tiết đơn là việc của AD16; trang khách chỉ cần biết khách đã mua gì. Hiện đọc thẳng `don_hang`, khi có API đơn hàng của Admin (T4.x) thì dùng lại.
+  - **Khóa khách thu hồi mọi phiên và có hiệu lực ngay** (guard đọc DB mỗi request; QĐ-12). Khóa dòng khách trước, phiên sau, nên không deadlock với đăng nhập, làm mới, đặt lại mật khẩu. Lý do khóa (không bắt buộc, tối đa 300 ký tự) chỉ ghi vào nhật ký hệ thống, không thêm cột vào hồ sơ khách (không đổi schema). Chưa gửi thông báo cho khách bị khóa (KTV13 chưa làm).
+  - **Mở khóa gỡ cả khóa tạm** do đoán mật khẩu và xóa bộ đếm sai; khách đặt lại mật khẩu bằng OTP vẫn không tự mở được khóa của Admin (QĐ-11).
+  - **Thao tác ghi của AD02 cũng đòi người thực hiện là ADMIN** (`dam_bao_la_admin`, như QĐ-13): `customer.manage` là một trong 18 quyền chỉ ADMIN giữ.
+  - **Khách đã xóa (ẩn danh hóa, [DB23]) không hiện và không thao tác được** (404).
+  - **Tìm số điện thoại:** chuỗi giống số điện thoại được đưa về dạng lưu (`+84`, `84`, khoảng trắng, gạch) để Admin gõ theo thói quen nào cũng tìm ra; một phần số cũng khớp. Escape LIKE dùng chung `core/tim_kiem.mau_tim_like` với AD01.
+  - **Nhãn trạng thái dùng chung** `lib/trangThai.ts` + `NhanTrangThai` (spec 09 mục 3, 4): test đối chiếu từng giá trị enum với `schema.d.ts` sinh từ OpenAPI nên thêm trạng thái ở backend mà quên nhãn thì test báo.
+  - **Liên kết trong khu quản trị phải giữ tiền tố `/quan-tri`:** trang AD02 từng viết `to="/khach-hang/1"` nên bấm vào bị đưa ra khu cửa hàng; test đơn vị chạy ở gốc `/` không thấy, chỉ lộ khi chạy trên trình duyệt. Từ nay test trang con của khu phải có ca chạy dưới tiền tố.
+- **Hệ quả:** spec 06 mục 3.6; spec 09 mục 2.3; `backend/CLAUDE.md`, `frontend/CLAUDE.md`.
+

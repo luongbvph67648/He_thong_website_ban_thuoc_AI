@@ -30,6 +30,12 @@ REGISTRY: dict[tuple[str, str], tuple[str, str]] = {
     ("GET", f"{TIEN_TO_NOI_BO}/vai-tro"): ("role.manage", "xem"),
     ("GET", f"{TIEN_TO_NOI_BO}/vai-tro/{{ma}}"): ("role.manage", "xem"),
     ("PUT", f"{TIEN_TO_NOI_BO}/vai-tro/{{ma}}/quyen"): ("role.manage", "day_du"),
+    # AD02: chỉ Admin có `customer.manage` (day_du).
+    ("GET", f"{TIEN_TO_NOI_BO}/khach-hang"): ("customer.manage", "xem"),
+    ("GET", f"{TIEN_TO_NOI_BO}/khach-hang/{{khach_id}}"): ("customer.manage", "xem"),
+    ("GET", f"{TIEN_TO_NOI_BO}/khach-hang/{{khach_id}}/don-hang"): ("customer.manage", "xem"),
+    ("POST", f"{TIEN_TO_NOI_BO}/khach-hang/{{khach_id}}/khoa"): ("customer.manage", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/khach-hang/{{khach_id}}/mo-khoa"): ("customer.manage", "day_du"),
 }
 
 # Route nội bộ cố ý KHÔNG cần quyền vì chạy trước khi có phiên (đăng nhập) hoặc chỉ dựa vào cookie refresh.

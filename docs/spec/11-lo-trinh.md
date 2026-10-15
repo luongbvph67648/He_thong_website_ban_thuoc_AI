@@ -262,16 +262,22 @@ _Đăng ký/đăng nhập 2 loại tài khoản, RBAC, nhật ký, cấu hình._
   - **Lỗi hạ tầng test tìm thấy:** `db_that` dọn bằng TRUNCATE nhưng giữ `vai_tro_quyen`, mà seed cố ý không ghi đè phân quyền đã có, nên test AD18 commit thật để lại ma trận lệch cho test sau (test viết sau bị lỗi giả). Sửa: TRUNCATE cả `quyen`, `vai_tro_quyen` rồi seed lại; có test hồi quy (`test_db_that_3/4`).
   - **Việc để task sau:** nút CLI khôi phục Admin duy nhất (đã ghi ở "Việc phát sinh").
 
-### [ ] T1.5 · Quản lý khách hàng
+### [x] T1.5 · Quản lý khách hàng
 - **Chức năng:** AD02 (Quản lý khách hàng)
 - **Phụ thuộc:** T1.3
 - **Bảng:** `khach_hang`, `don_hang`, `phien_dang_nhap`
 - **Tiêu chí chấp nhận:**
-  - [ ] Danh sách khách (tìm theo tên/SĐT/email), xem lịch sử mua (dùng lại API đơn hàng khi có), khóa/mở (thu hồi phiên).
-  - [ ] Response không bao giờ chứa `ho_so_suc_khoe`, `di_ung` (test khẳng định).
+  - [x] Danh sách khách (tìm theo tên/SĐT/email), xem lịch sử mua (dùng lại API đơn hàng khi có), khóa/mở (thu hồi phiên).
+  - [x] Response không bao giờ chứa `ho_so_suc_khoe`, `di_ung` (test khẳng định).
 - **Giao diện:**
-  - [ ] Danh sách và chi tiết khách hàng.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Danh sách và chi tiết khách hàng.
+- **Ghi chú triển khai:**
+  - **Backend:** `modules/tai_khoan/{quan_tri_khach,router_quan_tri_khach,schemas_quan_tri_khach}.py`; API ở spec 06 mục 3.6, quyết định ở QĐ-14. Danh sách có tìm (tên không dấu, email, số điện thoại gõ kiểu `+84 902-345-678`), lọc trạng thái, `sap_xep`; chi tiết; lịch sử mua tóm tắt (đọc thẳng `don_hang` vì API đơn hàng của Admin chưa có, dùng lại ở T4.x); khóa (thu hồi mọi phiên, có hiệu lực ngay, lý do chỉ ghi nhật ký) và mở khóa (gỡ cả khóa tạm). Không đổi schema CSDL.
+  - **Không lộ dữ liệu sức khỏe:** schema khai báo từng trường; test gieo hồ sơ sức khỏe và dị ứng thật rồi quét mọi khóa và giá trị ở danh sách, chi tiết, lịch sử mua và phản hồi khóa.
+  - **Phần dùng chung thêm vào:** `core/phan_trang.sap_xep_theo` + `SapXepQuery` (nợ từ T0.2, xem T1.4), `core/tim_kiem.mau_tim_like` (AD01 chuyển sang dùng), `lib/trangThai.ts` + `NhanTrangThai` (spec 09 mục 3, 4; test đối chiếu enum của OpenAPI), `khu/quan-tri/khach-hang/*`. Lệch spec 09: dòng `/khach-hang` của bảng 2.3 thêm `/khach-hang/:id`.
+  - **Lỗi chỉ lộ trên Chromium thật, đã sửa:** liên kết `to="/khach-hang/1"` bỏ mất tiền tố `/quan-tri` (đưa người dùng ra khu cửa hàng), test đơn vị chạy ở gốc nên không thấy; nay dựng từ đường dẫn hiện tại và có test chạy dưới tiền tố. Kiểm chứng trình duyệt 24/24: tìm kiếm/sắp xếp/lọc trên URL, chi tiết và lịch sử mua không lộ người nhận, địa chỉ, hồ sơ sức khỏe; khách đang đăng nhập bị khóa thì mất phiên ngay, đăng nhập báo tài khoản bị khóa, mở khóa đăng nhập lại được; id vượt int32 và id không tồn tại.
+  - **Kiểm thử:** backend 37 test riêng cho AD02 (gồm hai Admin khóa cùng lúc chỉ ghi một nhật ký, khóa đồng thời với làm mới phiên không deadlock và không để lại phiên sống); frontend 28 test trang + 6 test nhãn trạng thái. 17 đột biến backend và 10 đột biến frontend đều bị test bắt.
+  - **Việc để task sau:** trang Nhân viên (AD01) chưa có cột bấm sắp xếp dù API hỗ trợ `sap_xep`; làm giống trang Khách hàng (đã ghi ở "Việc phát sinh").
 
 ### [ ] T1.6 · Cấu hình hệ thống và nhật ký
 - **Chức năng:** AD08 (Cấu hình hệ thống), AD15 (Xem nhật ký hệ thống)
@@ -813,6 +819,7 @@ Lỗi hoặc việc phát hiện trong lúc làm nhưng nằm ngoài phạm vi t
 - [ ] (T1.3) Admin duy nhất quên mật khẩu thì không có đường khôi phục (nhân viên không có "quên mật khẩu" tự phục vụ, Admin khác đặt lại ở T1.4): thêm lệnh CLI `python -m app.seed --dat-lai-admin` hoặc tương đương khi làm T1.4/T8.3.
 - [ ] (T1.3) `nhat_ky_he_thong` "chỉ INSERT" mới được bảo đảm bằng việc ứng dụng không có route sửa/xóa; thêm trigger chặn UPDATE/DELETE ở DB qua migration mới (`/doi-schema`) khi rà soát bảo mật T8.2.
 - [ ] (T1.3-rv) `core/nhat_ky.py::che_du_lieu_nhay_cam` còn thiếu khóa `dang_mang_thai`, `dang_cho_con_bu`, `nam_sinh`, `ghi_chu` (của `di_ung`), `hoat_chat_id`, `thong_tin_nhan_hoan`; và `ghi_nhat_ky` nên bỏ hẳn giá trị cũ/mới khi `bang` là `ho_so_suc_khoe`/`di_ung` (spec 03 mục 5.1 chỉ ghi `bang` + `ban_ghi_id`). Chưa có nơi gọi nên chưa rò; làm trước task đầu tiên ghi nhật ký dữ liệu sức khỏe (T4.x/T5.x).
+- [ ] (T1.5) Trang Nhân viên (AD01) chưa có cột bấm để sắp xếp dù `GET /noi-bo/nhan-vien` đã hỗ trợ `sap_xep` (`created_at`, `ma_nhan_vien`, `ho_ten`, `email`): làm giống `TrangKhachHang.tsx` (sorter trên cột, `sap_xep` trên URL, bỏ giá trị lạ).
 - [ ] (T1.4-rv, Thấp) `quan_tri.py`: người thực hiện chỉ được kiểm tra ở dependency, TRƯỚC khi chờ khóa dòng. Admin B đang chờ khóa trong lúc Admin A commit khóa B vẫn thực hiện xong (đã chạy thử: B nhận mật khẩu tạm). Thêm dòng người thực hiện vào tập khóa và kiểm tra lại `hoat_dong`, chưa xóa, còn ADMIN sau khi có khóa (khi đó người thua nhận 403 thay vì `PHAI_CON_ADMIN`, cập nhật test đồng thời).
 - [ ] (T1.4-rv, Thấp) `quan_tri.dat_lai_mat_khau` băm Argon2 khi đang giữ khóa mọi dòng Admin (vài chục đến vài trăm ms chặn đăng nhập, làm mới, thao tác Admin khác). Sinh và băm mật khẩu tạm trước khi gọi `_khoa_dich_va_cac_admin`.
 - [ ] (T1.4-rv, Thấp) `TrangNhanVien.tsx` hộp thoại mật khẩu tạm: (a) đóng được bằng Esc hoặc nút X (spec 09 ghi "chỉ đóng bằng nút"): đặt `closable={false}` và `keyboard={false}`; (b) `await lamMoi()` chạy TRƯỚC `setMatKhauTam`, nên danh sách tải chậm/lỗi hoặc rời trang giữa chừng thì tài khoản đã tạo mà mật khẩu không bao giờ hiện: hiện mật khẩu trước, `void lamMoi()` sau; (c) `luu.data`/`hanhDong.data` giữ `mat_khau_tam` trong bộ nhớ (MutationCache `gcTime` 5 phút): gọi `reset()` sau khi đọc; (d) thêm `Cache-Control: no-store` cho phản hồi tạo/đặt lại và `field(repr=False)` cho `KetQuaCoMatKhauTam.mat_khau_tam`.

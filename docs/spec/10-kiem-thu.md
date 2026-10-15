@@ -27,7 +27,7 @@
 - **Test riêng:**
   - Khách A truy cập đơn, địa chỉ, đơn thuốc, đổi trả, hội thoại của khách B → 404.
   - Token khách gọi `/noi-bo` và token nội bộ gọi `/toi` → 401.
-  - Response nội bộ cho Admin/kho không chứa khóa `ho_so_suc_khoe`, `di_ung`, `benh_nen`. Response cho dược sĩ không chứa `gia_nhap`, `gia_von`.
+  - Response nội bộ cho Admin/kho không chứa khóa `ho_so_suc_khoe`, `di_ung`, `benh_nen`. Response cho dược sĩ không chứa `gia_nhap`, `gia_von`. AD02 làm mẫu: gieo hồ sơ sức khỏe thật cho khách rồi quét mọi khóa và mọi giá trị ở các phản hồi (`tests/khach_hang/test_kh_quan_tri.py::khong_lo_du_lieu_nhay_cam`); các route mới thấy dữ liệu khách phải thêm ca tương tự.
   - Hàm cổng sức khỏe: 4 trường hợp đúng/sai theo spec 03 mục 5.1, kèm kiểm tra có ghi nhật ký.
   - Tách nhiệm vụ: tự duyệt phiếu điều chỉnh/hủy/xuất trả bị chặn; Admin tự khóa, tự xóa, tự đổi vai trò, tự đặt lại mật khẩu bị chặn (`TU_THAY_DOI_KHONG_DUOC`); khóa/xóa/hạ vai trò Admin cuối cùng bị chặn (`PHAI_CON_ADMIN`), kể cả khi hai Admin làm nhau đồng thời (2 session thật, đúng một bên thành công).
 

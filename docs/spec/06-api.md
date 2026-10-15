@@ -104,6 +104,16 @@ Mọi route dưới `/api/v1/noi-bo/vai-tro`; `{ma}` chỉ gồm `A-Z` và `_`. 
   - Ghi nhật ký `sua` bảng `vai_tro_quyen` với phần khác biệt dạng danh sách `them`, `bo`, `doi_muc`.
   - **Hiệu lực:** quyền được đọc từ DB mỗi request (bộ nhớ đệm 60 giây, xóa ngay sau commit của thao tác này) nên thay đổi có hiệu lực ở request kế tiếp và KHÔNG thu hồi phiên; menu giao diện của nhân viên đang đăng nhập tự cập nhật khi họ quay lại cửa sổ hoặc sau tối đa 5 phút qua `GET /noi-bo/toi` (spec 09).
 
+### 3.6 Quản lý khách hàng (AD02, `customer.manage`)
+Mọi route dưới `/api/v1/noi-bo/khach-hang`; đọc cần mức `xem`, ghi cần `day_du` VÀ người thực hiện thuộc vai trò ADMIN (`dam_bao_la_admin`, như mục 3.4). `{khach_id}` là số nguyên 1..2147483647 (ngoài khoảng là `400 DU_LIEU_KHONG_HOP_LE`; không có hoặc đã xóa tài khoản [DB23] là `404 KHONG_TIM_THAY`).
+- **Không bao giờ có** `ho_so_suc_khoe`, `di_ung`, `benh_nen`, `mat_khau_hash` hay bất kỳ trường sức khỏe nào ở mọi phản hồi của nhóm này (spec 03 mục 5.1; schema khai báo từng trường, có test quét khóa và giá trị với khách có hồ sơ sức khỏe thật).
+- `GET /noi-bo/khach-hang?q=&trang_thai=&sap_xep=&trang=&kich_thuoc=` -> trang `{id, ho_ten, email, so_dien_thoai, trang_thai, khoa_den, created_at}`. Khách đã xóa không có trong danh sách. `q` tìm tên (không phân biệt dấu, hoa thường), email, số điện thoại: chuỗi giống số điện thoại được đưa về dạng lưu (`+84 902-345-678`, `84902345678` đều tìm ra `0902345678`; một phần số cũng khớp); `%` và `_` là chữ thường. `sap_xep` (mục 5) nhận `created_at` (mặc định `-created_at`, mới đăng ký trước), `ho_ten`, `email`, `so_dien_thoai`; trường khác là `400`.
+- `GET /noi-bo/khach-hang/{khach_id}` -> chi tiết: các trường trên cộng `gioi_tinh`, `dong_y_chinh_sach_luc`, `updated_at`, `so_don_hang` (mọi trạng thái).
+- `GET /noi-bo/khach-hang/{khach_id}/don-hang?trang=&kich_thuoc=` -> lịch sử mua, mới nhất trước: `{id, ma_don, kenh_ban, trang_thai, trang_thai_tt, tong_tien, created_at}` (tiền dạng chuỗi số). Chỉ đơn có `khach_hang_id` này (không gồm đơn khách lẻ hay của người khác). Cố ý không có người nhận, địa chỉ giao, ghi chú, token truy cập: chi tiết đơn thuộc AD16 (T4.x), khi có API đơn hàng của Admin thì dùng lại ở đây.
+- `POST /noi-bo/khach-hang/{khach_id}/khoa` thân tùy chọn `{ly_do?}` (tối đa 300 ký tự, chỉ ghi vào nhật ký, không lưu ở hồ sơ khách) -> chi tiết. `trang_thai = bi_khoa` và thu hồi MỌI phiên của khách ngay: access token đang dùng bị từ chối `403 TAI_KHOAN_BI_KHOA` ở request kế tiếp (guard đọc DB mỗi request), refresh token bị coi là đã thu hồi (`401 CHUA_DANG_NHAP`), đăng nhập bằng mật khẩu đúng nhận `403 TAI_KHOAN_BI_KHOA` còn sai mật khẩu vẫn là `401` như tài khoản bình thường. Khóa dòng khách `FOR UPDATE` TRƯỚC khi thu hồi phiên (thứ tự của QĐ-12); đã khóa thì gọi lại vẫn 200 và không ghi thêm nhật ký.
+- `POST /noi-bo/khach-hang/{khach_id}/mo-khoa` -> chi tiết: `trang_thai = hoat_dong`, xóa `khoa_den` (khóa tạm do đoán mật khẩu) và bộ đếm đăng nhập sai. Đã bình thường thì gọi lại vẫn 200, không ghi nhật ký.
+- Nhật ký `khoa`, `mo_khoa` (bảng `khach_hang`, `ban_ghi_id` = id khách): `gia_tri_moi = {ly_do}` nếu có; không chứa số điện thoại, email hay dữ liệu sức khỏe.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

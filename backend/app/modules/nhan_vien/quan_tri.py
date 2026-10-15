@@ -11,7 +11,6 @@ Quy tắc (spec 03 mục 7, 05 AD01):
 Mọi thay đổi ghi `nhat_ky_he_thong` cùng transaction.
 """
 
-import re
 from dataclasses import dataclass
 
 from sqlalchemy import and_, func, or_, select
@@ -27,6 +26,7 @@ from app.core.nhat_ky import ghi_nhat_ky
 from app.core.phan_quyen import dam_bao_la_admin
 from app.core.phan_trang import ThamSoPhanTrang, lay_trang, sap_xep_theo
 from app.core.thoi_gian import bay_gio_utc
+from app.core.tim_kiem import mau_tim_like
 from app.models.enums import TrangThaiTaiKhoan
 from app.models.he_thong import NhanVien, VaiTro
 from app.modules.nhan_vien.schemas_quan_tri import NhanVienSua, NhanVienTao
@@ -132,11 +132,6 @@ async def _dam_bao_email_chua_dung(db: AsyncSession, email: str, *, tru_id: int 
 # --- Đọc -------------------------------------------------------------------------------------------------------------
 
 
-def _mau_tim(q: str) -> str:
-    # Thoát ký tự đặc biệt của LIKE để người dùng gõ % hoặc _ không biến thành ký tự thay thế.
-    return "%" + re.sub(r"([\\%_])", r"\\\1", q.strip()) + "%"
-
-
 CAC_TRUONG_SAP_XEP = {
     "created_at": NhanVien.created_at,
     "ma_nhan_vien": NhanVien.ma_nhan_vien,
@@ -159,7 +154,7 @@ async def danh_sach(
     `q` tìm theo tên (không phân biệt dấu), email, mã nhân viên."""
     stmt = select(NhanVien).options(selectinload(NhanVien.vai_tro)).where(NhanVien.deleted_at.is_(None))
     if q and q.strip():
-        mau = _mau_tim(q)
+        mau = mau_tim_like(q)
         stmt = stmt.where(
             or_(
                 func.f_unaccent(func.lower(NhanVien.ho_ten)).like(func.f_unaccent(func.lower(mau)), escape="\\"),
