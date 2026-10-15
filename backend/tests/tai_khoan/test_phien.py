@@ -8,6 +8,7 @@ from sqlalchemy import select
 
 from app.models.enums import TrangThaiTaiKhoan
 from app.models.he_thong import PhienDangNhap
+from app.models.khach_hang import KhachHang
 from app.modules.tai_khoan import phien
 from app.modules.tai_khoan.phien import KetQuaLamMoi
 from tests.factories import tao_khach, tao_nhan_vien
@@ -150,6 +151,84 @@ async def test_tai_khoan_dang_khoa_tam_khong_lam_moi_duoc(client, db, thoi_gian)
     await db.flush()
     phan_hoi = await lam_moi(client, refresh)
     assert phan_hoi.status_code == 403 and phan_hoi.json()["ma_loi"] == "TAI_KHOAN_BI_KHOA"
+    assert 0 < phan_hoi.json()["chi_tiet"]["thu_lai_sau_giay"] <= 5 * 60 + 1
+
+
+async def test_ke_la_lam_khoa_tam_khong_duoc_dang_xuat_chu_tai_khoan(client, db, thoi_gian):
+    """Người lạ gửi sai mật khẩu 5 lần để khóa tạm: phiên của chủ tài khoản KHÔNG bị xoay vòng, thu hồi hay xóa cookie
+    (QĐ-12); hết khóa thì chính các refresh token cũ dùng tiếp được."""
+    khach = await tao_khach(db, so_dien_thoai=SDT)
+    dien_thoai = await dang_nhap_lay_refresh(client)
+    may_tinh = await dang_nhap_lay_refresh(client)
+    for _ in range(5):
+        await dang_nhap(client, SDT, "Sai-mat-khau-1")  # kẻ lạ
+
+    phan_hoi = await lam_moi(client, dien_thoai)
+    assert phan_hoi.status_code == 403 and phan_hoi.json()["ma_loi"] == "TAI_KHOAN_BI_KHOA"
+    assert phan_hoi.json()["chi_tiet"]["thu_lai_sau_giay"] > 0
+    assert cookie_refresh(phan_hoi) is None  # không ra lệnh xóa cookie
+    assert await so_phien_con_hieu_luc(db, khach.id) == 2
+    assert (await dong_phien(db, dien_thoai)).thu_hoi_luc is None  # chưa bị xoay vòng
+
+    thoi_gian.tien(minutes=15, seconds=1)
+    assert (await lam_moi(client, dien_thoai)).status_code == 200
+    assert (await lam_moi(client, may_tinh)).status_code == 200
+
+
+async def test_dat_lai_mat_khau_khoa_tai_khoan_truoc_roi_lam_moi_dong_thoi_khong_deadlock(db_that):
+    """Thứ tự ngược: chủ đã khóa dòng tài khoản (như route đặt lại mật khẩu) thì lần làm mới đến sau phải CHỜ khóa đó
+    rồi thấy token đã bị thu hồi. Nếu làm mới chỉ khóa dòng phiên, hai bên giữ khóa chéo nhau và Postgres hủy một
+    giao dịch bằng lỗi deadlock (500 cho người dùng)."""
+    async with db_that() as s, s.begin():
+        khach_id = (await tao_khach(s)).id
+        refresh = (await phien.tao_phien(s, loai="khach", chu_id=khach_id)).refresh_token
+
+    chu_giu_khoa = asyncio.Event()
+
+    async def chu_dat_lai_mat_khau():
+        async with db_that() as s, s.begin():
+            await s.execute(select(KhachHang).where(KhachHang.id == khach_id).with_for_update())
+            chu_giu_khoa.set()
+            await asyncio.sleep(0.4)  # giữ khóa tài khoản trong lúc bên kia bắt đầu làm mới
+            await phien.thu_hoi_tat_ca(s, "khach", khach_id)
+
+    async def ke_lam_moi():
+        await chu_giu_khoa.wait()
+        async with db_that() as s, s.begin():
+            return (await phien.lam_moi_phien(s, refresh_token=refresh, loai="khach")).ket_qua
+
+    _, ket_qua = await asyncio.wait_for(asyncio.gather(chu_dat_lai_mat_khau(), ke_lam_moi()), timeout=15)
+    assert ket_qua == KetQuaLamMoi.DA_THU_HOI  # token đã bị chủ thu hồi trước khi kẻ này làm mới được
+    async with db_that() as s:
+        assert await so_phien_con_hieu_luc(s, khach_id) == 0
+
+
+async def test_lam_moi_dong_thoi_voi_dat_lai_mat_khau_khong_de_lai_phien_song(db_that):
+    """Kẻ cầm token bị đánh cắp làm mới đúng lúc chủ đặt lại mật khẩu: phiên mới của kẻ đó cũng phải bị thu hồi."""
+    async with db_that() as s, s.begin():
+        khach_id = (await tao_khach(s)).id
+        refresh = (await phien.tao_phien(s, loai="khach", chu_id=khach_id)).refresh_token
+
+    da_xoay = asyncio.Event()
+
+    async def ke_cap_token():
+        async with db_that() as s, s.begin():
+            kq = await phien.lam_moi_phien(s, refresh_token=refresh, loai="khach")
+            da_xoay.set()
+            await asyncio.sleep(0.4)  # giữ giao dịch mở: bên kia đang chạy đồng thời
+            return kq.ket_qua
+
+    async def chu_dat_lai_mat_khau():
+        await da_xoay.wait()
+        async with db_that() as s, s.begin():
+            # Đúng như route đặt lại mật khẩu: khóa dòng khách rồi thu hồi mọi phiên.
+            await s.execute(select(KhachHang).where(KhachHang.id == khach_id).with_for_update())
+            await phien.thu_hoi_tat_ca(s, "khach", khach_id)
+
+    ket_qua, _ = await asyncio.wait_for(asyncio.gather(ke_cap_token(), chu_dat_lai_mat_khau()), timeout=10)
+    assert ket_qua == KetQuaLamMoi.OK
+    async with db_that() as s:
+        assert await so_phien_con_hieu_luc(s, khach_id) == 0
 
 
 async def test_refresh_token_cua_nhan_vien_khong_dung_duoc_o_endpoint_khach(client, db):

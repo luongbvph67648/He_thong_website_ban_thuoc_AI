@@ -212,6 +212,11 @@ describe('lamMoiAccessToken', () => {
     expect(await lam(() => json(401))).toEqual({ token: null, hetPhien: true })
     expect(await lam(() => json(403))).toEqual({ token: null, hetPhien: true })
     expect(await lam(() => json(500))).toEqual({ token: null, hetPhien: false })
+    // Khóa tạm do đoán sai mật khẩu: token vẫn còn giá trị nên giữ gợi ý đăng nhập, khác với Admin khóa.
+    const khoaTam = json(403, { ma_loi: 'TAI_KHOAN_BI_KHOA', thong_diep: 'x', chi_tiet: { thu_lai_sau_giay: 600 } })
+    expect(await lam(() => khoaTam)).toEqual({ token: null, hetPhien: false })
+    const adminKhoa = json(403, { ma_loi: 'TAI_KHOAN_BI_KHOA', thong_diep: 'x', chi_tiet: null })
+    expect(await lam(() => adminKhoa)).toEqual({ token: null, hetPhien: true })
     expect(await lam(() => json(200, { access_token: 'tok' }))).toEqual({ token: 'tok', hetPhien: false })
     expect(
       await lam(() => {

@@ -75,7 +75,7 @@ export function taoMiddlewareXacThuc(ts: ThamSoXacThuc): Middleware {
 
 export interface KetQuaLamMoi {
   token: string | null
-  /** Máy chủ trả lời rõ là phiên không còn (401/403); khác với lỗi mạng hay lỗi máy chủ có thể thử lại sau. */
+  /** Máy chủ trả lời rõ là phiên không còn (401, hoặc 403 do Admin khóa); khác với lỗi mạng, lỗi máy chủ hay khóa tạm. */
   hetPhien: boolean
 }
 
@@ -101,7 +101,16 @@ export async function lamMoiPhien(
   return docQuyen(async () => {
     try {
       const phanHoi = await fetchFn(duong, { method: 'POST', credentials: 'include' })
-      if (!phanHoi.ok) return { token: null, hetPhien: phanHoi.status === 401 || phanHoi.status === 403 }
+      if (!phanHoi.ok) {
+        if (phanHoi.status === 401) return { token: null, hetPhien: true }
+        if (phanHoi.status === 403) {
+          // Khóa tạm do đoán sai mật khẩu (có `thu_lai_sau_giay`): phiên vẫn còn nguyên, chưa phải hết phiên.
+          const than: unknown = await phanHoi.json().catch(() => null)
+          const chiTiet = (than as { chi_tiet?: { thu_lai_sau_giay?: unknown } | null } | null)?.chi_tiet
+          return { token: null, hetPhien: typeof chiTiet?.thu_lai_sau_giay !== 'number' }
+        }
+        return { token: null, hetPhien: false }
+      }
       const than: unknown = await phanHoi.json()
       const token = (than as { access_token?: unknown } | null)?.access_token
       return typeof token === 'string' && token !== '' ? { token, hetPhien: false } : { token: null, hetPhien: false }

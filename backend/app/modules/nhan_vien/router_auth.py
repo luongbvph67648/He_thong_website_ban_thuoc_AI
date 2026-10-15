@@ -7,15 +7,12 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Cookie, Depends, Request, Response
-from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import Db
 from app.core.gioi_han import GioiHanCuaSoTruot, lay_bo_gioi_han_dang_nhap
 from app.core.loi import tra_loi
 from app.core.phan_quyen import yeu_cau_quyen
-from app.core.thoi_gian import bay_gio_utc
-from app.models.enums import TrangThaiTaiKhoan
 from app.models.he_thong import NhanVien
 from app.modules.nhan_vien import service
 from app.modules.nhan_vien.schemas import (
@@ -76,15 +73,6 @@ async def dang_nhap(
     return await _phan_hoi_phien(db, response, kq.nhan_vien, kq.cap_token)
 
 
-async def _nhan_vien_con_dung(db: AsyncSession, nhan_vien_id: int) -> bool:
-    nhan_vien = (await db.execute(select(NhanVien).where(NhanVien.id == nhan_vien_id))).scalar_one()
-    return not (
-        nhan_vien.deleted_at is not None
-        or nhan_vien.trang_thai != TrangThaiTaiKhoan.hoat_dong
-        or (nhan_vien.khoa_den and nhan_vien.khoa_den > bay_gio_utc())
-    )
-
-
 @router.post("/lam-moi", response_model=CapTokenPhanHoi, summary="Làm mới access token nhân viên (NV01)")
 async def lam_moi(
     request: Request,
@@ -93,9 +81,7 @@ async def lam_moi(
     refresh_token: str | None = Cookie(default=None, alias=TEN_COOKIE_REFRESH_NOI_BO),
 ):
     """Xoay vòng refresh token. Dùng lại token đã thu hồi thì thu hồi toàn bộ phiên của nhân viên đó."""
-    return await lam_moi_http(
-        db, request, response, loai="noi_bo", refresh_token=refresh_token, con_dung=_nhan_vien_con_dung
-    )
+    return await lam_moi_http(db, request, response, loai="noi_bo", refresh_token=refresh_token)
 
 
 @router.post("/dang-xuat", status_code=204, summary="Đăng xuất nhân viên (NV01)")

@@ -5,8 +5,6 @@ viết hai lần rồi lệch nhau. Mọi lỗi được TRẢ VỀ (`core.loi.t
 đếm) được commit.
 """
 
-from collections.abc import Awaitable, Callable
-
 from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -20,9 +18,6 @@ from app.modules.tai_khoan.schemas import CapTokenPhanHoi
 
 DANG_NHAP_TOI_DA_MOI_IP = 20
 CUA_SO_DANG_NHAP_GIAY = 600
-
-KiemTraTaiKhoan = Callable[[AsyncSession, int], Awaitable[bool]]
-"""Trả `True` nếu tài khoản còn được dùng (tồn tại, chưa xóa, hoạt động, không khóa tạm)."""
 
 
 def dia_chi_ip(request: Request) -> str:
@@ -60,7 +55,6 @@ async def lam_moi_http(
     *,
     loai: LoaiPhien,
     refresh_token: str | None,
-    con_dung: KiemTraTaiKhoan,
 ) -> CapTokenPhanHoi | JSONResponse:
     """Xoay vòng refresh token. Dùng lại token đã thu hồi thì thu hồi toàn bộ phiên (nghi bị đánh cắp)."""
     ip, thiet_bi = ip_va_thiet_bi(request)
@@ -72,9 +66,15 @@ async def lam_moi_http(
     if kq.ket_qua is phien.KetQuaLamMoi.HET_HAN:
         return _loi_phien(loai, "TOKEN_HET_HAN", "Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại")
 
-    if not await con_dung(db, kq.chu_id):
-        await phien.thu_hoi_tat_ca(db, loai, kq.chu_id)  # kể cả phiên vừa cấp
+    if kq.ket_qua is phien.KetQuaLamMoi.BI_KHOA:  # đã thu hồi toàn bộ phiên trong `lam_moi_phien`
         return _loi_phien(loai, "TAI_KHOAN_BI_KHOA", "Tài khoản đang bị khóa")
+    if kq.ket_qua is phien.KetQuaLamMoi.KHOA_TAM:
+        # Không xóa cookie: token còn nguyên giá trị, dùng tiếp được khi hết khóa.
+        return tra_loi(
+            "TAI_KHOAN_BI_KHOA",
+            "Tài khoản đang bị khóa tạm, vui lòng thử lại sau",
+            {"thu_lai_sau_giay": kq.thu_lai_sau_giay},
+        )
     dat_cookie_refresh(response, kq.cap_token.refresh_token, loai)
     return CapTokenPhanHoi(access_token=kq.cap_token.access_token, het_han_giay=kq.cap_token.het_han_giay)
 

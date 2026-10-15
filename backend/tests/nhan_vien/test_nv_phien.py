@@ -6,7 +6,8 @@ import hashlib
 from sqlalchemy import select
 
 from app.models.enums import TrangThaiTaiKhoan
-from app.models.he_thong import PhienDangNhap
+from app.models.he_thong import NhanVien, PhienDangNhap
+from app.modules.nhan_vien import service as dich_vu_nv
 from app.modules.tai_khoan import phien
 from app.modules.tai_khoan.phien import KetQuaLamMoi
 from tests.factories import MAT_KHAU_TEST, tao_khach, tao_nhan_vien
@@ -112,6 +113,24 @@ async def test_bi_khoa_giua_chung_khong_lam_moi_duoc_va_mat_het_phien(client, db
     assert (await lam_moi(client, may_khac)).status_code == 401
 
 
+async def test_dang_khoa_tam_khong_lam_moi_duoc_va_ke_la_khong_lam_mat_phien_cua_chu(client, db, thoi_gian):
+    nv = await tao_nhan_vien(db, email=EMAIL)
+    dien_thoai = await dang_nhap_lay_refresh(client)
+    may_tinh = await dang_nhap_lay_refresh(client)
+    for _ in range(5):
+        await dang_nhap(client, mat_khau="Sai-mat-khau-1")  # kẻ lạ đoán mật khẩu
+
+    phan_hoi = await lam_moi(client, dien_thoai)
+    assert phan_hoi.status_code == 403 and phan_hoi.json()["ma_loi"] == "TAI_KHOAN_BI_KHOA"
+    assert phan_hoi.json()["chi_tiet"]["thu_lai_sau_giay"] > 0 and cookie_refresh(phan_hoi) is None
+    assert await so_phien_con_hieu_luc(db, nv.id) == 2
+    assert (await dong_phien(db, dien_thoai)).thu_hoi_luc is None
+
+    thoi_gian.tien(minutes=15, seconds=1)
+    assert (await lam_moi(client, dien_thoai)).status_code == 200
+    assert (await lam_moi(client, may_tinh)).status_code == 200
+
+
 async def test_xoa_mem_giua_chung_khong_lam_moi_duoc(client, db, thoi_gian):
     nv = await tao_nhan_vien(db, email=EMAIL)
     refresh = await dang_nhap_lay_refresh(client)
@@ -173,6 +192,63 @@ async def test_hai_lan_lam_moi_dong_thoi_cung_mot_token_chi_mot_ben_thang(db_tha
     assert tuple(ket_qua) == (KetQuaLamMoi.OK, KetQuaLamMoi.DA_THU_HOI)
     async with db_that() as s:
         assert await so_phien_con_hieu_luc(s, nv_id) == 0
+
+
+async def test_doi_mat_khau_chay_truoc_lam_moi_dong_thoi_khong_deadlock(db_that):
+    """Thứ tự ngược của test dưới: đổi mật khẩu đã khóa dòng nhân viên thì lần làm mới đến sau phải chờ rồi bị coi là
+    dùng lại token đã thu hồi (không deadlock, không để lại phiên sống ngoài phiên mới của chủ)."""
+    async with db_that() as s, s.begin():
+        nv_id = (await tao_nhan_vien(s)).id
+        refresh = (await phien.tao_phien(s, loai="noi_bo", chu_id=nv_id)).refresh_token
+
+    chu_giu_khoa = asyncio.Event()
+
+    async def chu_doi_mat_khau():
+        async with db_that() as s, s.begin():
+            await s.execute(select(NhanVien).where(NhanVien.id == nv_id).with_for_update())
+            chu_giu_khoa.set()
+            await asyncio.sleep(0.4)
+            await phien.thu_hoi_tat_ca(s, "noi_bo", nv_id)
+
+    async def ke_lam_moi():
+        await chu_giu_khoa.wait()
+        async with db_that() as s, s.begin():
+            return (await phien.lam_moi_phien(s, refresh_token=refresh, loai="noi_bo")).ket_qua
+
+    _, ket_qua = await asyncio.wait_for(asyncio.gather(chu_doi_mat_khau(), ke_lam_moi()), timeout=15)
+    assert ket_qua == KetQuaLamMoi.DA_THU_HOI
+    async with db_that() as s:
+        assert await so_phien_con_hieu_luc(s, nv_id) == 0
+
+
+async def test_lam_moi_dong_thoi_voi_doi_mat_khau_khong_de_lai_phien_song(db_that):
+    """Kẻ cầm refresh token bị đánh cắp làm mới đúng lúc chủ đổi mật khẩu: phiên kẻ đó vừa nhận phải bị thu hồi."""
+    async with db_that() as s, s.begin():
+        nv_id = (await tao_nhan_vien(s)).id
+        refresh = (await phien.tao_phien(s, loai="noi_bo", chu_id=nv_id)).refresh_token
+
+    da_xoay = asyncio.Event()
+
+    async def ke_cap_token():
+        async with db_that() as s, s.begin():
+            kq = await phien.lam_moi_phien(s, refresh_token=refresh, loai="noi_bo")
+            da_xoay.set()
+            await asyncio.sleep(0.4)
+            return kq.cap_token.refresh_token
+
+    async def chu_doi_mat_khau():
+        await da_xoay.wait()
+        async with db_that() as s, s.begin():
+            kq = await dich_vu_nv.doi_mat_khau(
+                s, nv_id, mat_khau_cu=MAT_KHAU_TEST, mat_khau_moi="Mat-khau-moi-2", ip="127.0.0.1", thiet_bi=None
+            )
+            return kq.cap_token.refresh_token
+
+    token_ke_cap, token_chu = await asyncio.wait_for(asyncio.gather(ke_cap_token(), chu_doi_mat_khau()), timeout=15)
+    async with db_that() as s:
+        assert (await dong_phien(s, token_ke_cap)).thu_hoi_luc is not None  # phiên của kẻ cầm token đã bị thu hồi
+        assert (await dong_phien(s, token_chu)).thu_hoi_luc is None
+        assert await so_phien_con_hieu_luc(s, nv_id) == 1  # chỉ còn phiên mới của chủ
 
 
 async def test_dang_xuat_thu_hoi_dung_phien_va_xoa_cookie(client, db):
