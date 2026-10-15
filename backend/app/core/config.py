@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Literal
 
 from pydantic import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -17,6 +18,11 @@ class Settings(BaseSettings):
     # Khóa ký access token (HS256), tối thiểu 32 ký tự. Không có giá trị mặc định: để trống thì không tạo/giải mã token.
     JWT_SECRET: SecretStr = SecretStr("")
     JWT_ACCESS_PHUT: int = 15
+    # Tin nhắn (OTP, thông báo): `gia` ghi SMS ra log, email qua SMTP tới Mailpit; `that` cần nhà cung cấp (spec 08).
+    TIN_NHAN_CHE_DO: Literal["gia", "that"] = "gia"
+    SMTP_HOST: str = "localhost"
+    SMTP_PORT: int = 1025
+    SMTP_NGUOI_GUI: str = "Nhà thuốc AI <no-reply@nhathuoc.local>"
     # Tài khoản Admin đầu tiên do `python -m app.seed` tạo. Để trống thì seed báo lỗi (không có giá trị mặc định
     # để khỏi vô tình tạo Admin với mật khẩu đoán được).
     ADMIN_EMAIL: str = ""

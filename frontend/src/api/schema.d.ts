@@ -21,10 +21,98 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/auth/otp": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Gửi mã OTP đăng ký (KVL09)
+         * @description Phản hồi luôn giống nhau dù số đã đăng ký hay chưa (chống dò tài khoản).
+         */
+        post: operations["gui_ma_otp_api_v1_auth_otp_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/auth/dang-ky": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Đăng ký tài khoản khách bằng SĐT và OTP (KVL09) */
+        post: operations["dang_ky_khach_api_v1_auth_dang_ky_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** DangKyYeuCau */
+        DangKyYeuCau: {
+            /** So Dien Thoai */
+            so_dien_thoai: string;
+            /** Otp */
+            otp: string;
+            /** Mat Khau */
+            mat_khau: string;
+            /** Ho Ten */
+            ho_ten: string;
+            /** Email */
+            email?: string | null;
+            /** Dong Y Chinh Sach */
+            dong_y_chinh_sach: boolean;
+        };
+        /** HTTPValidationError */
+        HTTPValidationError: {
+            /** Detail */
+            detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * KhachHangDoc
+         * @description Hồ sơ khách trả về cho chính họ. Không bao giờ chứa mật khẩu, hash hay trạng thái khóa.
+         */
+        KhachHangDoc: {
+            /** Id */
+            id: number;
+            /** Ho Ten */
+            ho_ten: string;
+            /** So Dien Thoai */
+            so_dien_thoai: string;
+            /** Email */
+            email: string | null;
+        };
+        /** OtpPhanHoi */
+        OtpPhanHoi: {
+            /** Da Gui */
+            da_gui: boolean;
+            /** Het Han Giay */
+            het_han_giay: number;
+        };
+        /** OtpYeuCau */
+        OtpYeuCau: {
+            /** So Dien Thoai */
+            so_dien_thoai: string;
+            /**
+             * Muc Dich
+             * @constant
+             */
+            muc_dich: "dang_ky";
+        };
         /** SucKhoe */
         SucKhoe: {
             /**
@@ -37,6 +125,19 @@ export interface components {
              * @enum {string}
              */
             db: "ok" | "loi";
+        };
+        /** ValidationError */
+        ValidationError: {
+            /** Location */
+            loc: (string | number)[];
+            /** Message */
+            msg: string;
+            /** Error Type */
+            type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
         };
     };
     responses: never;
@@ -72,6 +173,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SucKhoe"];
+                };
+            };
+        };
+    };
+    gui_ma_otp_api_v1_auth_otp_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OtpYeuCau"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OtpPhanHoi"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dang_ky_khach_api_v1_auth_dang_ky_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DangKyYeuCau"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KhachHangDoc"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

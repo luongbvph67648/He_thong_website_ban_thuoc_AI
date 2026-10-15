@@ -23,6 +23,7 @@ dev = [
     "pytest-asyncio",
     "httpx",
     "ruff>=0.17.1",
+    "aiosmtpd>=1.4.6",
 ]
 
 [tool.uv]

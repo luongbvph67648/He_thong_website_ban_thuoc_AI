@@ -18,7 +18,9 @@ HTTP: `app` (ứng dụng thật, request dùng chung transaction của test), `
 import io
 import json
 import logging
+import re
 from contextlib import asynccontextmanager
+from datetime import UTC, datetime, timedelta
 
 import httpx
 import pytest
@@ -29,9 +31,11 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 from app.core.bao_mat import tao_access_token
 from app.core.config import settings
 from app.core.db import PhienRequest, get_db, get_engine, tao_engine
+from app.core.gioi_han import GioiHanCuaSoTruot, lay_bo_gioi_han_otp
 from app.core.log import BoLocRequestId, JsonFormatter
 from app.main import create_app
 from app.seed.co_ban import seed_co_ban
+from app.tich_hop.tin_nhan import lay_kenh_tin_nhan
 from scripts.so_sanh_schema import cau_truc_tu_model, chay_alembic, db_tam
 from tests.factories import tao_khach, tao_nhan_vien
 from tests.ha_tang import don_dep_sau_commit, tao_lai_database
@@ -137,11 +141,71 @@ async def engine_co_bang(engine_tam):
     return engine_tam
 
 
+# --- Tin nhắn, giới hạn tần suất, thời gian -------------------------------------------------------------------------
+
+
+class KenhGhiNho:
+    """Kênh tin nhắn của test: ghi lại mọi tin thay vì gửi. Đặt `loi` để mô phỏng nhà cung cấp lỗi."""
+
+    def __init__(self) -> None:
+        self.sms: list[tuple[str, str]] = []
+        self.email: list[tuple[str, str, str]] = []
+        self.loi: Exception | None = None
+
+    async def gui_sms(self, so_dien_thoai: str, noi_dung: str) -> None:
+        if self.loi:
+            raise self.loi
+        self.sms.append((so_dien_thoai, noi_dung))
+
+    async def gui_email(self, den: str, tieu_de: str, noi_dung_html: str) -> None:
+        if self.loi:
+            raise self.loi
+        self.email.append((den, tieu_de, noi_dung_html))
+
+    def ma_otp_cuoi(self) -> str:
+        """Mã 6 số trong tin SMS gần nhất."""
+        khop = re.search(r"\b(\d{6})\b", self.sms[-1][1])
+        assert khop, f"SMS không có mã OTP: {self.sms[-1][1]!r}"
+        return khop.group(1)
+
+
+@pytest.fixture
+def kenh_tin_nhan() -> KenhGhiNho:
+    return KenhGhiNho()
+
+
+class MocThoiGian:
+    """Đồng hồ giả cho service dùng `bay_gio_utc` (đã vá): `tien(phut=...)` nhảy tới."""
+
+    def __init__(self, bat_dau: datetime) -> None:
+        self.bay_gio = bat_dau
+
+    def __call__(self) -> datetime:
+        return self.bay_gio
+
+    def tien(self, **khoang) -> None:
+        self.bay_gio += timedelta(**khoang)
+
+
+@pytest.fixture
+def thoi_gian(monkeypatch) -> MocThoiGian:
+    """Vá `bay_gio_utc` ở các module tài khoản; trả về đồng hồ để test chủ động tua thời gian."""
+    moc = MocThoiGian(datetime.now(UTC))
+    for module in ("app.modules.tai_khoan.otp", "app.modules.tai_khoan.dang_ky"):
+        monkeypatch.setattr(f"{module}.bay_gio_utc", moc, raising=False)
+    return moc
+
+
+@pytest.fixture
+def gioi_han_ip() -> GioiHanCuaSoTruot:
+    return GioiHanCuaSoTruot()
+
+
 # --- HTTP -----------------------------------------------------------------------------------------------------------
 
 
 @pytest.fixture
-def app(engine_test, ket_noi):
+def app(engine_test, ket_noi, kenh_tin_nhan, gioi_han_ip):
     """Ứng dụng thật. Session của mỗi request chạy trên cùng transaction ngoài của test, nên thấy dữ liệu factory đã
     `flush()` và mọi thay đổi bị rollback cuối test. Vẫn giữ nguyên ngữ nghĩa của `get_db`: request thành công thì
     "commit" (giải phóng savepoint), request lỗi thì hoàn tác phần của request đó."""
@@ -154,6 +218,8 @@ def app(engine_test, ket_noi):
     ung_dung = create_app()
     ung_dung.dependency_overrides[get_db] = get_db_test
     ung_dung.dependency_overrides[get_engine] = lambda: engine_test
+    ung_dung.dependency_overrides[lay_kenh_tin_nhan] = lambda: kenh_tin_nhan
+    ung_dung.dependency_overrides[lay_bo_gioi_han_otp] = lambda: gioi_han_ip
     return ung_dung
 
 

@@ -37,7 +37,8 @@ src/
   - Không có nút "Thêm vào giỏ".
   - Thay bằng nút "Cần tư vấn từ dược sĩ", dẫn tới gửi đơn thuốc hoặc chat.
 - **Form**
-  - Dùng Ant Design `Form` và kiểm tra phía client giống ràng buộc backend.
+  - Dùng Ant Design `Form` và kiểm tra phía client giống ràng buộc backend (`lib/dienThoai.ts`, `lib/matKhau.ts` có test cùng bảng ca với backend).
+  - Nhiều `Form` cùng vị trí trong JSX (ví dụ các bước của form nhiều bước) PHẢI có `key` khác nhau: không có key thì React dùng lại một phiên bản và nó giữ instance `form` cũ, `setFields`/`getFieldValue` của form mới sẽ không có tác dụng.
   - Lỗi từ API: hiện `thong_diep`; gắn `chi_tiet` vào field tương ứng nếu có.
 - **Ngôn ngữ:** toàn bộ chữ trên UI viết tiếng Việt có dấu. Tên file và component dùng PascalCase không dấu (`DanhSachDonHang.tsx`).
 - **Responsive:** trang khách phải dùng được ở màn hình 360px; khu nội bộ tối thiểu 1280px.

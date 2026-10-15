@@ -4,6 +4,9 @@ Refresh token, cookie và các dependency `khach_hien_tai`/`nhan_vien_hien_tai` 
 kiểm tra chữ ký token.
 """
 
+import asyncio
+import hashlib
+import hmac
 import uuid
 from datetime import timedelta
 
@@ -30,6 +33,16 @@ def kiem_tra_mat_khau(mat_khau: str, ma_bam: str) -> bool:
         return _hasher.verify(ma_bam, mat_khau)
     except (VerificationError, InvalidHashError):
         return False
+
+
+async def bam_mat_khau_async(mat_khau: str) -> str:
+    """Như `bam_mat_khau` nhưng chạy ở luồng riêng: Argon2 tốn vài chục mili giây CPU, gọi trực tiếp trong route sẽ
+    chặn vòng lặp sự kiện và làm mọi request khác đứng chờ."""
+    return await asyncio.to_thread(bam_mat_khau, mat_khau)
+
+
+async def kiem_tra_mat_khau_async(mat_khau: str, ma_bam: str) -> bool:
+    return await asyncio.to_thread(kiem_tra_mat_khau, mat_khau, ma_bam)
 
 
 def mat_khau_du_manh(mat_khau: str) -> bool:
@@ -89,3 +102,11 @@ def giai_ma_access_token(token: str, aud: str) -> dict:
         audience=aud,
         options={"require": ["exp", "iat", "sub", "aud", "jti"]},
     )
+
+
+def khoa_hmac(muc_dich: str) -> bytes:
+    """Khóa con 32 byte cho từng mục đích HMAC (hash OTP, hash refresh token...), suy ra từ `JWT_SECRET`.
+
+    Mỗi mục đích một khóa riêng nên lộ một khóa không ảnh hưởng mục đích khác và không để lộ khóa ký JWT.
+    """
+    return hmac.new(_khoa_jwt().encode(), f"khoa-con:{muc_dich}".encode(), hashlib.sha256).digest()

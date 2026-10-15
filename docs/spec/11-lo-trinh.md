@@ -172,18 +172,28 @@ _Dựng khung dự án, CSDL đúng ERD, seed, hạ tầng test. Chưa có chứ
 
 _Đăng ký/đăng nhập 2 loại tài khoản, RBAC, nhật ký, cấu hình._
 
-### [ ] T1.1 · OTP và đăng ký khách hàng
+### [x] T1.1 · OTP và đăng ký khách hàng
 - **Chức năng:** KVL09 (Đăng ký tài khoản)
 - **Phụ thuộc:** T0.6, T0.7
 - **Bảng:** `khach_hang`, `ma_otp`
 - **Tiêu chí chấp nhận:**
-  - [ ] Adapter `tin_nhan` (SMS/email) có bản giả ghi ra log và Mailpit (spec 08).
-  - [ ] `POST /api/v1/auth/otp` (mục đích `dang_ky`), lưu `ma_otp.ma_hash`, hết hạn 5 phút, tối đa 5 lần thử, giới hạn gửi theo `gioi_han_otp`.
-  - [ ] `POST /api/v1/auth/dang-ky`: SĐT bắt buộc (chuẩn hóa 0xxxxxxxxx), email tùy chọn, mật khẩu băm Argon2, lưu `dong_y_chinh_sach_luc`.
-  - [ ] Test: OTP sai/hết hạn/quá số lần; SĐT trùng; đăng ký thành công.
+  - [x] Adapter `tin_nhan` (SMS/email) có bản giả ghi ra log và Mailpit (spec 08).
+  - [x] `POST /api/v1/auth/otp` (mục đích `dang_ky`), lưu `ma_otp.ma_hash`, hết hạn 5 phút, tối đa 5 lần thử, giới hạn gửi theo `gioi_han_otp`.
+  - [x] `POST /api/v1/auth/dang-ky`: SĐT bắt buộc (chuẩn hóa 0xxxxxxxxx), email tùy chọn, mật khẩu băm Argon2, lưu `dong_y_chinh_sach_luc`.
+  - [x] Test: OTP sai/hết hạn/quá số lần; SĐT trùng; đăng ký thành công.
 - **Giao diện:**
-  - [ ] Trang đăng ký 2 bước (nhập SĐT → OTP + thông tin).
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Trang đăng ký 2 bước (nhập SĐT → OTP + thông tin).
+- **Ghi chú triển khai:**
+  - **Adapter tin nhắn** (`app/tich_hop/tin_nhan/`): giao diện `KenhTinNhan` (`gui_sms`, `gui_email`), bản giả (SMS ghi ra log với số điện thoại che dạng `091***678` và có cả mã OTP, chỉ ở chế độ giả; email gửi thật qua SMTP tới Mailpit, nếu Mailpit chưa chạy thì chỉ cảnh báo và vẫn ghi nội dung vào log để dev đọc mã), bản thật là khung báo lỗi rõ ràng vì chưa chọn nhà cung cấp (ghi QĐ khi deploy). Chọn bằng `TIN_NHAN_CHE_DO`; mẫu SMS không dấu, gọn trong một tin 160 ký tự. Test email gửi qua một máy chủ SMTP thật trong tiến trình test (`aiosmtpd`), kiểm tra tiêu đề tiếng Việt và nội dung HTML.
+  - **OTP** (`modules/tai_khoan/otp.py`): 6 chữ số từ `secrets`, lưu **HMAC-SHA256 có khóa** gắn với (mục đích, SĐT, mã) chứ không phải Argon2 (mã 6 số sống 5 phút; Argon2 chỉ làm chậm server; có khóa bí mật suy từ `JWT_SECRET` qua `khoa_hmac("otp")` nên lộ DB không cho phép dò ngoại tuyến). Hiệu lực 5 phút, tối đa 5 lần thử, chỉ mã mới nhất còn hiệu lực. Giới hạn gửi đọc từ `cau_hinh.gioi_han_otp` mỗi lần (Admin đổi là áp dụng ngay): theo SĐT đếm chính xác trong DB, theo IP bằng bộ đếm cửa sổ trượt trong bộ nhớ (`core/gioi_han.py`; **không dùng slowapi** như spec 01 ghi vì giới hạn lấy từ DB lúc chạy chứ không cố định lúc import). `429 QUA_GIOI_HAN` kèm `Retry-After`. Khóa tư vấn theo (mục đích, SĐT) tuần tự hóa các thao tác OTP cùng số.
+  - **Chống dò tài khoản (spec 06 mục 3), kiểm tra đến mức hành vi:** `POST /auth/otp` trả y hệt dù số đã đăng ký hay chưa; số đã đăng ký nhận SMS "đã có tài khoản" thay cho mã và vẫn có dòng OTP giữ chỗ với "mã" không khớp được, nên bộ đếm lần thử, hết hạn và khóa hành xử giống hệt số chưa đăng ký (test so sánh chuỗi phản hồi của hai loại số; phá thử bằng dòng "đã dùng" thì test fail). Số đã đăng ký cũng bị tính giới hạn gửi để không bị dùng làm máy gửi SMS.
+  - **Bộ đếm lần thử phải sống qua lỗi:** `raise LoiNghiepVu` làm `get_db` rollback nên lần thử sai sẽ không được ghi và có thể dò mã vô hạn. Thêm `core.loi.tra_loi(...)` (trả về phản hồi lỗi cùng định dạng thay vì ném) để route commit rồi mới trả 422. Dùng lại cho đếm đăng nhập sai ở T1.2. Phá thử bằng `raise` thì 3 test fail.
+  - **Đăng ký** (`POST /auth/dang-ky`): xác thực OTP trước (khóa dòng FOR UPDATE nên hai đăng ký đồng thời cùng một mã chỉ một cái thành công, có test hai request thật song song), rồi mới kiểm tra trùng SĐT/email (không cho dò email khi chưa có OTP đúng). OTP chỉ bị tiêu thụ khi tạo được tài khoản: lỗi trùng email thì rollback, người dùng sửa email rồi gửi lại cùng mã. Mật khẩu băm Argon2id ở luồng riêng (`bam_mat_khau_async`, vì Argon2 tốn vài chục ms CPU sẽ chặn vòng lặp sự kiện). Lưu `dong_y_chinh_sach_luc`; bắt buộc `dong_y_chinh_sach = true`. Email tùy chọn, chuẩn hóa chữ thường, trùng không phân biệt hoa thường. Phản hồi 201 chỉ có `id, ho_ten, so_dien_thoai, email`.
+  - **Chuẩn hóa SĐT** (`core/dien_thoai.py`): `+84 912 345 678`, `0912.345.678`... về `0912345678`; chỉ nhận di động (03x, 05x, 07x, 08x, 09x) và chỉ chữ số ASCII (test bắt được lỗi `\d` của Python nhận cả chữ số Ả Rập). Frontend có bản chuẩn hóa tương ứng, test cùng bảng ca.
+  - **Thông điệp validate tiếng Việt:** bổ sung ánh xạ cho lỗi quá ngắn/quá dài/sai định dạng/ngoài khoảng và bỏ tiền tố "Value error," của validator tự viết (`core/loi.py`).
+  - **Giao diện** (`/dang-ky`): 2 bước; kiểm tra phía client giống backend; hiện số lần thử còn lại, hết hạn, giới hạn tần suất ("thử lại sau N phút"), lỗi theo từng trường (email trùng hiện dưới ô email); gửi lại mã bị khóa 60 giây; bấm đăng ký hai lần chỉ gửi một request; email tự cắt khoảng trắng. **Lỗi thật test bắt được:** hai `Form` Ant Design cùng vị trí không có `key` bị React dùng lại một phiên bản nên giữ instance `form` cũ, `setFields` rơi vào instance không gắn với form nào và lỗi không hiện (nay mỗi bước một `key`). Đã chạy luồng thật trong Chromium (420px, không cuộn ngang, không cảnh báo console): nhập số, đọc OTP từ log SMS giả, nhập sai một lần (thấy "còn 4 lần thử", bộ đếm lưu trong DB), nhập đúng, tài khoản tạo với `$argon2id$`.
+  - **Phụ thuộc mới:** `aiosmtpd` (dev), `pyjwt` đã có từ T0.6. Fixture test mới: `kenh_tin_nhan` (ghi nhớ tin gửi, `ma_otp_cuoi()`), `gioi_han_ip` (bộ đếm IP riêng mỗi test), `thoi_gian` (vá `bay_gio_utc` để tua thời gian). Env: `TIN_NHAN_CHE_DO`, `SMTP_HOST`, `SMTP_PORT`, `SMTP_NGUOI_GUI`.
+  - **Chưa làm:** mục đích OTP `quen_mat_khau` (T1.2) và `don_thuoc_khach` (T5.x); chế độ `that` của kênh tin nhắn.
 
 ### [ ] T1.2 · Đăng nhập khách, phiên và quên mật khẩu
 - **Chức năng:** KVL10 (Đăng nhập, quên mật khẩu)

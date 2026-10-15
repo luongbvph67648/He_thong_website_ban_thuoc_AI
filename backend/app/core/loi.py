@@ -75,6 +75,15 @@ _LOI_VALIDATE_TIENG_VIET = {
     "float_parsing": "Phải là số",
     "bool_parsing": "Phải là true hoặc false",
     "json_invalid": "JSON không hợp lệ",
+    "string_too_short": "Quá ngắn",
+    "string_too_long": "Quá dài",
+    "string_pattern_mismatch": "Sai định dạng",
+    "literal_error": "Giá trị không hợp lệ",
+    "enum": "Giá trị không hợp lệ",
+    "greater_than_equal": "Phải lớn hơn hoặc bằng {ge}",
+    "less_than_equal": "Phải nhỏ hơn hoặc bằng {le}",
+    "greater_than": "Phải lớn hơn {gt}",
+    "less_than": "Phải nhỏ hơn {lt}",
 }
 
 
@@ -112,6 +121,17 @@ def phan_hoi_loi(
     )
 
 
+def tra_loi(ma_loi: str, thong_diep: str, chi_tiet: Any = None, headers: dict[str, str] | None = None) -> JSONResponse:
+    """Phản hồi lỗi cùng định dạng với `LoiNghiepVu` nhưng được TRẢ VỀ thay vì ném.
+
+    Dùng khi phải giữ thay đổi đã ghi dù trả lỗi (đếm lần thử OTP, đếm lần đăng nhập sai): route trả về bình thường nên
+    `get_db` commit; còn `raise LoiNghiepVu` luôn làm request bị rollback.
+    """
+    if ma_loi not in MA_LOI:
+        raise ValueError(f"Mã lỗi chưa khai báo: {ma_loi}. Thêm vào spec 06 mục 4 và MA_LOI trong core/loi.py")
+    return phan_hoi_loi(MA_LOI[ma_loi], ma_loi, thong_diep, chi_tiet, headers)
+
+
 def _truong(loi: dict[str, Any]) -> str:
     if loi["type"] == "json_invalid":
         return "body"
@@ -128,8 +148,16 @@ async def _xu_ly_loi_nghiep_vu(request: Request, loi: LoiNghiepVu) -> JSONRespon
     return phan_hoi_loi(loi.http_status, loi.ma_loi, loi.thong_diep, loi.chi_tiet, loi.headers)
 
 
+def _thong_diep_validate(loi: dict[str, Any]) -> str:
+    mau = _LOI_VALIDATE_TIENG_VIET.get(loi["type"])
+    if mau is not None:
+        return mau.format(**(loi.get("ctx") or {}))
+    # Lỗi từ validator tự viết (ValueError): Pydantic thêm tiền tố tiếng Anh, bỏ đi để giữ nguyên thông điệp tiếng Việt.
+    return loi["msg"].removeprefix("Value error, ")
+
+
 async def _xu_ly_loi_validate(request: Request, loi: RequestValidationError) -> JSONResponse:
-    chi_tiet = [{"truong": _truong(e), "loi": _LOI_VALIDATE_TIENG_VIET.get(e["type"], e["msg"])} for e in loi.errors()]
+    chi_tiet = [{"truong": _truong(e), "loi": _thong_diep_validate(e)} for e in loi.errors()]
     return phan_hoi_loi(400, "DU_LIEU_KHONG_HOP_LE", "Dữ liệu không hợp lệ", chi_tiet)
 
 

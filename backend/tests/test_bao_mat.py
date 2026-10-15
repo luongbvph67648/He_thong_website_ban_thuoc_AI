@@ -6,8 +6,11 @@ from pydantic import SecretStr
 
 from app.core.bao_mat import (
     bam_mat_khau,
+    bam_mat_khau_async,
     giai_ma_access_token,
+    khoa_hmac,
     kiem_tra_mat_khau,
+    kiem_tra_mat_khau_async,
     mat_khau_du_manh,
     tao_access_token,
 )
@@ -134,3 +137,25 @@ def test_khoa_jwt_con_la_gia_tri_mau_cua_env_example_bi_tu_choi(monkeypatch):
     monkeypatch.setattr(settings, "JWT_SECRET", SecretStr(mau))
     with pytest.raises(RuntimeError, match="giá trị mẫu"):
         tao_access_token(1, "khach")
+
+
+def test_khoa_hmac_xac_dinh_tach_theo_muc_dich_va_phu_thuoc_khoa_goc(khoa_jwt, monkeypatch):
+    otp = khoa_hmac("otp")
+    assert otp == khoa_hmac("otp") and len(otp) == 32
+    assert khoa_hmac("khac") != otp  # mỗi mục đích một khóa con, lộ một khóa không lộ khóa gốc hay khóa khác
+    assert otp != settings.JWT_SECRET.get_secret_value().encode()
+    monkeypatch.setattr(settings, "JWT_SECRET", SecretStr("khoa-khac-" + "y" * 40))
+    assert khoa_hmac("otp") != otp
+
+
+def test_khoa_hmac_cung_tu_choi_khoa_goc_thieu_hoac_mau(monkeypatch):
+    monkeypatch.setattr(settings, "JWT_SECRET", SecretStr(""))
+    with pytest.raises(RuntimeError, match="JWT_SECRET"):
+        khoa_hmac("otp")
+
+
+async def test_bam_va_kiem_tra_mat_khau_khong_chan_vong_lap_su_kien():
+    ma_bam = await bam_mat_khau_async("Abc12345")
+    assert ma_bam.startswith("$argon2id$")
+    assert await kiem_tra_mat_khau_async("Abc12345", ma_bam) is True
+    assert await kiem_tra_mat_khau_async("sai", ma_bam) is False

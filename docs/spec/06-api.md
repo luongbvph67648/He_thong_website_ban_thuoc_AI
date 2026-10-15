@@ -47,6 +47,12 @@
   - `muc_dich`: `dang_ky`, `quen_mat_khau`, `don_thuoc_khach`.
   - Phản hồi giống nhau dù SĐT có tồn tại hay không, để chống dò tài khoản.
 
+### 3.1 Đăng ký khách (KVL09)
+- `POST /api/v1/auth/otp` `{so_dien_thoai, muc_dich: "dang_ky"}` -> 200 `{da_gui: true, het_han_giay: 300}`. Phản hồi giống hệt dù số đã đăng ký hay chưa (số đã đăng ký nhận SMS "đã có tài khoản"). `429 QUA_GIOI_HAN` kèm `Retry-After` theo `cau_hinh.gioi_han_otp` (theo SĐT và theo IP). `502 LOI_DOI_TAC` khi không gửi được tin nhắn.
+- `POST /api/v1/auth/dang-ky` `{so_dien_thoai, otp, mat_khau, ho_ten, email?, dong_y_chinh_sach: true}` -> 201 `{id, ho_ten, so_dien_thoai, email}`. `422 OTP_SAI` (kèm `chi_tiet.so_lan_con_lai`; hết lượt thử cũng là `OTP_SAI`), `422 OTP_HET_HAN`, `409 TRUNG_DU_LIEU` (`chi_tiet.truong`).
+- SĐT nhận dạng `+84 912 345 678`, `0912.345.678`... và lưu dạng `0xxxxxxxxx`; chỉ số di động Việt Nam.
+- Route cần giữ thay đổi dù trả lỗi (đếm lần thử OTP, đếm đăng nhập sai) phải TRẢ VỀ lỗi bằng `core.loi.tra_loi(...)`, không `raise` (raise làm rollback).
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

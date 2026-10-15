@@ -76,7 +76,11 @@ async def don_cua_toi(ma_don: str, kh: KhachHang = Depends(khach_hien_tai), db=D
 - **Xóa mềm:** truy vấn mặc định lọc `deleted_at IS NULL` qua helper `chua_xoa(Model)`.
 - **Tiền:** `Decimal`, làm tròn qua `core.tien.lam_tron_vnd()` (half-up). `cong()`/`tru()` cộng trừ rồi làm tròn một lần; hàm tiền từ chối `float`. Trong schema Pydantic dùng kiểu `Tien` (không âm, dưới 10^12, số đồng nguyên, xuất JSON dạng chuỗi `"125000.00"`); chênh lệch có thể âm thì dùng `TienCoDau`.
 - **Thời gian:** `core.thoi_gian.bay_gio_utc()`, `hom_nay_vn()`.
-- **Mật khẩu:** `core.bao_mat.bam_mat_khau` / `kiem_tra_mat_khau` (Argon2id; chuỗi băm hỏng trả `False`, không ném lỗi), `mat_khau_du_manh` (≥ 8 ký tự, có chữ và số). Không tự gọi `argon2` ở nơi khác.
+- **Giữ thay đổi dù trả lỗi:** `raise LoiNghiepVu` luôn rollback. Cần lưu bộ đếm (lần thử OTP, lần đăng nhập sai, khóa tạm) thì route TRẢ VỀ `core.loi.tra_loi("OTP_SAI", "...", chi_tiet)` (cùng định dạng, route kết thúc bình thường nên `get_db` commit). Service trả kết quả (enum/dataclass) thay vì ném, như `otp.kiem_tra_otp`.
+- **Chống dò tài khoản:** API công khai không được cho phép phân biệt tài khoản có hay không qua phản hồi, thời điểm hay bộ đếm; xem `otp.py`. Đoạn nghiệp vụ mà hai nhánh phải giống hệt nhau cần test so sánh chuỗi phản hồi của hai nhánh.
+- **Giới hạn tần suất:** `core.gioi_han.GioiHanCuaSoTruot` (bộ nhớ, theo IP), giới hạn đọc từ `cau_hinh` mỗi lần; theo SĐT/tài khoản thì đếm trong DB. Dependency để test thay bằng bộ riêng.
+- **Tin nhắn:** gửi qua `tich_hop.tin_nhan.KenhTinNhan` (dependency `lay_kenh_tin_nhan`), không tự gọi SMTP/SMS. SĐT chuẩn hóa bằng `core.dien_thoai.chuan_hoa_sdt`, ghi log phải `che_sdt`.
+- **Mật khẩu:** `core.bao_mat.bam_mat_khau` / `kiem_tra_mat_khau` (Argon2id; chuỗi băm hỏng trả `False`, không ném lỗi); trong route dùng bản `_async` (`bam_mat_khau_async`, `kiem_tra_mat_khau_async`) vì Argon2 tốn CPU và sẽ chặn vòng lặp sự kiện, `mat_khau_du_manh` (≥ 8 ký tự, có chữ và số). Không tự gọi `argon2` ở nơi khác.
 - **Mã chứng từ:** `core.ma_chung_tu.ma_nhan_vien(db)`, `ma_phieu(db, "phieu_nhap")`, `ma_lenh_thu_hoi(db)` lấy số từ sequence (spec 04 mục 7); sequence không rollback nên mã có thể nhảy số, không bao giờ trùng. Mã của khách (`DH...`) dùng ký tự ngẫu nhiên, làm ở T4.x.
 - **Slug:** `core.slug.tao_slug("Thuốc ho Bổ phế")` → `thuoc-ho-bo-phe`.
 - **Phân trang:** route nhận `tp: PhanTrang`, truy vấn đã có `ORDER BY` thì `dong, tong = await lay_trang(db, stmt, tp)`, trả `tao_trang(dong, tong, tp)` với `response_model=Trang[Schema]`.
