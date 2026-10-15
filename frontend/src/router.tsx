@@ -14,6 +14,7 @@ import TrangChu from './khu/cua-hang/TrangChu'
 import NhanVienLayout, { TrangDauNhanVien } from './khu/nhan-vien/NhanVienLayout'
 import { MUC_NHAN_VIEN } from './khu/nhan-vien/menu'
 import TrangDangNhapNoiBo from './khu/nhan-vien/TrangDangNhap'
+import TrangTaiKhoanNoiBo from './khu/nhan-vien/TrangTaiKhoan'
 import QuanTriLayout from './khu/quan-tri/QuanTriLayout'
 import { MUC_QUAN_TRI } from './khu/quan-tri/menu'
 
@@ -42,6 +43,11 @@ export function taoRoutes(): RouteObject[] {
     {
       path: '/nhan-vien/dang-nhap',
       element: <TrangDangNhapNoiBo />,
+    },
+    // Ngoài layout nhân viên/quản trị: dùng chung cho cả ba vai trò và là nơi tài khoản bị bắt đổi mật khẩu bị chuyển tới.
+    {
+      path: '/nhan-vien/tai-khoan',
+      element: <TrangTaiKhoanNoiBo />,
     },
     {
       path: '/nhan-vien',

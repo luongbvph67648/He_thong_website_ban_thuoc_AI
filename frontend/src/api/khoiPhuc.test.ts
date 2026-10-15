@@ -89,13 +89,61 @@ describe('khoiPhucPhien', () => {
     expect(lanSau.store.getState().loai).toBeNull()
   })
 
-  it('gợi ý phiên nội bộ chưa được khôi phục ở T1.2: xóa gợi ý, không gọi API', async () => {
-    localStorage.setItem('phien_goi_y', 'noi_bo')
-    const { khoiPhucPhien, store } = await taiLaiModule()
-    await khoiPhucPhien()
-    expect(lamMoiPhien).not.toHaveBeenCalled()
-    expect(localStorage.getItem('phien_goi_y')).toBeNull()
-    expect(store.getState().daKhoiPhuc).toBe(true)
+  describe('phiên nhân viên', () => {
+    const NHAN_VIEN = {
+      id: 3,
+      ma_nhan_vien: 'NV0003',
+      ho_ten: 'Trần Văn Kho',
+      email: 'kho@example.com',
+      so_dien_thoai: null,
+      vai_tro: { ma: 'WAREHOUSE', ten: 'Nhân viên kho' },
+      phai_doi_mat_khau: false,
+      quyen: { 'profile.self': 'day_du', 'order.view': 'chi_xem' },
+    }
+
+    it('làm mới bằng endpoint nội bộ, lấy /noi-bo/toi rồi đăng nhập kèm quyền và vai trò', async () => {
+      localStorage.setItem('phien_goi_y', 'noi_bo')
+      lamMoiPhien.mockResolvedValue({ token: 'tok-nv', hetPhien: false })
+      GET.mockResolvedValue({ data: NHAN_VIEN })
+      const { khoiPhucPhien, store } = await taiLaiModule()
+      await khoiPhucPhien()
+      expect(lamMoiPhien).toHaveBeenCalledWith('noi_bo')
+      expect(GET).toHaveBeenCalledWith('/api/v1/noi-bo/toi', { headers: { Authorization: 'Bearer tok-nv' } })
+      const p = store.getState()
+      expect([p.loai, p.accessToken, p.phaiDoiMatKhau]).toEqual(['noi_bo', 'tok-nv', false])
+      expect(p.hoSo).toMatchObject({ id: 3, hoTen: 'Trần Văn Kho', vaiTro: 'WAREHOUSE', email: 'kho@example.com' })
+      expect(p.quyen).toEqual({ 'profile.self': 'day_du', 'order.view': 'chi_xem' })
+    })
+
+    it('khôi phục cả cờ bắt đổi mật khẩu để tải lại trang không thoát được việc đổi mật khẩu', async () => {
+      localStorage.setItem('phien_goi_y', 'noi_bo')
+      lamMoiPhien.mockResolvedValue({ token: 'tok-nv', hetPhien: false })
+      GET.mockResolvedValue({ data: { ...NHAN_VIEN, phai_doi_mat_khau: true } })
+      const { khoiPhucPhien, store } = await taiLaiModule()
+      await khoiPhucPhien()
+      expect(store.getState().phaiDoiMatKhau).toBe(true)
+    })
+
+    it('phiên đã hết thì xóa gợi ý; lỗi mạng thì giữ gợi ý', async () => {
+      localStorage.setItem('phien_goi_y', 'noi_bo')
+      lamMoiPhien.mockResolvedValue({ token: null, hetPhien: true })
+      await (await taiLaiModule()).khoiPhucPhien()
+      expect(localStorage.getItem('phien_goi_y')).toBeNull()
+
+      localStorage.setItem('phien_goi_y', 'noi_bo')
+      lamMoiPhien.mockResolvedValue({ token: null, hetPhien: false })
+      await (await taiLaiModule()).khoiPhucPhien()
+      expect(localStorage.getItem('phien_goi_y')).toBe('noi_bo')
+    })
+
+    it('tài khoản bị khóa khi lấy hồ sơ thì không đăng nhập nửa vời', async () => {
+      localStorage.setItem('phien_goi_y', 'noi_bo')
+      lamMoiPhien.mockResolvedValue({ token: 'tok-nv', hetPhien: false })
+      GET.mockResolvedValue({ error: { ma_loi: 'TAI_KHOAN_BI_KHOA', thong_diep: 'khóa', chi_tiet: null } })
+      const { khoiPhucPhien, store } = await taiLaiModule()
+      await khoiPhucPhien()
+      expect([store.getState().loai, store.getState().daKhoiPhuc]).toEqual([null, true])
+    })
   })
 
   it('giá trị lạ trong gợi ý bị bỏ qua', async () => {

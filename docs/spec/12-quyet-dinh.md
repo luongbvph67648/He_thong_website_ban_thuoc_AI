@@ -91,3 +91,16 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
   - `?tiep=` sau khi đăng nhập chỉ nhận đường dẫn nội bộ (một dấu `/` đầu, không `//`, `\`, ký tự điều khiển, không về chính trang đăng nhập/đăng ký/quên mật khẩu) để tránh open redirect.
   - Endpoint đặt lại mật khẩu đặt tên `POST /auth/dat-lai-mat-khau` (QĐ-08 ghi `quen-mat-khau` cho danh sách không tự làm mới; frontend dùng `dat-lai-mat-khau`).
 - **Hệ quả:** spec 01 (bảng biến môi trường: `COOKIE_SECURE`), spec 06 mục 3.2; `backend/CLAUDE.md`, `frontend/CLAUDE.md`.
+
+## QĐ-12: Xác thực nhân viên, RBAC và nhật ký (2026-10-15, task T1.3)
+- **Quyết định:**
+  - **Ba route xác thực công khai nằm trong `/api/v1/noi-bo/auth/`** (`dang-nhap`, `lam-moi`, `dang-xuat`): ngoại lệ duy nhất của quy tắc "route `/noi-bo` phải có `yeu_cau_quyen`", khai báo tường minh ở `CONG_KHAI` của registry. `doi-mat-khau` thì cần `profile.self`.
+  - **Đổi mật khẩu thu hồi mọi phiên cũ rồi cấp phiên mới cho thiết bị đang đổi** (không đẩy người đang đổi ra màn đăng nhập); mọi thiết bị khác phải đăng nhập lại. Đoán mật khẩu cũ qua chức năng này được đếm như đăng nhập sai và khi khóa thì thu hồi mọi phiên, nên kẻ cầm access token đánh cắp không dò được mật khẩu.
+  - **Khóa tạm do đoán mật khẩu lúc đăng nhập KHÔNG thu hồi phiên đang chạy của chủ tài khoản** (nếu thu hồi, kẻ chỉ cần gửi sai 5 lần là đăng xuất được người khác). Khóa do Admin (AD01, T1.4) thì phải thu hồi mọi phiên.
+  - **Access token đã cấp còn dùng được tới khi hết hạn (tối đa `JWT_ACCESS_PHUT` = 15 phút)** sau khi đổi mật khẩu hoặc thu hồi phiên, vì token không tra DB phiên. Chấp nhận để giữ token ngắn hạn không trạng thái; riêng trạng thái tài khoản (khóa, xóa mềm), vai trò và quyền được đọc từ DB mỗi request nên có hiệu lực ngay.
+  - **Mức quyền `chi_xem` chỉ cho thao tác đọc:** thao tác ghi luôn đòi `day_du` ngay trong `yeu_cau_quyen`, không phụ thuộc người viết route khai báo đúng `muc`. `gioi_han` lạ coi là chỉ xem.
+  - **`ke_ca_chua_doi_mat_khau`**: chỉ `GET /noi-bo/toi` và `POST /noi-bo/auth/doi-mat-khau` được miễn việc bắt đổi mật khẩu; test registry giữ danh sách này cố định.
+  - **Nhật ký** (`core/nhat_ky.py`): luôn che giá trị của khóa chứa `mat_khau`, `password`, `otp`, `token`, `secret`, `hash`, `benh_nen`, `di_ung`, `suc_khoe`, `khoa_ma_hoa` (kể cả khi người gọi quên), tiền ghi dạng chuỗi (không qua float), số điện thoại chỉ ghi dạng che. Ghi: đăng nhập thành công, khóa tạm (đúng một lần lúc bị khóa), đổi mật khẩu, sửa hồ sơ. Đăng nhập thất bại thường không ghi để kẻ dò không làm phình bảng.
+  - **Giới hạn:** bảng `nhat_ky_he_thong` "chỉ INSERT" hiện chỉ được bảo đảm bằng việc ứng dụng không có route sửa/xóa, chưa có trigger chặn UPDATE/DELETE ở DB (cần migration mới qua `/doi-schema`, ghi ở "Việc phát sinh").
+  - Cookie refresh nhân viên tên `refresh_token_noi_bo`, `Path=/api/v1/noi-bo/auth`; đăng nhập nội bộ dùng email; nhân viên không có luồng "quên mật khẩu" tự phục vụ (Admin đặt lại ở T1.4).
+- **Hệ quả:** spec 03 mục 8, spec 06 mục 3.3, spec 09 mục 1, spec 10 mục 3; `backend/CLAUDE.md`, `frontend/CLAUDE.md`.

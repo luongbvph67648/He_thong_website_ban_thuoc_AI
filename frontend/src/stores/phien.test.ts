@@ -50,6 +50,25 @@ describe('usePhien', () => {
     expect({ ...localStorage }).toEqual({ phien_goi_y: 'noi_bo' })
   })
 
+  it('đăng nhập mặc định không bị bắt đổi mật khẩu; truyền cờ thì lưu và đăng xuất xóa', () => {
+    usePhien.getState().dangNhap({ accessToken: 't', loai: 'noi_bo', hoSo, quyen: {} })
+    expect(usePhien.getState().phaiDoiMatKhau).toBe(false)
+    usePhien.getState().dangNhap({ accessToken: 't', loai: 'noi_bo', hoSo, quyen: {}, phaiDoiMatKhau: true })
+    expect(usePhien.getState().phaiDoiMatKhau).toBe(true)
+    usePhien.getState().dangXuat()
+    expect(usePhien.getState().phaiDoiMatKhau).toBe(false)
+  })
+
+  it('cập nhật hồ sơ chỉ đổi trường được truyền, giữ token và quyền; chưa đăng nhập thì không làm gì', () => {
+    usePhien.getState().capNhatHoSo({ hoTen: 'X' })
+    expect(usePhien.getState().hoSo).toBeNull()
+    usePhien.getState().dangNhap({ accessToken: 't1', loai: 'noi_bo', hoSo, quyen: { 'order.view': 'day_du' } })
+    usePhien.getState().capNhatHoSo({ hoTen: 'Tên mới' })
+    const p = usePhien.getState()
+    expect(p.hoSo).toEqual({ ...hoSo, hoTen: 'Tên mới' })
+    expect([p.accessToken, p.quyen]).toEqual(['t1', { 'order.view': 'day_du' }])
+  })
+
   it('đăng xuất xóa gợi ý phiên', () => {
     usePhien.getState().dangNhap({ accessToken: 't', loai: 'khach', hoSo, quyen: {} })
     expect(localStorage.getItem('phien_goi_y')).toBe('khach')

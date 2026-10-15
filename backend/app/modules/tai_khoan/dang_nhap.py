@@ -1,4 +1,4 @@
-"""Đăng nhập khách (KVL10): kiểm tra mật khẩu, khóa tạm khi sai nhiều lần.
+"""Đăng nhập (KVL10 khách, NV01 nhân viên): kiểm tra mật khẩu, khóa tạm khi sai nhiều lần.
 
 Bộ đếm sai và `khoa_den` phải được lưu dù request trả lỗi, nên service trả kết quả (enum) và route TRẢ VỀ lỗi
 bằng `core.loi.tra_loi` (xem `core/loi.py`). Chống dò tài khoản: số/email không tồn tại và mật khẩu sai cho cùng
@@ -19,6 +19,7 @@ from app.core.cau_hinh import doc_cau_hinh
 from app.core.dien_thoai import chuan_hoa_sdt
 from app.core.thoi_gian import bay_gio_utc
 from app.models.enums import TrangThaiTaiKhoan
+from app.models.he_thong import NhanVien
 from app.models.khach_hang import KhachHang
 
 SO_LAN_SAI_MAC_DINH = 5
@@ -35,8 +36,10 @@ class KetQuaDangNhap(StrEnum):
 @dataclass(frozen=True)
 class KetQuaKiemTraDangNhap:
     ket_qua: KetQuaDangNhap
-    khach: KhachHang | None = None
+    tai_khoan: KhachHang | NhanVien | None = None
     thu_lai_sau_giay: int | None = None
+    vua_bi_khoa: bool = False
+    """`True` đúng lần sai làm tài khoản vừa bị khóa tạm (để ghi nhật ký một lần, không ghi mỗi lần thử khi khóa)."""
 
 
 @cache
@@ -45,8 +48,8 @@ def _ma_bam_gia() -> str:
     return bam_mat_khau(secrets.token_urlsafe(16))
 
 
-def _tim_theo(dinh_danh: str):
-    """Điều kiện tìm tài khoản: có `@` là email, ngược lại là số điện thoại; không hợp lệ thì None."""
+def _tim_khach_theo(dinh_danh: str):
+    """Điều kiện tìm khách: có `@` là email, ngược lại là số điện thoại; không hợp lệ thì None."""
     dinh_danh = dinh_danh.strip()
     if "@" in dinh_danh:
         return func.lower(KhachHang.email) == dinh_danh.lower()
@@ -56,37 +59,59 @@ def _tim_theo(dinh_danh: str):
         return None
 
 
-async def kiem_tra_dang_nhap(db: AsyncSession, *, ten_dang_nhap: str, mat_khau: str) -> KetQuaKiemTraDangNhap:
-    """Kiểm tra thông tin đăng nhập và cập nhật bộ đếm sai/khóa. Không tạo phiên (route làm khi `OK`)."""
-    dieu_kien = _tim_theo(ten_dang_nhap)
-    khach = None
-    if dieu_kien is not None:
-        khach = (
-            await db.execute(select(KhachHang).where(dieu_kien, KhachHang.deleted_at.is_(None)).with_for_update())
-        ).scalar_one_or_none()
-    if khach is None:
+async def kiem_tra_mat_khau_va_khoa(
+    db: AsyncSession, tai_khoan: KhachHang | NhanVien, mat_khau: str
+) -> KetQuaKiemTraDangNhap:
+    """Kiểm tra mật khẩu của một tài khoản đã tìm thấy, cập nhật bộ đếm sai và khóa tạm.
+
+    Dùng chung cho đăng nhập và đổi mật khẩu (mật khẩu cũ sai cũng bị đếm, để phiên bị đánh cắp không dò được mật khẩu).
+    Tài khoản phải được khóa dòng (`FOR UPDATE`) bởi người gọi.
+    """
+    bay_gio = bay_gio_utc()
+    if tai_khoan.khoa_den and tai_khoan.khoa_den > bay_gio:
+        return KetQuaKiemTraDangNhap(
+            KetQuaDangNhap.KHOA_TAM, thu_lai_sau_giay=_giay_con_lai(tai_khoan.khoa_den, bay_gio)
+        )
+
+    if not await kiem_tra_mat_khau_async(mat_khau, tai_khoan.mat_khau_hash):
+        toi_da = int(await doc_cau_hinh(db, "so_lan_dang_nhap_sai_toi_da", SO_LAN_SAI_MAC_DINH))
+        tai_khoan.so_lan_dang_nhap_sai += 1
+        if tai_khoan.so_lan_dang_nhap_sai >= toi_da:
+            phut = int(await doc_cau_hinh(db, "thoi_gian_khoa_dang_nhap_phut", THOI_GIAN_KHOA_PHUT_MAC_DINH))
+            tai_khoan.khoa_den = bay_gio + timedelta(minutes=phut)
+            tai_khoan.so_lan_dang_nhap_sai = 0
+            return KetQuaKiemTraDangNhap(
+                KetQuaDangNhap.KHOA_TAM, tai_khoan=tai_khoan, thu_lai_sau_giay=phut * 60, vua_bi_khoa=True
+            )
+        return KetQuaKiemTraDangNhap(KetQuaDangNhap.SAI_THONG_TIN, tai_khoan=tai_khoan)
+
+    if tai_khoan.trang_thai != TrangThaiTaiKhoan.hoat_dong:
+        return KetQuaKiemTraDangNhap(KetQuaDangNhap.TAI_KHOAN_BI_KHOA, tai_khoan=tai_khoan)
+    tai_khoan.so_lan_dang_nhap_sai = 0
+    tai_khoan.khoa_den = None
+    return KetQuaKiemTraDangNhap(KetQuaDangNhap.OK, tai_khoan)
+
+
+async def _tim_va_kiem_tra(db: AsyncSession, truy_van, mat_khau: str) -> KetQuaKiemTraDangNhap:
+    tai_khoan = None if truy_van is None else (await db.execute(truy_van.with_for_update())).scalar_one_or_none()
+    if tai_khoan is None:
         await kiem_tra_mat_khau_async(mat_khau, _ma_bam_gia())  # cân bằng thời gian với đường có tài khoản
         return KetQuaKiemTraDangNhap(KetQuaDangNhap.SAI_THONG_TIN)
+    return await kiem_tra_mat_khau_va_khoa(db, tai_khoan, mat_khau)
 
-    bay_gio = bay_gio_utc()
-    if khach.khoa_den and khach.khoa_den > bay_gio:
-        return KetQuaKiemTraDangNhap(KetQuaDangNhap.KHOA_TAM, thu_lai_sau_giay=_giay_con_lai(khach.khoa_den, bay_gio))
 
-    if not await kiem_tra_mat_khau_async(mat_khau, khach.mat_khau_hash):
-        toi_da = int(await doc_cau_hinh(db, "so_lan_dang_nhap_sai_toi_da", SO_LAN_SAI_MAC_DINH))
-        khach.so_lan_dang_nhap_sai += 1
-        if khach.so_lan_dang_nhap_sai >= toi_da:
-            phut = int(await doc_cau_hinh(db, "thoi_gian_khoa_dang_nhap_phut", THOI_GIAN_KHOA_PHUT_MAC_DINH))
-            khach.khoa_den = bay_gio + timedelta(minutes=phut)
-            khach.so_lan_dang_nhap_sai = 0
-            return KetQuaKiemTraDangNhap(KetQuaDangNhap.KHOA_TAM, thu_lai_sau_giay=phut * 60)
-        return KetQuaKiemTraDangNhap(KetQuaDangNhap.SAI_THONG_TIN)
+async def kiem_tra_dang_nhap(db: AsyncSession, *, ten_dang_nhap: str, mat_khau: str) -> KetQuaKiemTraDangNhap:
+    """Kiểm tra đăng nhập của khách (số điện thoại hoặc email). Không tạo phiên (route làm khi `OK`)."""
+    dieu_kien = _tim_khach_theo(ten_dang_nhap)
+    truy_van = None if dieu_kien is None else select(KhachHang).where(dieu_kien, KhachHang.deleted_at.is_(None))
+    return await _tim_va_kiem_tra(db, truy_van, mat_khau)
 
-    if khach.trang_thai != TrangThaiTaiKhoan.hoat_dong:
-        return KetQuaKiemTraDangNhap(KetQuaDangNhap.TAI_KHOAN_BI_KHOA)
-    khach.so_lan_dang_nhap_sai = 0
-    khach.khoa_den = None
-    return KetQuaKiemTraDangNhap(KetQuaDangNhap.OK, khach)
+
+async def kiem_tra_dang_nhap_nhan_vien(db: AsyncSession, *, email: str, mat_khau: str) -> KetQuaKiemTraDangNhap:
+    """Kiểm tra đăng nhập của nhân viên bằng email (không phân biệt hoa thường). Không tạo phiên."""
+    email = email.strip().lower()
+    truy_van = select(NhanVien).where(func.lower(NhanVien.email) == email, NhanVien.deleted_at.is_(None))
+    return await _tim_va_kiem_tra(db, truy_van, mat_khau)
 
 
 def _giay_con_lai(den, bay_gio) -> int:

@@ -152,10 +152,189 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/noi-bo/auth/dang-nhap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Đăng nhập nhân viên (NV01)
+         * @description Đăng nhập bằng email.
+         *
+         *     Tài khoản còn `phai_doi_mat_khau` vẫn đăng nhập được nhưng chỉ dùng được `/noi-bo/toi` và đổi mật khẩu.
+         */
+        post: operations["dang_nhap_api_v1_noi_bo_auth_dang_nhap_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/auth/lam-moi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Làm mới access token nhân viên (NV01)
+         * @description Xoay vòng refresh token. Dùng lại token đã thu hồi thì thu hồi toàn bộ phiên của nhân viên đó.
+         */
+        post: operations["lam_moi_api_v1_noi_bo_auth_lam_moi_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/auth/dang-xuat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Đăng xuất nhân viên (NV01)
+         * @description Thu hồi phiên hiện tại và xóa cookie. Gọi nhiều lần, hoặc không có cookie, vẫn trả 204.
+         */
+        post: operations["dang_xuat_api_v1_noi_bo_auth_dang_xuat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/auth/doi-mat-khau": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Đổi mật khẩu của chính mình (NV01)
+         * @description Đổi mật khẩu: mọi phiên cũ bị thu hồi, thiết bị này nhận phiên mới. Dùng được cả khi đang bị bắt đổi mật khẩu.
+         */
+        post: operations["doi_mat_khau_api_v1_noi_bo_auth_doi_mat_khau_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/toi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Hồ sơ và quyền của tôi (NV02) */
+        get: operations["ho_so_cua_toi_api_v1_noi_bo_toi_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Cập nhật hồ sơ cá nhân (NV02) */
+        patch: operations["cap_nhat_ho_so_api_v1_noi_bo_toi_patch"];
+        trace?: never;
+    };
+    "/api/v1/noi-bo/thong-bao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Thông báo của tôi (NV02) */
+        get: operations["danh_sach_api_v1_noi_bo_thong_bao_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/thong-bao/so-chua-doc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Số thông báo chưa đọc (chuông thông báo) */
+        get: operations["so_chua_doc_api_v1_noi_bo_thong_bao_so_chua_doc_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/thong-bao/da-doc-tat-ca": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Đánh dấu tất cả đã đọc */
+        post: operations["da_doc_tat_ca_api_v1_noi_bo_thong_bao_da_doc_tat_ca_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/thong-bao/{thong_bao_id}/da-doc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Đánh dấu một thông báo đã đọc */
+        post: operations["da_doc_api_v1_noi_bo_thong_bao__thong_bao_id__da_doc_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * CapNhatHoSoYeuCau
+         * @description Chỉ gửi trường cần đổi. `so_dien_thoai = null` (hoặc rỗng) là xóa số. Email do Admin quản lý (AD01): gửi lên
+         *     thì bị từ chối (400) thay vì lặng lẽ bỏ qua.
+         */
+        CapNhatHoSoYeuCau: {
+            /** Ho Ten */
+            ho_ten?: string | null;
+            /** So Dien Thoai */
+            so_dien_thoai?: string | null;
+        };
         /**
          * CapTokenPhanHoi
          * @description Refresh token KHÔNG nằm trong thân phản hồi: nó chỉ đi trong cookie httpOnly.
@@ -172,6 +351,11 @@ export interface components {
             /** Het Han Giay */
             het_han_giay: number;
         };
+        /** DaDocTatCa */
+        DaDocTatCa: {
+            /** Da Cap Nhat */
+            da_cap_nhat: number;
+        };
         /** DangKyYeuCau */
         DangKyYeuCau: {
             /** So Dien Thoai */
@@ -186,6 +370,13 @@ export interface components {
             email?: string | null;
             /** Dong Y Chinh Sach */
             dong_y_chinh_sach: boolean;
+        };
+        /** DangNhapNhanVienYeuCau */
+        DangNhapNhanVienYeuCau: {
+            /** Email */
+            email: string;
+            /** Mat Khau */
+            mat_khau: string;
         };
         /** DangNhapPhanHoi */
         DangNhapPhanHoi: {
@@ -225,6 +416,13 @@ export interface components {
             /** Mat Khau Moi */
             mat_khau_moi: string;
         };
+        /** DoiMatKhauYeuCau */
+        DoiMatKhauYeuCau: {
+            /** Mat Khau Cu */
+            mat_khau_cu: string;
+            /** Mat Khau Moi */
+            mat_khau_moi: string;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -243,6 +441,29 @@ export interface components {
             so_dien_thoai: string;
             /** Email */
             email: string | null;
+        };
+        /**
+         * NhanVienToi
+         * @description Hồ sơ của chính nhân viên đang đăng nhập, kèm quyền để giao diện ẩn/hiện menu (lớp phụ, backend vẫn kiểm tra).
+         */
+        NhanVienToi: {
+            /** Id */
+            id: number;
+            /** Ma Nhan Vien */
+            ma_nhan_vien: string;
+            /** Ho Ten */
+            ho_ten: string;
+            /** Email */
+            email: string;
+            /** So Dien Thoai */
+            so_dien_thoai: string | null;
+            vai_tro: components["schemas"]["VaiTroDoc"];
+            /** Phai Doi Mat Khau */
+            phai_doi_mat_khau: boolean;
+            /** Quyen */
+            quyen: {
+                [key: string]: "day_du" | "chi_xem";
+            };
         };
         /** OtpPhanHoi */
         OtpPhanHoi: {
@@ -267,6 +488,28 @@ export interface components {
              */
             kenh: "sms" | "email";
         };
+        /**
+         * PhienNhanVienPhanHoi
+         * @description Phản hồi đăng nhập và đổi mật khẩu: token mới kèm hồ sơ để giao diện khỏi gọi thêm `/noi-bo/toi`.
+         */
+        PhienNhanVienPhanHoi: {
+            /** Access Token */
+            access_token: string;
+            /**
+             * Token Type
+             * @default bearer
+             * @constant
+             */
+            token_type: "bearer";
+            /** Het Han Giay */
+            het_han_giay: number;
+            nhan_vien: components["schemas"]["NhanVienToi"];
+        };
+        /** SoChuaDoc */
+        SoChuaDoc: {
+            /** So Chua Doc */
+            so_chua_doc: number;
+        };
         /** SucKhoe */
         SucKhoe: {
             /**
@@ -279,6 +522,44 @@ export interface components {
              * @enum {string}
              */
             db: "ok" | "loi";
+        };
+        /** ThongBaoDoc */
+        ThongBaoDoc: {
+            /** Id */
+            id: number;
+            /** Loai */
+            loai: string;
+            /** Tieu De */
+            tieu_de: string;
+            /** Noi Dung */
+            noi_dung: string | null;
+            /** Lien Ket */
+            lien_ket: string | null;
+            /** Da Doc */
+            da_doc: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** Trang[ThongBaoDoc] */
+        Trang_ThongBaoDoc_: {
+            /** Du Lieu */
+            du_lieu: components["schemas"]["ThongBaoDoc"][];
+            /** Tong */
+            tong: number;
+            /** Trang */
+            trang: number;
+            /** Kich Thuoc */
+            kich_thuoc: number;
+        };
+        /** VaiTroDoc */
+        VaiTroDoc: {
+            /** Ma */
+            ma: string;
+            /** Ten */
+            ten: string;
         };
         /** ValidationError */
         ValidationError: {
@@ -539,6 +820,292 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KhachHangDoc"];
+                };
+            };
+        };
+    };
+    dang_nhap_api_v1_noi_bo_auth_dang_nhap_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DangNhapNhanVienYeuCau"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhienNhanVienPhanHoi"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lam_moi_api_v1_noi_bo_auth_lam_moi_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                refresh_token_noi_bo?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CapTokenPhanHoi"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dang_xuat_api_v1_noi_bo_auth_dang_xuat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: {
+                refresh_token_noi_bo?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    doi_mat_khau_api_v1_noi_bo_auth_doi_mat_khau_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DoiMatKhauYeuCau"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhienNhanVienPhanHoi"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ho_so_cua_toi_api_v1_noi_bo_toi_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NhanVienToi"];
+                };
+            };
+        };
+    };
+    cap_nhat_ho_so_api_v1_noi_bo_toi_patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CapNhatHoSoYeuCau"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NhanVienToi"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    danh_sach_api_v1_noi_bo_thong_bao_get: {
+        parameters: {
+            query?: {
+                /** @description true: đã đọc, false: chưa đọc, bỏ trống: tất cả */
+                da_doc?: boolean | null;
+                /** @description Số trang, bắt đầu từ 1 */
+                trang?: number;
+                /** @description Số dòng mỗi trang */
+                kich_thuoc?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Trang_ThongBaoDoc_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    so_chua_doc_api_v1_noi_bo_thong_bao_so_chua_doc_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SoChuaDoc"];
+                };
+            };
+        };
+    };
+    da_doc_tat_ca_api_v1_noi_bo_thong_bao_da_doc_tat_ca_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DaDocTatCa"];
+                };
+            };
+        };
+    };
+    da_doc_api_v1_noi_bo_thong_bao__thong_bao_id__da_doc_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                thong_bao_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThongBaoDoc"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

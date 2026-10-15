@@ -66,6 +66,22 @@
 - `GET /api/v1/toi` -> 200 `{id, ho_ten, so_dien_thoai, email}` của khách trong token. Mọi route `/api/v1/toi/*` phải dùng `Depends(khach_hien_tai)` (có test duyệt OpenAPI: không token thì 401).
 - **Guard (`core/phan_quyen.py`):** `khach_hien_tai` đòi access token `aud = khach`, rồi đọc tài khoản từ DB ở MỖI request (tài khoản phải tồn tại, `hoat_dong`, không `khoa_den`) nên khóa tài khoản có hiệu lực ngay chứ không đợi token hết hạn. Token hết hạn là `401 TOKEN_HET_HAN`; mọi token sai khác là `401 CHUA_DANG_NHAP`; tài khoản bị khóa là `403 TAI_KHOAN_BI_KHOA`. `khach_tuy_chon` cho route công khai: không token, token vô nghĩa, token nội bộ hoặc tài khoản bị khóa thì coi là khách vãng lai; chỉ token khách hết hạn mới trả `TOKEN_HET_HAN` để client làm mới.
 
+### 3.3 Xác thực và hồ sơ nhân viên (NV01, NV02)
+- **Cookie refresh token nhân viên:** tên `refresh_token_noi_bo`, `Path=/api/v1/noi-bo/auth`, các thuộc tính còn lại như khách (mục 3.2). Tên và `Path` khác với khách nên trình duyệt đăng nhập cả hai chỉ gửi đúng cookie cho đúng nhóm endpoint; refresh token của loại này đưa vào cửa của loại kia bị từ chối mà không thu hồi gì.
+- `POST /api/v1/noi-bo/auth/dang-nhap` `{email, mat_khau}` -> 200 `{access_token, token_type, het_han_giay, nhan_vien: NhanVienToi}` (access token `aud = noi_bo`). Email không phân biệt hoa thường. Lỗi, khóa tạm (`so_lan_dang_nhap_sai_toi_da`, `thoi_gian_khoa_dang_nhap_phut`), giới hạn 20 lần/10 phút mỗi IP (bộ đếm riêng với cửa khách) và chống dò tài khoản y như `POST /auth/dang-nhap` của khách (mục 3.2). Tài khoản còn `phai_doi_mat_khau` vẫn đăng nhập được.
+- `POST /api/v1/noi-bo/auth/lam-moi`, `POST /api/v1/noi-bo/auth/dang-xuat`: như của khách. Đây cùng với `dang-nhap` là ba route công khai duy nhất dưới `/noi-bo` (chưa có phiên thì không thể có quyền).
+- `POST /api/v1/noi-bo/auth/doi-mat-khau` `{mat_khau_cu, mat_khau_moi}` (cần `profile.self`, dùng được cả khi đang bị bắt đổi mật khẩu) -> 200 như đăng nhập (phiên MỚI).
+  - Thành công: thu hồi MỌI phiên cũ của nhân viên đó (kể cả thiết bị khác), bỏ cờ `phai_doi_mat_khau`, cấp phiên mới cho thiết bị đang đổi, ghi nhật ký `doi_mat_khau`.
+  - `422 MAT_KHAU_CU_SAI` khi mật khẩu hiện tại sai; lần sai được đếm như đăng nhập sai, đủ số lần thì `403 TAI_KHOAN_BI_KHOA` (kèm `chi_tiet.thu_lai_sau_giay`), khóa tạm VÀ thu hồi mọi phiên (người đang gọi có thể cầm phiên bị đánh cắp). Đang khóa thì mật khẩu đúng cũng không đổi được.
+  - `400` khi mật khẩu mới yếu hoặc trùng mật khẩu cũ (kiểm tra trước, không bị đếm là lần sai).
+- `GET /api/v1/noi-bo/toi` -> 200 `NhanVienToi`: `{id, ma_nhan_vien, ho_ten, email, so_dien_thoai, vai_tro: {ma, ten}, phai_doi_mat_khau, quyen: {<mã quyền>: "day_du" | "chi_xem"}}`. Dùng được cả khi còn `phai_doi_mat_khau` (giao diện đọc cờ này để chuyển sang màn đổi mật khẩu). Không bao giờ có mật khẩu hay hash.
+- `PATCH /api/v1/noi-bo/toi` `{ho_ten?, so_dien_thoai?}` -> `NhanVienToi`. Chỉ đổi trường được gửi; `so_dien_thoai` null hoặc rỗng là xóa số. Trường khác (email do Admin quản lý ở AD01, vai trò, trạng thái, cờ đổi mật khẩu) bị từ chối `400`. Ghi nhật ký `sua` với giá trị cũ/mới, số điện thoại chỉ ghi dạng che (`091***678`).
+- **Thông báo của tôi** (`profile.self`; thông báo của người khác hoặc của khách là `404`):
+  - `GET /api/v1/noi-bo/thong-bao?da_doc=&trang=&kich_thuoc=` -> trang `ThongBaoDoc` `{id, loai, tieu_de, noi_dung, lien_ket, da_doc, created_at}`, mới nhất trước.
+  - `GET /api/v1/noi-bo/thong-bao/so-chua-doc` -> `{so_chua_doc}` (chuông thông báo, làm mới mỗi phút).
+  - `POST /api/v1/noi-bo/thong-bao/{id}/da-doc` (gọi lại vẫn 200), `POST /api/v1/noi-bo/thong-bao/da-doc-tat-ca` -> `{da_cap_nhat}`.
+  - `lien_ket` chỉ là đường dẫn nội bộ của ứng dụng (bắt đầu bằng một `/`); service tạo thông báo từ chối URL ngoài, và giao diện cũng không bao giờ điều hướng tới URL ngoài.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:
@@ -83,7 +99,7 @@
 | 404 | `KHONG_TIM_THAY` | Kể cả khi tài nguyên tồn tại nhưng thuộc khách khác |
 | 405 | `PHUONG_THUC_KHONG_DUOC_PHEP` | Gọi sai phương thức HTTP; giữ header `Allow` |
 | 409 | `HET_HANG`, `CHUYEN_TRANG_THAI_KHONG_HOP_LE`, `DA_CO_NGUOI_XU_LY`, `GIA_DA_THAY_DOI`, `TRUNG_DU_LIEU`, `PHAI_CON_ADMIN`, `DANH_MUC_CON_SAN_PHAM` | |
-| 422 | `THUOC_KE_DON_KHONG_VAO_GIO`, `VUOT_SO_LUONG_TOI_DA`, `MA_GIAM_GIA_KHONG_HOP_LE`, `QUA_THOI_HAN_DOI_TRA`, `HOAN_VUOT_SO_DA_TRA`, `OTP_SAI`, `OTP_HET_HAN` | Vi phạm quy tắc nghiệp vụ |
+| 422 | `THUOC_KE_DON_KHONG_VAO_GIO`, `VUOT_SO_LUONG_TOI_DA`, `MA_GIAM_GIA_KHONG_HOP_LE`, `QUA_THOI_HAN_DOI_TRA`, `HOAN_VUOT_SO_DA_TRA`, `OTP_SAI`, `OTP_HET_HAN`, `MAT_KHAU_CU_SAI` | Vi phạm quy tắc nghiệp vụ |
 | 429 | `QUA_GIOI_HAN` | Giới hạn tần suất; kèm header `Retry-After` |
 | 502 | `LOI_DOI_TAC` | Cổng thanh toán hoặc vận chuyển lỗi |
 | khác | `LOI_HTTP` | Lỗi HTTP 4xx khác do framework phát sinh (ví dụ 413); giữ nguyên status. Lỗi 5xx khác quy về `LOI_HE_THONG` |

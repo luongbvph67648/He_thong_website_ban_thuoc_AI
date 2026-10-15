@@ -1,4 +1,5 @@
 import { docGoiY, xoaGoiY } from '../lib/goiYPhien'
+import { phienTuNhanVien } from '../lib/hoSoNoiBo'
 import { usePhien } from '../stores/phien'
 import { api } from './client'
 import { lamMoiPhien } from './xacThuc'
@@ -6,20 +7,22 @@ import { lamMoiPhien } from './xacThuc'
 async function chay(): Promise<void> {
   const loai = docGoiY()
   if (loai === null) return
-  if (loai !== 'khach') {
-    // Phiên nội bộ được khôi phục cùng đăng nhập nội bộ (T1.3).
-    xoaGoiY()
-    return
-  }
-  const { token, hetPhien } = await lamMoiPhien('khach')
+  const { token, hetPhien } = await lamMoiPhien(loai)
   if (!token) {
     if (hetPhien) xoaGoiY() // lỗi mạng thì giữ gợi ý để lần tải sau thử lại
     return
   }
+  const tieuDe = { Authorization: `Bearer ${token}` }
   try {
-    const { data } = await api.GET('/api/v1/toi', { headers: { Authorization: `Bearer ${token}` } })
-    if (data) {
-      usePhien.getState().dangNhap({ accessToken: token, loai: 'khach', hoSo: { id: data.id, hoTen: data.ho_ten }, quyen: {} })
+    if (loai === 'khach') {
+      const { data } = await api.GET('/api/v1/toi', { headers: tieuDe })
+      if (data) {
+        usePhien.getState().dangNhap({ accessToken: token, loai, hoSo: { id: data.id, hoTen: data.ho_ten }, quyen: {} })
+      }
+    } else {
+      // Nhân viên: hồ sơ kèm quyền và cờ bắt đổi mật khẩu đều lấy từ `/noi-bo/toi`.
+      const { data } = await api.GET('/api/v1/noi-bo/toi', { headers: tieuDe })
+      if (data) usePhien.getState().dangNhap({ accessToken: token, loai, ...phienTuNhanVien(data) })
     }
   } catch {
     // Mất mạng giữa chừng: coi như chưa đăng nhập, lần tải sau sẽ thử lại.

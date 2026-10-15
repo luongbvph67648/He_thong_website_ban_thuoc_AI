@@ -11,6 +11,7 @@ export interface PhienGia {
   loai: LoaiPhien
   vaiTro?: string
   quyen?: QuyenCuaToi
+  phaiDoiMatKhau?: boolean
 }
 
 /** Dựng ứng dụng thật (router + provider) tại một đường dẫn, với phiên đăng nhập giả tùy chọn. */
@@ -22,6 +23,7 @@ export function renderTai(duong: string, phien?: PhienGia) {
       loai: phien.loai,
       hoSo: { id: 1, hoTen: 'Người dùng thử', vaiTro: phien.vaiTro },
       quyen: phien.quyen ?? {},
+      phaiDoiMatKhau: phien.phaiDoiMatKhau,
     })
   }
   const router = createMemoryRouter(taoRoutes(), { initialEntries: [duong] })

@@ -21,11 +21,9 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.bao_mat import TIEN_TO_GIA_TRI_MAU, bam_mat_khau, mat_khau_du_manh
-from app.core.config import BACKEND_DIR
+from app.core.danh_muc_quyen import QUYEN_YAML
 from app.core.ma_chung_tu import ma_nhan_vien
 from app.models.he_thong import CauHinh, NhanVien, Quyen, VaiTro, VaiTroQuyen
-
-QUYEN_YAML = BACKEND_DIR.parent / "docs" / "spec" / "data" / "quyen.yaml"
 
 _MUC_QUYEN = {"day_du": None, "chi_xem": "chi_xem"}  # giá trị lưu ở vai_tro_quyen.gioi_han
 _EMAIL = re.compile(r"[^@\s]+@[^@\s]+\.[^@\s]+")

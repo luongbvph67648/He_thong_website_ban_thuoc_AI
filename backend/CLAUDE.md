@@ -31,24 +31,30 @@ app/modules/<module>/
 
 ## Xác thực và phân quyền (`app/core/phan_quyen.py`)
 ```python
+NhanVienXacNhan = Annotated[NhanVien, Depends(yeu_cau_quyen("order.confirm"))]
+
+
 @router.post("/don-hang/{ma_don}/xac-nhan", response_model=DonHangDoc)
-async def xac_nhan(
-    ma_don: str,
-    nv: NhanVien = Depends(yeu_cau_quyen("order.confirm")),
-    db: AsyncSession = Depends(get_db),
-):
+async def xac_nhan(ma_don: str, nv: NhanVienXacNhan, db: Db):
     return await service.xac_nhan_don(db, ma_don, nv)
 
-@router.get("/phieu-nhap")                      # Admin chỉ xem: muc="xem"
-async def ds_phieu_nhap(nv=Depends(yeu_cau_quyen("stock.import", muc="xem")), ...): ...
 
-@router.get("/don-hang/{ma_don}")              # khách: chỉ đơn của mình, không có thì 404
-async def don_cua_toi(ma_don: str, kh: KhachHang = Depends(khach_hien_tai), db=Depends(get_db)):
+@router.get("/phieu-nhap")  # Admin chỉ xem: muc="xem"
+async def ds_phieu_nhap(nv: Annotated[NhanVien, Depends(yeu_cau_quyen("stock.import", muc="xem"))], db: Db): ...
+
+
+@router.get("/don-hang/{ma_don}")  # khách: chỉ đơn của mình, không có thì 404
+async def don_cua_toi(ma_don: str, kh: Annotated[KhachHang, Depends(khach_hien_tai)], db: Db):
     return await service.lay_don_cua_khach(db, kh.id, ma_don)
 ```
-- **`muc="xem"`:** vai trò có quyền ở mức `chi_xem` hoặc `day_du` đều qua được.
+- **Viết `Annotated[NhanVien, Depends(yeu_cau_quyen(...))]`**, không viết `nv: NhanVien = Depends(yeu_cau_quyen(...))`: ruff B008 cấm gọi hàm trong giá trị mặc định.
+- **`muc="xem"`:** vai trò có quyền ở mức `chi_xem` hoặc `day_du` đều qua được, nhưng chỉ có tác dụng với GET: thao tác ghi luôn đòi `day_du` ngay trong `yeu_cau_quyen`.
 - **`muc="day_du"` (mặc định):** chỉ vai trò có quyền mức `day_du`.
-- **Thêm route nội bộ mới:** phải thêm vào `tests/phan_quyen/registry.py`. Nếu thiếu, test ma trận sẽ fail.
+- **Quyền đọc từ DB, cache 60 giây trong process;** sau khi sửa phân quyền (AD18) gọi `xoa_cache_quyen()`. Trạng thái tài khoản đọc mỗi request, không cache.
+- **Ngoại lệ về route công khai:** chỉ ba route `/noi-bo/auth/{dang-nhap,lam-moi,dang-xuat}` không có `yeu_cau_quyen`; chúng nằm trong `CONG_KHAI` của registry. `ke_ca_chua_doi_mat_khau=True` chỉ dành cho `GET /noi-bo/toi` và đổi mật khẩu (registry giữ danh sách cố định).
+- **Thêm route nội bộ mới:** phải thêm vào `tests/phan_quyen/registry.py` với đúng (mã quyền, mức) route đang dùng. Test registry duyệt cây route + dependency thật và fail nếu thiếu, sai mã/mức hay ghi mà khai mức `xem`; test ma trận sinh ca 3 vai trò từ `quyen.yaml`.
+- **Nhật ký:** `core.nhat_ky.ghi_nhat_ky(db, nhan_vien_id=..., hanh_dong=..., bang=..., ban_ghi_id=..., gia_tri_cu/moi=..., ip=...)` trong cùng transaction với thao tác. Khóa nhạy cảm (mật khẩu, OTP, token, hash, sức khỏe) tự bị che; số điện thoại truyền dạng `che_sdt`. Thao tác thất bại mà vẫn cần ghi/đếm thì route TRẢ VỀ lỗi (xem mục "Giữ thay đổi dù trả lỗi").
+- **Thông báo:** `modules/thong_bao/service.gui_cho_nhan_vien(db, nhan_vien_id, loai=, tieu_de=, noi_dung=, lien_ket=)`; `lien_ket` chỉ là đường dẫn nội bộ.
 - **Kiểm tra ngoài mã quyền** (tách nhiệm vụ, chủ sở hữu, dữ liệu sức khỏe) viết trong service, lỗi trả qua `LoiNghiepVu`.
 
 ## Lỗi
@@ -80,6 +86,7 @@ async def don_cua_toi(ma_don: str, kh: KhachHang = Depends(khach_hien_tai), db=D
 - **Chống dò tài khoản:** API công khai không được cho phép phân biệt tài khoản có hay không qua phản hồi, thời điểm hay bộ đếm; xem `otp.py`. Đoạn nghiệp vụ mà hai nhánh phải giống hệt nhau cần test so sánh chuỗi phản hồi của hai nhánh.
 - **Giới hạn tần suất:** `core.gioi_han.GioiHanCuaSoTruot` (bộ nhớ, theo IP), giới hạn đọc từ `cau_hinh` mỗi lần; theo SĐT/tài khoản thì đếm trong DB. Dependency để test thay bằng bộ riêng.
 - **Phiên đăng nhập:** `modules/tai_khoan/phien.py` (`tao_phien`, `lam_moi_phien`, `thu_hoi_phien`, `thu_hoi_tat_ca`) dùng chung khách và nhân viên (`loai = "khach" | "noi_bo"`). Refresh token là chuỗi ngẫu nhiên, DB chỉ lưu SHA-256, xoay vòng, dùng lại token đã thu hồi thì thu hồi toàn bộ; cookie đặt/xóa qua `tai_khoan/cookie.py` (route nhận cookie bằng `Cookie(alias=TEN_COOKIE_REFRESH_KHACH)`). Đổi/đặt lại mật khẩu, khóa tài khoản phải gọi `thu_hoi_tat_ca`. Đăng nhập: `dang_nhap.kiem_tra_dang_nhap` (khóa tạm, chống dò bằng thời gian).
+- **Xác thực nhân viên** (`modules/nhan_vien/`): đăng nhập bằng email, cookie `refresh_token_noi_bo` (Path `/api/v1/noi-bo/auth`). Làm mới/đăng xuất/giới hạn IP dùng chung với khách qua `tai_khoan/phien_http.py` (đừng viết lại). Đổi mật khẩu: thu hồi mọi phiên cũ rồi cấp phiên mới; đoán mật khẩu cũ bị đếm như đăng nhập sai. Admin khóa nhân viên (T1.4) phải gọi `phien.thu_hoi_tat_ca(db, "noi_bo", id)`.
 - **Guard khách:** `Depends(khach_hien_tai)` (bắt buộc) hoặc `khach_tuy_chon` (công khai nhưng biết khách nếu có) từ `core/phan_quyen.py`; đọc tài khoản từ DB mỗi request. Route mới dưới `/api/v1/toi` PHẢI dùng `khach_hien_tai` (test duyệt OpenAPI kiểm tra).
 - **Tin nhắn:** gửi qua `tich_hop.tin_nhan.KenhTinNhan` (dependency `lay_kenh_tin_nhan`), không tự gọi SMTP/SMS. SĐT chuẩn hóa bằng `core.dien_thoai.chuan_hoa_sdt`, ghi log phải `che_sdt`.
 - **Mật khẩu:** `core.bao_mat.bam_mat_khau` / `kiem_tra_mat_khau` (Argon2id; chuỗi băm hỏng trả `False`, không ném lỗi); trong route dùng bản `_async` (`bam_mat_khau_async`, `kiem_tra_mat_khau_async`) vì Argon2 tốn CPU và sẽ chặn vòng lặp sự kiện, `mat_khau_du_manh` (≥ 8 ký tự, có chữ và số). Không tự gọi `argon2` ở nơi khác.

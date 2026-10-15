@@ -18,8 +18,8 @@
 - **Fixture đăng nhập:** `dang_nhap_khach`, `dang_nhap_duoc_si`, `dang_nhap_kho`, `dang_nhap_admin` trả client đã gắn token.
 
 ## 3. Test ma trận phân quyền (`tests/phan_quyen/`)
-- **`registry.py`:** từ điển `{(METHOD, path_template): (ma_quyen, muc)}` cho **mọi** route `/api/v1/noi-bo/*`.
-- **`test_registry_day_du`:** duyệt `app.routes`; route nội bộ nào không có trong registry hoặc không gắn dependency `yeu_cau_quyen` thì fail.
+- **`registry.py`:** từ điển `{(METHOD, path_template): (ma_quyen, muc)}` cho **mọi** route `/api/v1/noi-bo/*`, kèm `CONG_KHAI` (ba route xác thực không cần quyền) và `CHO_PHEP_KHI_CHUA_DOI_MAT_KHAU` (đúng hai route được miễn việc bắt đổi mật khẩu).
+- **`test_registry_day_du`:** duyệt cây route (kể cả router include lồng nhau) kèm cây dependency thật; route nội bộ nào không có trong registry, không gắn đúng một `yeu_cau_quyen`, hoặc khai báo (mã quyền, mức) khác với route thật thì fail. Thao tác ghi khai báo mức `xem`, mã quyền không có trong yaml, registry lỗi thời (không còn route) đều fail. Có test chứng minh bộ kiểm tra bắt được từng loại lỗi này trên route thử.
 - **`test_ma_tran`:** tham số hóa theo (route, vai trò) từ `docs/spec/data/quyen.yaml`.
   - Vai trò không có quyền: phải nhận **403** `KHONG_CO_QUYEN`.
   - Vai trò có quyền: **không** được nhận 403. Có thể là 404 hoặc 422 vì dữ liệu giả.

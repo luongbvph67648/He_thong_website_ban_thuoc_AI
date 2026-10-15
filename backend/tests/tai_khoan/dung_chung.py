@@ -15,33 +15,33 @@ async def dang_nhap(client, ten_dang_nhap=SDT, mat_khau=MAT_KHAU_TEST):
     return await client.post(URL_DANG_NHAP, json={"ten_dang_nhap": ten_dang_nhap, "mat_khau": mat_khau})
 
 
-def cookie_refresh(phan_hoi) -> str | None:
+def cookie_refresh(phan_hoi, ten: str = TEN_COOKIE) -> str | None:
     """Giá trị cookie refresh trong `Set-Cookie` của phản hồi (chuỗi rỗng nếu cookie bị xóa, None nếu không đặt)."""
     for dong in phan_hoi.headers.get_list("set-cookie"):
         cookie = SimpleCookie()
         cookie.load(dong)
-        if TEN_COOKIE in cookie:
-            return cookie[TEN_COOKIE].value
+        if ten in cookie:
+            return cookie[ten].value
     return None
 
 
-def dong_set_cookie(phan_hoi) -> str:
-    (dong,) = [d for d in phan_hoi.headers.get_list("set-cookie") if d.startswith(f"{TEN_COOKIE}=")]
+def dong_set_cookie(phan_hoi, ten: str = TEN_COOKIE) -> str:
+    (dong,) = [d for d in phan_hoi.headers.get_list("set-cookie") if d.startswith(f"{ten}=")]
     return dong
 
 
-def kem_cookie(refresh_token: str) -> dict[str, str]:
+def kem_cookie(refresh_token: str, ten: str = TEN_COOKIE) -> dict[str, str]:
     """Header `Cookie` gửi tay: tách khỏi cookie jar của client để test từng token cụ thể."""
-    return {"Cookie": f"{TEN_COOKIE}={refresh_token}"}
+    return {"Cookie": f"{ten}={refresh_token}"}
 
 
-async def _goi_voi_cookie(client, url: str, refresh_token: str | None):
+async def _goi_voi_cookie(client, url: str, refresh_token: str | None, ten: str = TEN_COOKIE):
     """POST kèm đúng cookie chỉ định. `None` nghĩa là KHÔNG gửi cookie nào: xóa cả cookie jar của client, vì cookie
     không `Secure` (khi dev tắt `COOKIE_SECURE`) sẽ được httpx tự lưu và gửi lại."""
     if refresh_token is None:
         client.cookies.clear()
         return await client.post(url)
-    return await client.post(url, headers=kem_cookie(refresh_token))
+    return await client.post(url, headers=kem_cookie(refresh_token, ten))
 
 
 async def lam_moi(client, refresh_token: str | None):

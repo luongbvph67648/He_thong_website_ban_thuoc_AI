@@ -1,9 +1,13 @@
-import { BellOutlined, LogoutOutlined, UserOutlined } from '@ant-design/icons'
-import { Badge, Button, Dropdown, Layout, Menu, Space, Typography } from 'antd'
+import { LogoutOutlined, UserOutlined } from '@ant-design/icons'
+import { useQueryClient } from '@tanstack/react-query'
+import { Button, Dropdown, Layout, Menu, Space, Typography } from 'antd'
 import { useMemo } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { dangXuatNoiBo } from '../api/dangXuat'
 import type { MucDieuHuong } from '../lib/dieuHuong'
+import { DUONG_DANG_NHAP_NOI_BO, DUONG_TAI_KHOAN_NOI_BO } from '../lib/hoSoNoiBo'
 import { usePhien } from '../stores/phien'
+import { ChuongThongBao } from './ChuongThongBao'
 import { duongDayDu, xayMenu } from './xayMenu'
 
 const { Sider, Header, Content } = Layout
@@ -18,9 +22,9 @@ interface Props {
 export function KhungNoiBo({ goc, tieuDe, muc }: Props) {
   const quyen = usePhien((s) => s.quyen)
   const hoSo = usePhien((s) => s.hoSo)
-  const dangXuat = usePhien((s) => s.dangXuat)
   const vitri = useLocation()
   const dieuHuong = useNavigate()
+  const queryClient = useQueryClient()
   const items = useMemo(() => xayMenu(goc, muc, quyen), [goc, muc, quyen])
 
   // Mục đang chọn: đường dẫn dài nhất là tiền tố của địa chỉ hiện tại (để trang con vẫn sáng mục cha).
@@ -51,19 +55,24 @@ export function KhungNoiBo({ goc, tieuDe, muc }: Props) {
           }}
         >
           <Space size="large">
-            <Badge count={0} showZero={false}>
-              <BellOutlined aria-label="Thông báo" style={{ fontSize: 18 }} />
-            </Badge>
+            <ChuongThongBao />
             <Dropdown
               menu={{
                 items: [
                   {
+                    key: 'tai-khoan',
+                    icon: <UserOutlined />,
+                    label: 'Hồ sơ và đổi mật khẩu',
+                    onClick: () => dieuHuong(DUONG_TAI_KHOAN_NOI_BO),
+                  },
+                  {
                     key: 'dang-xuat',
                     icon: <LogoutOutlined />,
                     label: 'Đăng xuất',
-                    onClick: () => {
-                      dangXuat()
-                      dieuHuong('/nhan-vien/dang-nhap')
+                    onClick: async () => {
+                      await dangXuatNoiBo()
+                      queryClient.clear() // bỏ dữ liệu của phiên vừa đăng xuất khỏi bộ nhớ đệm
+                      dieuHuong(DUONG_DANG_NHAP_NOI_BO)
                     },
                   },
                 ],

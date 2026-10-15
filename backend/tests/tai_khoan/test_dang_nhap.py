@@ -12,7 +12,7 @@ from app.core.bao_mat import giai_ma_access_token
 from app.models.enums import TrangThaiTaiKhoan
 from app.models.he_thong import CauHinh, PhienDangNhap
 from app.modules.tai_khoan import dang_nhap as dich_vu_dang_nhap
-from app.modules.tai_khoan import router_cong_khai
+from app.modules.tai_khoan import phien_http
 from tests.factories import MAT_KHAU_TEST, tao_khach
 from tests.tai_khoan.dung_chung import SDT, cookie_refresh, dang_nhap, dong_set_cookie
 
@@ -199,7 +199,7 @@ async def test_thieu_truong_tra_400(client, thieu):
 
 
 async def test_gioi_han_theo_ip_chan_do_mat_khau_dien_rong(client, db, monkeypatch, app):
-    monkeypatch.setattr(router_cong_khai, "DANG_NHAP_TOI_DA_MOI_IP", 3)
+    monkeypatch.setattr(phien_http, "DANG_NHAP_TOI_DA_MOI_IP", 3)
     await tao_khach(db, so_dien_thoai=SDT)
     for _ in range(3):
         assert (await dang_nhap(client, SDT, "Sai-mat-khau-1")).status_code == 401

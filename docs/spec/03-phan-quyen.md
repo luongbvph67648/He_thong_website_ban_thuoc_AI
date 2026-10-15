@@ -269,7 +269,13 @@ Khách vãng lai gửi đơn thuốc (KVL08) chỉ xem lại được kết qu�
   - `khach_hien_tai`: bắt buộc đăng nhập, `aud = khach`, tài khoản `hoat_dong`, không bị `khoa_den`.
   - `khach_tuy_chon`: cho route công khai cần biết khách nếu có.
   - `nhan_vien_hien_tai`: `aud = noi_bo`, tài khoản hoạt động, không `phai_doi_mat_khau` (trừ route đổi mật khẩu).
-  - `yeu_cau_quyen(ma: str, muc: Literal["xem", "day_du"] = "day_du")`: dependency trả `NhanVien`. Quyền của vai trò đọc từ DB, cache trong process 60 giây. Thiếu quyền → 403 `KHONG_CO_QUYEN`.
+  - `yeu_cau_quyen(ma: str, muc: Literal["xem", "day_du"] = "day_du", *, ke_ca_chua_doi_mat_khau=False)`: dependency trả `NhanVien` (đã nạp `vai_tro`). Quyền của vai trò đọc từ DB, cache trong process 60 giây (`xoa_cache_quyen()` bỏ cache ngay, AD18 gọi sau khi sửa phân quyền). Thiếu quyền → 403 `KHONG_CO_QUYEN`; còn `phai_doi_mat_khau` → 403 `PHAI_DOI_MAT_KHAU`.
+    - **Thao tác ghi luôn cần mức `day_du`**, kể cả khi route khai báo nhầm `muc="xem"` (mục 2).
+    - `gioi_han` của `vai_tro_quyen` khác NULL (kể cả giá trị lạ) được coi là chỉ xem (đặc quyền tối thiểu).
+    - `ke_ca_chua_doi_mat_khau=True` chỉ dành cho `GET /noi-bo/toi` và đổi mật khẩu; registry test khẳng định không route nào khác bật cờ này.
+    - `ma` phải có trong `quyen.yaml`, sai thì lỗi ngay lúc dựng route.
+    - Cách viết: `nv: Annotated[NhanVien, Depends(yeu_cau_quyen("order.confirm"))]` (ruff B008 cấm gọi hàm trong giá trị mặc định).
+  - **Route công khai duy nhất dưới `/api/v1/noi-bo`:** `auth/dang-nhap`, `auth/lam-moi`, `auth/dang-xuat` (chưa có phiên thì không thể có quyền). Mọi route nội bộ khác bắt buộc có `yeu_cau_quyen`.
 - **Trạng thái tài khoản kiểm tra ở mỗi request**, nên khóa tài khoản có hiệu lực ngay, không chờ access token hết hạn. Đồng thời mọi `phien_dang_nhap` của tài khoản bị thu hồi.
 - **Kiểm tra sở hữu:** service nhận `khach_hang_id` từ dependency và lọc trong truy vấn (`WHERE khach_hang_id = :id`). Không lấy ra rồi mới so sánh.
 - **Frontend** đọc danh sách quyền từ `GET /api/v1/noi-bo/toi` để ẩn/hiện menu và nút. Đây chỉ là lớp phụ.

@@ -1,13 +1,26 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { matchRoutes } from 'react-router-dom'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { usePhien } from './stores/phien'
 import { TRANG_CUA_HANG } from './khu/cua-hang/trang'
 import { MUC_NHAN_VIEN } from './khu/nhan-vien/menu'
 import { MUC_QUAN_TRI } from './khu/quan-tri/menu'
 import { taoRoutes } from './router'
 import { renderTai } from './test/render'
+
+// Khung nội bộ có chuông thông báo gọi API: thay client bằng bản giả để test không đụng tới mạng.
+const { GET, POST } = vi.hoisted(() => ({
+  GET: vi.fn(async (duong: string) =>
+    duong.endsWith('/so-chua-doc')
+      ? { data: { so_chua_doc: 0 } }
+      : { data: { du_lieu: [], tong: 0, trang: 1, kich_thuoc: 10 } },
+  ),
+  POST: vi.fn(async (_duong: string) => ({ response: { status: 204 } })),
+}))
+vi.mock('./api/client', () => ({ api: { GET, POST } }))
 
 const GOC_REPO = resolve(__dirname, '../..')
 const doc = (duong: string) => readFileSync(resolve(GOC_REPO, duong), 'utf-8')
@@ -185,6 +198,61 @@ describe('khu nhân viên', () => {
   it('trang đăng nhập nội bộ truy cập được khi chưa đăng nhập', async () => {
     renderTai('/nhan-vien/dang-nhap')
     expect(await screen.findByRole('heading', { name: 'Đăng nhập nội bộ' })).toBeInTheDocument()
+  })
+
+  it('header có chuông thông báo lấy số chưa đọc từ API', async () => {
+    GET.mockImplementationOnce(async () => ({ data: { so_chua_doc: 3 } }))
+    renderTai('/nhan-vien/don-hang', duocSi)
+    expect(await screen.findByRole('button', { name: 'Thông báo, 3 chưa đọc' })).toBeInTheDocument()
+  })
+
+  it('đăng xuất gọi API nội bộ, xóa phiên và về trang đăng nhập nội bộ', async () => {
+    localStorage.clear()
+    const { router } = renderTai('/nhan-vien/don-hang', duocSi)
+    await userEvent.setup().click(await screen.findByRole('button', { name: /Người dùng thử/ }))
+    await userEvent.setup().click(await screen.findByText('Đăng xuất'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/nhan-vien/dang-nhap'))
+    expect(POST).toHaveBeenCalledWith('/api/v1/noi-bo/auth/dang-xuat')
+    expect(usePhien.getState().loai).toBeNull()
+  })
+
+  it('menu tài khoản dẫn tới trang hồ sơ và đổi mật khẩu', async () => {
+    const { router } = renderTai('/nhan-vien/don-hang', duocSi)
+    await userEvent.setup().click(await screen.findByRole('button', { name: /Người dùng thử/ }))
+    await userEvent.setup().click(await screen.findByText('Hồ sơ và đổi mật khẩu'))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/nhan-vien/tai-khoan'))
+    expect(await screen.findByRole('heading', { name: 'Tài khoản của tôi' })).toBeInTheDocument()
+  })
+})
+
+describe('tài khoản bị bắt đổi mật khẩu', () => {
+  const batDoi = { loai: 'noi_bo', vaiTro: 'PHARMACIST', quyen: { 'order.view': 'day_du' }, phaiDoiMatKhau: true } as const
+
+  beforeEach(() => POST.mockClear())
+
+  it.each(['/nhan-vien', '/nhan-vien/don-hang', '/nhan-vien/ton-kho'])('%s chuyển tới trang tài khoản', async (duong) => {
+    const { router } = renderTai(duong, batDoi)
+    expect(await screen.findByText('Bạn cần đổi mật khẩu trước khi tiếp tục')).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/nhan-vien/tai-khoan')
+  })
+
+  it('Admin cũng bị chuyển từ khu quản trị', async () => {
+    const { router } = renderTai('/quan-tri/nhan-vien', { ...batDoi, vaiTro: 'ADMIN' })
+    expect(await screen.findByText('Bạn cần đổi mật khẩu trước khi tiếp tục')).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/nhan-vien/tai-khoan')
+  })
+
+  it('không có menu để đi tiếp, chỉ có form đổi mật khẩu', async () => {
+    renderTai('/nhan-vien/don-hang', batDoi)
+    await screen.findByText('Bạn cần đổi mật khẩu trước khi tiếp tục')
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Đổi mật khẩu' })).toBeInTheDocument()
+  })
+
+  it('chưa đăng nhập thì trang tài khoản chuyển tới đăng nhập nội bộ', async () => {
+    const { router } = renderTai('/nhan-vien/tai-khoan')
+    expect(await screen.findByRole('heading', { name: 'Đăng nhập nội bộ' })).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/nhan-vien/dang-nhap')
   })
 })
 

@@ -34,6 +34,7 @@ from app.core.config import settings
 from app.core.db import PhienRequest, get_db, get_engine, tao_engine
 from app.core.gioi_han import GioiHanCuaSoTruot, lay_bo_gioi_han_dang_nhap, lay_bo_gioi_han_otp
 from app.core.log import BoLocRequestId, JsonFormatter
+from app.core.phan_quyen import xoa_cache_quyen
 from app.main import create_app
 from app.seed.co_ban import seed_co_ban
 from app.tich_hop.tin_nhan import lay_kenh_tin_nhan
@@ -57,6 +58,9 @@ def cau_hinh_co_dinh_cho_test(monkeypatch):
     monkeypatch.setattr(settings, "COOKIE_SECURE", True)
     monkeypatch.setattr(settings, "REFRESH_NGAY", 14)
     monkeypatch.setattr(settings, "JWT_ACCESS_PHUT", 15)
+    xoa_cache_quyen()  # cache quyền của process không được sống sót qua các test (id vai trò, dữ liệu mỗi test một khác)
+    yield
+    xoa_cache_quyen()
 
 
 # --- Database -------------------------------------------------------------------------------------------------------

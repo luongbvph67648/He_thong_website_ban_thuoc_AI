@@ -25,6 +25,8 @@ src/
   - Backend đổi schema thì chạy `npm run gen:api` (backend phải đang chạy ở :8000) và commit `schema.d.ts`. Route backend mới nhớ khai `response_model` để type có dữ liệu thay vì `{}`.
   - Client tự gắn `Authorization` và làm mới token khi 401 (`api/xacThuc.ts`, QĐ-08); đừng tự `fetch` ngoài client.
 - **Phiên đăng nhập** (`stores/phien.ts`): chỉ ở bộ nhớ, không persist, không đặt token hay hồ sơ vào localStorage/sessionStorage.
+  - Phiên nội bộ giữ thêm `phaiDoiMatKhau` (và quyền, vai trò trong `hoSo`). `YeuCauQuyen`, `NhanVienLayout`, `QuanTriLayout` chuyển mọi trang nội bộ về `/nhan-vien/tai-khoan` khi cờ này bật; trang mới thuộc khu nội bộ nằm dưới các layout này thì được bảo vệ sẵn.
+  - Đăng nhập/khôi phục phiên nội bộ dùng `phienTuNhanVien(NhanVienToi)` (`lib/hoSoNoiBo.ts`) để đổi hồ sơ API sang dạng lưu trong store; đăng xuất qua `dangXuatNoiBo()` / `dangXuatKhach()`.
   - Ngoại lệ duy nhất: khóa `phien_goi_y` (`khach` hoặc `noi_bo`, `lib/goiYPhien.ts`) để biết có nên thử lấy lại phiên khi tải trang. Store tự ghi/xóa khóa này trong `dangNhap`/`dangXuat`.
   - `daKhoiPhuc` là `false` khi đang lấy lại phiên lúc tải trang. Trang hay thành phần phân biệt "đã đăng nhập" với "chưa" (header, trang bắt đăng nhập) phải chờ cờ này, nếu không sẽ nhấp nháy hoặc chuyển hướng nhầm.
   - Làm mới token phải đi qua `lamMoiPhien` (có Web Locks): refresh token xoay vòng, hai lần làm mới cùng lúc bằng một cookie sẽ bị đăng xuất khắp nơi (QĐ-11). Không tự gọi `/auth/lam-moi` ở chỗ khác.
@@ -36,6 +38,7 @@ src/
   - Trang của khu nội bộ khai báo một lần trong `khu/nhan-vien/menu.ts` hoặc `khu/quan-tri/menu.ts` (đường dẫn, nhãn, mã quyền, mã chức năng); `router.tsx` sinh route bọc `<YeuCauQuyen ma=... muc="xem">` và menu lọc theo quyền từ cùng bảng đó. Thêm trang mới: thêm một dòng vào bảng, rồi thay `TrangDangXayDung` bằng trang thật. Test `router.test.tsx` đối chiếu bảng với spec 09 và `quyen.yaml`.
   - Nút thao tác bọc `<YeuCauQuyen ma="order.confirm" kieu="nut">` (mức đầy đủ), ẩn hẳn khi chỉ có `chi_xem`.
   - UI chỉ là lớp phụ: backend vẫn kiểm tra quyền.
+- **Thông báo nội bộ:** `components/ChuongThongBao.tsx` (query key `['noi-bo', 'thong-bao', ...]`, làm mới mỗi phút). Chỉ điều hướng tới `lien_ket` khi là đường dẫn nội bộ. Không dùng antd `List` (deprecated từ 6.6): dùng phần tử tự dựng hoặc `<button>`.
 - **Hiển thị**
   - Tiền: `dinhDangTien()` (ví dụ `125.000 ₫`).
   - Ngày giờ: `dinhDangNgay()` theo Asia/Ho_Chi_Minh.

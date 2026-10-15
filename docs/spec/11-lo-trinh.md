@@ -218,20 +218,28 @@ _Đăng ký/đăng nhập 2 loại tài khoản, RBAC, nhật ký, cấu hình._
   - **Chưa làm / để task sau:** trang `/tai-khoan` vẫn là trang giữ chỗ (T2.x–T4.x), khôi phục phiên nội bộ cùng đăng nhập nội bộ (T1.3), `don_thuoc_khach` cho OTP (T5.x). Chạy `/review-nghiep-vu` gộp T1.1–T1.3 sau T1.3 (phần phân quyền thật nằm ở T1.3).
 
 
-### [ ] T1.3 · Xác thực nhân viên, RBAC và nhật ký
+### [x] T1.3 · Xác thực nhân viên, RBAC và nhật ký
 - **Chức năng:** NV01 (Đăng nhập, đổi mật khẩu), NV02 (Xem thông báo, cập nhật hồ sơ cá nhân)
 - **Phụ thuộc:** T1.2
 - **Bảng:** `nhan_vien`, `phien_dang_nhap`, `thong_bao`
 - **Tiêu chí chấp nhận:**
-  - [ ] `POST /api/v1/noi-bo/auth/dang-nhap` (`aud = "noi_bo"`), bắt đổi mật khẩu lần đầu (`phai_doi_mat_khau`), đổi mật khẩu thu hồi mọi phiên.
-  - [ ] `GET /api/v1/noi-bo/toi` trả hồ sơ + danh sách mã quyền và mức (`day_du`/`chi_xem`).
-  - [ ] `core/phan_quyen.py`: `yeu_cau_quyen(ma, muc="day_du")` đọc quyền từ DB (cache 60 giây), kiểm tra trạng thái tài khoản mỗi request.
-  - [ ] `core/nhat_ky.py`: `ghi_nhat_ky(...)` ghi `nhat_ky_he_thong` (không ghi mật khẩu, OTP, dữ liệu sức khỏe).
-  - [ ] Registry endpoint → quyền + test ma trận phân quyền tự sinh từ `quyen.yaml` (spec 10 mục 3); test thất bại nếu có route `/noi-bo` chưa khai báo.
-  - [ ] Thông báo nội bộ: `GET /api/v1/noi-bo/thong-bao`, đánh dấu đã đọc; sửa hồ sơ cá nhân.
+  - [x] `POST /api/v1/noi-bo/auth/dang-nhap` (`aud = "noi_bo"`), bắt đổi mật khẩu lần đầu (`phai_doi_mat_khau`), đổi mật khẩu thu hồi mọi phiên.
+  - [x] `GET /api/v1/noi-bo/toi` trả hồ sơ + danh sách mã quyền và mức (`day_du`/`chi_xem`).
+  - [x] `core/phan_quyen.py`: `yeu_cau_quyen(ma, muc="day_du")` đọc quyền từ DB (cache 60 giây), kiểm tra trạng thái tài khoản mỗi request.
+  - [x] `core/nhat_ky.py`: `ghi_nhat_ky(...)` ghi `nhat_ky_he_thong` (không ghi mật khẩu, OTP, dữ liệu sức khỏe).
+  - [x] Registry endpoint → quyền + test ma trận phân quyền tự sinh từ `quyen.yaml` (spec 10 mục 3); test thất bại nếu có route `/noi-bo` chưa khai báo.
+  - [x] Thông báo nội bộ: `GET /api/v1/noi-bo/thong-bao`, đánh dấu đã đọc; sửa hồ sơ cá nhân.
 - **Giao diện:**
-  - [ ] Trang đăng nhập nội bộ, đổi mật khẩu bắt buộc, menu theo quyền, chuông thông báo.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Trang đăng nhập nội bộ, đổi mật khẩu bắt buộc, menu theo quyền, chuông thông báo.
+- **Ghi chú triển khai:**
+  - **Backend:** `core/phan_quyen.py` (`nhan_vien_hien_tai`, `yeu_cau_quyen(ma, muc, *, ke_ca_chua_doi_mat_khau)`, cache quyền 60 giây bằng đồng hồ đơn điệu, `xoa_cache_quyen`), `core/danh_muc_quyen.py` (mã quyền hợp lệ đọc từ `quyen.yaml`, sai mã thì lỗi ngay lúc dựng route), `core/nhat_ky.py`, module `modules/nhan_vien/` (`/noi-bo/auth/*`, `/noi-bo/toi`) và `modules/thong_bao/`. Phần làm mới/đăng xuất/giới hạn IP/cookie của khách và nhân viên tách ra `modules/tai_khoan/phien_http.py` + `cookie.py` dùng chung (không viết logic nhạy cảm hai lần); `dang_nhap.py` tách `kiem_tra_mat_khau_va_khoa` dùng chung cho đăng nhập và đổi mật khẩu. Mã lỗi mới `MAT_KHAU_CU_SAI` (422). Chi tiết hợp đồng: spec 06 mục 3.3; quyết định: QĐ-12.
+  - **Phân quyền:** thao tác ghi luôn cần `day_du` dù route khai báo `muc="xem"`; `gioi_han` lạ coi là chỉ xem; trạng thái tài khoản, vai trò và quyền đọc từ DB mỗi request nên khóa/đổi vai trò có hiệu lực ngay. Route nội bộ viết `Annotated[NhanVien, Depends(yeu_cau_quyen(...))]` (ruff B008).
+  - **Test** (backend 736 xanh, thêm 170 so với T1.2): `tests/phan_quyen/` (guard, registry, ma trận), `tests/nhan_vien/` (đăng nhập, phiên, đổi mật khẩu, hồ sơ), `tests/thong_bao/`, `tests/test_nhat_ky.py`. `registry.py` + `ma_tran.py` duyệt cây route THẬT (kể cả router include lồng của FastAPI 0.143) và đối chiếu từng route với dependency `yeu_cau_quyen` gắn trên nó; ma trận 3 vai trò × mọi route sinh từ `quyen.yaml`. Vì `profile.self` ai cũng có nên ma trận thật chưa phân biệt được vai trò, nên có thêm ma trận trên route thử dùng nhiều mã quyền khác nhau và các test chứng minh bộ kiểm tra bắt được: route chưa vào registry, quên `yeu_cau_quyen`, dùng nhầm mã/mức, ghi khai báo `xem`, registry lỗi thời, route công khai có quyền, bật cờ bỏ qua đổi mật khẩu sai chỗ, route quên kiểm tra quyền (kho và Admin lọt vào), route chặn nhầm người đúng quyền.
+  - **Kiểm chứng bằng phá thử:** 24 đột biến (bỏ kiểm tra quyền, ghi lọt qua mức xem, bỏ bắt đổi mật khẩu, cache không hết hạn, guard bỏ kiểm tra khóa, `gioi_han` lạ thành đầy đủ, nhận token khách, đổi mật khẩu không thu hồi phiên / không bỏ cờ / khóa không thu hồi, thông báo không lọc chủ sở hữu ở cả bốn truy vấn, `lien_ket` ngoài ứng dụng, làm mới không kiểm tra khóa, cookie trùng tên khách, giới hạn IP dùng chung, đăng nhập không ghi nhật ký, nhật ký không che, hồ sơ nhận email, ghi số điện thoại đầy đủ, route dùng nhầm mã quyền) đều bị ít nhất một test bắt.
+  - **Frontend:** `/nhan-vien/dang-nhap` thật (quay lại `state.tu` nếu là đường dẫn nội bộ; Admin vào `/quan-tri`), trang `/nhan-vien/tai-khoan` (hồ sơ + đổi mật khẩu, chuyển bắt buộc từ mọi trang nội bộ khi `phaiDoiMatKhau`), `ChuongThongBao` (số chưa đọc làm mới mỗi phút, 10 thông báo mới nhất, bấm để đọc và đi tới liên kết nội bộ; không dùng antd `List` vì đã deprecated), đăng xuất gọi API nội bộ. Khôi phục phiên nội bộ khi tải trang (`api/khoiPhuc.ts`) lấy lại cả quyền và cờ bắt đổi mật khẩu từ `/noi-bo/toi`, làm mới tuần tự giữa các tab bằng Web Locks như phiên khách. 253 test vitest xanh (cả khi `TZ=America/Los_Angeles`), `tsc`, oxlint, build sạch.
+  - **Đã chạy thật trên Chromium với backend + Vite, 34/34 kiểm tra đạt:** vào `/quan-tri` khi chưa đăng nhập bị chuyển; Admin lần đầu bị đưa sang đổi mật khẩu từ mọi URL nội bộ và tải lại vẫn bị bắt; cookie `refresh_token_noi_bo` HttpOnly Path=/api/v1/noi-bo/auth, localStorage chỉ có gợi ý; đổi mật khẩu sai/yếu/đúng, đổi xong vào thẳng khu quản trị với refresh token mới; tải lại khôi phục phiên và quyền; sửa hồ sơ (SĐT `+84 912 345 678` lưu thành `0912345678`) và tải lại thấy đúng; đăng xuất xóa cookie và gợi ý; mật khẩu cũ bị từ chối, mật khẩu mới vào được; dược sĩ thấy chuông 3 chưa đọc, bấm thông báo sang liên kết nội bộ và còn 2, đánh dấu tất cả; 4 tab nội bộ mở cùng lúc đều còn đăng nhập; khách đã đăng nhập vẫn bị chặn ở khu nội bộ. (Nhờ phép kiểm này phát hiện và bỏ antd `List` deprecated, sửa tiêu đề thông báo dính liền giờ.)
+  - **Chưa làm / để task sau:** Admin đặt lại mật khẩu và khóa/mở tài khoản nhân viên, kèm thu hồi phiên (T1.4); thông báo của khách (KTV13); gửi thông báo từ các nghiệp vụ (đơn mới, chat, kho: HT07 và các task nghiệp vụ, dùng `thong_bao.service.gui_cho_nhan_vien`). Chạy `/review-nghiep-vu` gộp T1.1–T1.3 ngay sau commit này.
+
 
 ### [ ] T1.4 · Quản lý nhân viên, vai trò và quyền
 - **Chức năng:** AD01 (Quản lý tài khoản nhân viên), AD18 (Quản lý vai trò & phân quyền)
@@ -793,3 +801,5 @@ _Báo cáo tổng hợp, rà soát bảo mật/hiệu năng, dữ liệu demo, t
 Lỗi hoặc việc phát hiện trong lúc làm nhưng nằm ngoài phạm vi task đang làm. Ghi một dòng `- [ ] (Tx.y) mô tả`, xử lý sau.
 
 - [ ] (T0.5) `QUYEN_YAML` nằm ngoài `backend/` (`docs/spec/data/quyen.yaml`): khi đóng image Docker ở T8.3 nếu chỉ copy `backend/` thì `python -m app.seed` lỗi `FileNotFoundError`. Khi đóng gói, copy file này vào image hoặc đặt đường dẫn qua biến môi trường.
+- [ ] (T1.3) Admin duy nhất quên mật khẩu thì không có đường khôi phục (nhân viên không có "quên mật khẩu" tự phục vụ, Admin khác đặt lại ở T1.4): thêm lệnh CLI `python -m app.seed --dat-lai-admin` hoặc tương đương khi làm T1.4/T8.3.
+- [ ] (T1.3) `nhat_ky_he_thong` "chỉ INSERT" mới được bảo đảm bằng việc ứng dụng không có route sửa/xóa; thêm trigger chặn UPDATE/DELETE ở DB qua migration mới (`/doi-schema`) khi rà soát bảo mật T8.2.

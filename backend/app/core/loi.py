@@ -40,6 +40,7 @@ MA_LOI: dict[str, int] = {
     "HOAN_VUOT_SO_DA_TRA": 422,
     "OTP_SAI": 422,
     "OTP_HET_HAN": 422,
+    "MAT_KHAU_CU_SAI": 422,
     "QUA_GIOI_HAN": 429,
     "LOI_DOI_TAC": 502,
     "LOI_HE_THONG": 500,

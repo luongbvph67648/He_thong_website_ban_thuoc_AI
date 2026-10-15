@@ -12,6 +12,9 @@ Quy ước code ở `frontend/CLAUDE.md`. File này mô tả **trang nào, cho a
 Đăng nhập nội bộ tại `/nhan-vien/dang-nhap`, dùng chung cho cả ba vai trò. Sau khi đăng nhập:
 - Admin vào `/quan-tri`.
 - Dược sĩ và nhân viên kho vào `/nhan-vien`.
+- Đang định vào một trang nội bộ khác (đã bị chuyển tới đăng nhập) thì quay lại đúng trang đó (chỉ nhận đường dẫn nội bộ).
+
+Trang tài khoản cá nhân `/nhan-vien/tai-khoan` (hồ sơ: họ tên, số điện thoại; đổi mật khẩu) nằm ngoài hai layout và dùng chung cho cả ba vai trò. Tài khoản còn `phai_doi_mat_khau` (lần đăng nhập đầu, hoặc Admin vừa đặt lại) bị chuyển tới đây từ MỌI trang nội bộ và chỉ còn form đổi mật khẩu cho tới khi đổi xong. Header khu nội bộ có chuông thông báo (số chưa đọc, 10 thông báo mới nhất, đánh dấu đã đọc) và menu tài khoản (hồ sơ và đổi mật khẩu, đăng xuất).
 
 ## 2. Bản đồ trang
 ### 2.1 Cửa hàng
