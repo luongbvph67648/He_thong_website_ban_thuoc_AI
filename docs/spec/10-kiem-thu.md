@@ -13,7 +13,7 @@
   - Mỗi test mở connection + transaction ngoài.
   - Session của app dùng `join_transaction_mode="create_savepoint"`.
   - Rollback sau mỗi test.
-- **Test tranh chấp** (mục 4) cần **commit thật** nên dùng fixture riêng `db_that`: tạo dữ liệu, commit, chạy, rồi dọn bằng `TRUNCATE ... CASCADE` các bảng liên quan.
+- **Test tranh chấp** (mục 4) cần **commit thật** nên dùng fixture riêng `db_that`: tạo dữ liệu, commit, chạy, rồi dọn bằng `TRUNCATE ... CASCADE` các bảng liên quan. Dọn dẹp cũng khôi phục `quyen` và `vai_tro_quyen` về mặc định của `quyen.yaml` (seed không ghi đè phân quyền đã có), nên test sửa phân quyền bằng commit thật không làm lệch test sau.
 - **`tests/factories.py`:** hàm async `tao_khach(...)`, `tao_nhan_vien(vai_tro=...)`, `tao_san_pham(loai=..., don_vi=[...])`, `tao_lo(san_pham, so_luong, han_su_dung, trang_thai)`, `tao_don(...)`... Giá trị mặc định hợp lệ, tham số nào cũng ghi đè được.
 - **Fixture đăng nhập:** `dang_nhap_khach`, `dang_nhap_duoc_si`, `dang_nhap_kho`, `dang_nhap_admin` trả client đã gắn token.
 

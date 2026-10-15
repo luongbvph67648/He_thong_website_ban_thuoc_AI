@@ -183,6 +183,40 @@ async def test_db_that_2_sau_test_don_sach_nhung_giu_seed(db_that):
         assert (await tao_khach(s)).id == 1
 
 
+async def test_db_that_3_sua_phan_quyen_that_phai_duoc_khoi_phuc_ve_mac_dinh_sau_test(db_that):
+    """AD18 commit thật vào `vai_tro_quyen`; seed không ghi đè phân quyền đã có nên dọn dẹp phải tự khôi phục, nếu
+    không test sau thấy ma trận quyền bị lệch (từng khiến test AD18 viết sau bị lỗi giả)."""
+    mac_dinh = "SELECT count(*), count(*) FILTER (WHERE gioi_han IS NULL) FROM vai_tro_quyen"
+    async with db_that() as s:
+        so_mac_dinh = (await s.execute(text(mac_dinh))).one()
+    async with db_that() as s, s.begin():
+        await s.execute(
+            text("DELETE FROM vai_tro_quyen WHERE quyen_id = (SELECT id FROM quyen WHERE ma = 'order.pick')")
+        )
+        await s.execute(text("UPDATE vai_tro_quyen SET gioi_han = 'chi_xem' WHERE gioi_han IS NULL"))
+    async with db_that() as s:
+        assert (await s.execute(text(mac_dinh))).one() != so_mac_dinh  # đã bị sửa thật
+
+
+async def test_db_that_4_phan_quyen_ve_dung_mac_dinh_cua_quyen_yaml(db_that):
+    from tests.nhan_vien.test_nv_ho_so import quyen_theo_yaml
+
+    async with db_that() as s:
+        thuc_te = {
+            (vt, q): "day_du" if g is None else "chi_xem"
+            for vt, q, g in (
+                await s.execute(
+                    text(
+                        "SELECT v.ma, q.ma, vq.gioi_han FROM vai_tro_quyen vq "
+                        "JOIN vai_tro v ON v.id = vq.vai_tro_id JOIN quyen q ON q.id = vq.quyen_id"
+                    )
+                )
+            ).all()
+        }
+    mong_doi = {(vt, q): m for vt in ("PHARMACIST", "WAREHOUSE", "ADMIN") for q, m in quyen_theo_yaml(vt).items()}
+    assert thuc_te == mong_doi
+
+
 # --- An toàn khi tạo lại database ------------------------------------------------------------------------------------
 
 

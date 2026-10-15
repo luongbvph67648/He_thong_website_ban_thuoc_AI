@@ -26,3 +26,15 @@ def ma_quyen_hop_le(duong_dan: Path = QUYEN_YAML) -> frozenset[str] | None:
     except OSError:
         logger.warning("Không đọc được %s, bỏ qua kiểm tra mã quyền lúc khai báo route", duong_dan)
         return None
+
+
+@cache
+def quyen_chi_cho_admin(duong_dan: Path = QUYEN_YAML) -> frozenset[str]:
+    """Mã quyền mà ma trận phân quyền (spec 03) chỉ cấp cho ADMIN: quản trị tài khoản và phân quyền, duyệt phiếu kho,
+    xác nhận hoàn tiền, cấu hình, nhật ký... Vai trò khác không được gán các quyền này qua AD18, nếu không người nhận
+    tự tạo Admin hay tự cấp thêm quyền (leo thang đặc quyền) hoặc vừa lập vừa duyệt (tách nhiệm vụ, quy tắc 8).
+
+    Khác `ma_quyen_hop_le`, thiếu file thì để lỗi nổi lên (đóng an toàn): không có danh sách thì không được gán gì.
+    """
+    du_lieu = yaml.safe_load(duong_dan.read_text(encoding="utf-8"))
+    return frozenset(q["ma"] for q in du_lieu["quyen"] if set(q["vai_tro"]) == {"ADMIN"})

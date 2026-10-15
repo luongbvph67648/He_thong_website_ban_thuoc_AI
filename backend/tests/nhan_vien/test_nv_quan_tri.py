@@ -7,9 +7,11 @@ import pytest
 from sqlalchemy import select
 
 from app.core.bao_mat import mat_khau_du_manh
+from app.core.loi import LoiNghiepVu
 from app.models.enums import TrangThaiTaiKhoan
 from app.models.he_thong import NhanVien, PhienDangNhap
 from app.modules.nhan_vien import quan_tri
+from app.modules.nhan_vien.schemas_quan_tri import NhanVienSua
 from app.modules.tai_khoan import phien
 from tests.factories import MAT_KHAU_TEST, tao_khach, tao_nhan_vien
 from tests.nhan_vien.dung_chung import (
@@ -375,46 +377,22 @@ async def test_admin_van_sua_duoc_ho_ten_va_so_dien_thoai_cua_chinh_minh_va_gui_
 # --- Luôn còn ít nhất một Admin hoạt động ----------------------------------------------------------------------------
 
 
-async def test_admin_cuoi_cung_khong_bi_khoa_xoa_hay_ha_vai_tro_boi_nguoi_khac(db, app, clients_theo_vai_tro):
-    """Người khác (có `staff.manage`, không phải Admin này) cũng không thể làm hệ thống mất Admin hoạt động cuối cùng."""
-    from app.models.he_thong import Quyen, VaiTro, VaiTroQuyen
-
-    # Cấp `staff.manage` cho dược sĩ để có người không phải Admin quản lý nhân viên (AD18 cho phép).
-    quyen_id = (await db.execute(select(Quyen.id).where(Quyen.ma == "staff.manage"))).scalar_one()
-    vai_tro_id = (await db.execute(select(VaiTro.id).where(VaiTro.ma == "PHARMACIST"))).scalar_one()
-    db.add(VaiTroQuyen(vai_tro_id=vai_tro_id, quyen_id=quyen_id))
-    await db.flush()
-    from app.core.phan_quyen import xoa_cache_quyen
-
-    xoa_cache_quyen()
-    duoc_si = clients_theo_vai_tro["PHARMACIST"]
-    admin_duy_nhat = (
-        (
-            await db.execute(
-                select(NhanVien)
-                .join(VaiTro, VaiTro.id == NhanVien.vai_tro_id)
-                .where(
-                    VaiTro.ma == "ADMIN",
-                    NhanVien.trang_thai == TrangThaiTaiKhoan.hoat_dong,
-                    NhanVien.deleted_at.is_(None),
-                )
-            )
-        )
-        .scalars()
-        .all()
-    )
-    assert len(admin_duy_nhat) == 1  # chỉ có Admin do fixture tạo (DB test không seed Admin)
-    id_admin = admin_duy_nhat[0].id
-
-    for phuong_thuc, hau_to, than in (
-        ("POST", "/khoa", None),
-        ("DELETE", "", None),
-        ("PATCH", "", {"vai_tro": "WAREHOUSE"}),
+async def test_admin_cuoi_cung_khong_bi_khoa_xoa_hay_ha_vai_tro_ke_ca_khi_nguoi_thuc_hien_vua_mat_hoat_dong(db):
+    """Qua API, người thực hiện là Admin hoạt động nên luôn còn ít nhất người đó. Quy tắc vẫn cần ở service vì Admin
+    thực hiện có thể vừa bị Admin khác khóa trong lúc request đang chờ khóa dòng (xem test đồng thời bên dưới):
+    giả lập bằng một Admin đã bị khóa gọi thẳng service lên Admin hoạt động duy nhất."""
+    da_khoa = await tao_nhan_vien(db, "ADMIN", trang_thai=TrangThaiTaiKhoan.bi_khoa)
+    admin_duy_nhat = await tao_nhan_vien(db, "ADMIN")
+    for ten_ham, tham_so in (
+        (quan_tri.khoa, ()),
+        (quan_tri.xoa_mem, ()),
+        (quan_tri.sua, (NhanVienSua(vai_tro="WAREHOUSE"),)),
     ):
-        phan_hoi = await duoc_si.request(phuong_thuc, f"{GOC}/{id_admin}{hau_to}", **({"json": than} if than else {}))
-        assert la_loi(phan_hoi, 409, "PHAI_CON_ADMIN"), (phuong_thuc, hau_to)
-    await db.refresh(admin_duy_nhat[0])
-    assert admin_duy_nhat[0].trang_thai == TrangThaiTaiKhoan.hoat_dong and admin_duy_nhat[0].deleted_at is None
+        with pytest.raises(LoiNghiepVu) as loi:
+            await ten_ham(db, da_khoa, admin_duy_nhat.id, *tham_so, ip="127.0.0.1")
+        assert loi.value.ma_loi == "PHAI_CON_ADMIN", ten_ham.__name__
+    await db.refresh(admin_duy_nhat)
+    assert admin_duy_nhat.trang_thai == TrangThaiTaiKhoan.hoat_dong and admin_duy_nhat.deleted_at is None
 
 
 async def test_co_admin_khac_hoat_dong_thi_khoa_duoc_va_admin_bi_khoa_khong_tinh_la_hoat_dong(dang_nhap_admin, db):

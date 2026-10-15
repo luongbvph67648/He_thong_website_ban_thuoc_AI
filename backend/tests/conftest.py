@@ -131,7 +131,7 @@ async def db_chua_seed(engine_migration):
 async def db_that(engine_test):
     """Factory session cho test cần COMMIT THẬT (tranh chấp giữa nhiều session): `async with db_that() as s, s.begin()`.
 
-    Sau test, mọi dữ liệu bị TRUNCATE (giữ vai trò/quyền, seed lại cấu hình). Test dùng `db_that` không được dùng
+    Sau test, mọi dữ liệu bị TRUNCATE (giữ vai trò; quyền, phân quyền và cấu hình được seed lại về mặc định). Test dùng `db_that` không được dùng
     đồng thời `db` để đọc kết quả, vì hai bên nằm ở hai transaction khác nhau.
     """
     try:

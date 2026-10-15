@@ -54,9 +54,18 @@ export default function TrangVaiTro() {
 
   const luu = useMutation({
     mutationFn: () =>
-      goi(() => api.PUT('/api/v1/noi-bo/vai-tro/{ma}/quyen', { params: { path: { ma: maVaiTro } }, body: { quyen: thanCapNhatQuyen(sua) } })),
+      goi(() =>
+        api.PUT('/api/v1/noi-bo/vai-tro/{ma}/quyen', {
+          params: { path: { ma: maVaiTro } },
+          body: { quyen: thanCapNhatQuyen(sua), phien_ban: chiTiet.data?.phien_ban ?? '' },
+        }),
+      ),
     onSuccess: async (kq) => {
       setXacNhan(false)
+      if (!kq.ok && kq.loi?.ma_loi === 'DU_LIEU_DA_THAY_DOI') {
+        await queryClient.invalidateQueries({ queryKey: KHOA_QUERY }) // bản mới về, `daDoi` giữ nguyên
+        return void message.warning('Phân quyền của vai trò này vừa được người khác thay đổi. Đã tải bản mới, hãy kiểm tra các thay đổi của bạn rồi lưu lại.')
+      }
       if (!kq.ok) {
         const chiTietLoi = Array.isArray(kq.loi?.chi_tiet) ? (kq.loi.chi_tiet as { loi?: string }[]).map((c) => c.loi).join('; ') : ''
         return void message.error(chiTietLoi || thongDiepChung(kq.loi))

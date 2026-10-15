@@ -461,7 +461,8 @@ export interface paths {
         get?: never;
         /**
          * Thay toàn bộ quyền của vai trò (AD18)
-         * @description Mã quyền không có trong `quyen` bị gỡ. ADMIN không sửa được; `profile.self` bắt buộc ở mức đầy đủ.
+         * @description Mã quyền không có trong `quyen` bị gỡ. ADMIN không sửa được; `profile.self` bắt buộc ở mức đầy đủ; quyền chỉ
+         *     dành cho vai trò khác (spec 06 mục 3.5) không gán được; `phien_ban` phải là bản vừa đọc, nếu không là 409.
          */
         put: operations["cap_nhat_quyen_api_v1_noi_bo_vai_tro__ma__quyen_put"];
         post?: never;
@@ -495,6 +496,8 @@ export interface components {
             quyen: {
                 [key: string]: "day_du" | "chi_xem";
             };
+            /** Phien Ban */
+            phien_ban: string;
         };
         /**
          * CapTokenPhanHoi
@@ -843,6 +846,8 @@ export interface components {
             so_nhan_vien: number;
             /** Chinh Sua Duoc */
             chinh_sua_duoc: boolean;
+            /** Phien Ban */
+            phien_ban: string;
             /** Quyen */
             quyen: components["schemas"]["QuyenTrongVaiTro"][];
         };

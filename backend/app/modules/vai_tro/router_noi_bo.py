@@ -30,5 +30,6 @@ async def chi_tiet(ma: MaVaiTroPath, actor: PhanQuyenXem, db: Db):
 
 @router.put("/{ma}/quyen", response_model=VaiTroChiTiet, summary="Thay toàn bộ quyền của vai trò (AD18)")
 async def cap_nhat_quyen(ma: MaVaiTroPath, du_lieu: CapNhatQuyenYeuCau, request: Request, actor: PhanQuyenSua, db: Db):
-    """Mã quyền không có trong `quyen` bị gỡ. ADMIN không sửa được; `profile.self` bắt buộc ở mức đầy đủ."""
-    return await service.cap_nhat_quyen(db, actor, ma, du_lieu.quyen, ip=dia_chi_ip(request))
+    """Mã quyền không có trong `quyen` bị gỡ. ADMIN không sửa được; `profile.self` bắt buộc ở mức đầy đủ; quyền chỉ
+    dành cho vai trò khác (spec 06 mục 3.5) không gán được; `phien_ban` phải là bản vừa đọc, nếu không là 409."""
+    return await service.cap_nhat_quyen(db, actor, ma, du_lieu.quyen, du_lieu.phien_ban, ip=dia_chi_ip(request))

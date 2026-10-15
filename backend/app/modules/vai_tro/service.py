@@ -3,16 +3,23 @@
 - Vai trò ADMIN bất biến: mọi thay đổi trả `PHAI_CON_ADMIN` (không ai còn quản trị được nếu Admin mất quyền).
 - `profile.self` bắt buộc ở mức đầy đủ cho mọi vai trò, nếu không nhân viên không đổi được mật khẩu bắt buộc.
 - `content.professional.edit` và `content.approve` chỉ PHARMACIST (spec 03 mục 7: Admin không sửa nội dung chuyên môn).
+- Quyền mà ma trận spec 03 chỉ cấp cho ADMIN (`quyen_chi_cho_admin`) không gán được cho vai trò khác: nếu được thì người
+  nhận tự tạo Admin/tự cấp quyền (`staff.manage`, `role.manage`) hoặc vừa lập vừa duyệt (`refund.confirm`).
+- Khóa lạc quan: `phien_ban` (dấu vân tay của tập mã quyền + mức) phải khớp lúc lưu, nếu không một trang mở từ trước sẽ
+  ngầm cấp lại quyền Admin khác vừa gỡ.
 - Thay thế toàn bộ quyền của vai trò trong một transaction, khóa dòng vai trò (`FOR UPDATE`) để hai Admin sửa cùng lúc
   tuần tự; ghi nhật ký phần chênh lệch; xóa cache quyền sau commit.
 """
 
+import hashlib
+
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.danh_muc_quyen import quyen_chi_cho_admin
 from app.core.loi import LoiNghiepVu
 from app.core.nhat_ky import ghi_nhat_ky
-from app.core.phan_quyen import xoa_cache_quyen_sau_commit
+from app.core.phan_quyen import dam_bao_la_admin, xoa_cache_quyen_sau_commit
 from app.models.he_thong import NhanVien, Quyen, VaiTro, VaiTroQuyen
 from app.modules.vai_tro.schemas import QuyenTrongVaiTro, VaiTroChiTiet, VaiTroTomTat
 
@@ -20,6 +27,20 @@ MA_VAI_TRO_ADMIN = "ADMIN"
 QUYEN_BAT_BUOC = frozenset({"profile.self"})
 QUYEN_CHI_CHO_VAI_TRO = {"content.professional.edit": "PHARMACIST", "content.approve": "PHARMACIST"}
 BANG = "vai_tro_quyen"
+
+
+def vai_tro_duoc_cap(ma_quyen: str) -> str | None:
+    """Mã vai trò DUY NHẤT được giữ quyền này; `None` là gán được cho PHARMACIST và WAREHOUSE tùy ý."""
+    if ma_quyen in QUYEN_CHI_CHO_VAI_TRO:
+        return QUYEN_CHI_CHO_VAI_TRO[ma_quyen]
+    return MA_VAI_TRO_ADMIN if ma_quyen in quyen_chi_cho_admin() else None
+
+
+def tinh_phien_ban(muc_theo_ma: dict[str, str]) -> str:
+    """Dấu vân tay chỉ phụ thuộc nội dung quyền (không phụ thuộc số lần lưu hay thời điểm): lưu lại bản cũ thì phiên bản
+    cũ trở lại."""
+    chuoi = "|".join(f"{ma}={muc}" for ma, muc in sorted(muc_theo_ma.items()))
+    return hashlib.sha256(chuoi.encode()).hexdigest()[:16]
 
 
 def _muc_tu_gioi_han(gioi_han: str | None) -> str:
@@ -90,6 +111,7 @@ async def chi_tiet(db: AsyncSession, ma: str) -> VaiTroChiTiet:
         mo_ta=vai_tro.mo_ta,
         so_nhan_vien=so_nv or 0,
         chinh_sua_duoc=vai_tro.ma != MA_VAI_TRO_ADMIN,
+        phien_ban=tinh_phien_ban({q.ma: hien_co[q.id] for q in quyen if q.id in hien_co}),
         quyen=[
             QuyenTrongVaiTro(
                 ma=q.ma,
@@ -97,7 +119,7 @@ async def chi_tiet(db: AsyncSession, ma: str) -> VaiTroChiTiet:
                 mo_ta=q.mo_ta,
                 muc=hien_co.get(q.id),  # type: ignore[arg-type]
                 bat_buoc=q.ma in QUYEN_BAT_BUOC,
-                chi_cho_vai_tro=QUYEN_CHI_CHO_VAI_TRO.get(q.ma),
+                chi_cho_vai_tro=vai_tro_duoc_cap(q.ma),
             )
             for q in quyen
         ],
@@ -109,9 +131,11 @@ def _loi_du_lieu(cac_loi: list[dict[str, str]]) -> LoiNghiepVu:
 
 
 async def cap_nhat_quyen(
-    db: AsyncSession, actor: NhanVien, ma: str, quyen_moi: dict[str, str], *, ip: str
+    db: AsyncSession, actor: NhanVien, ma: str, quyen_moi: dict[str, str], phien_ban: str, *, ip: str
 ) -> VaiTroChiTiet:
-    """Đặt quyền của vai trò đúng bằng `quyen_moi`. Không có thay đổi thì không ghi gì."""
+    """Đặt quyền của vai trò đúng bằng `quyen_moi`, với điều kiện `phien_ban` còn là bản hiện tại (nếu không:
+    `DU_LIEU_DA_THAY_DOI`). Không có thay đổi thì không ghi gì."""
+    await dam_bao_la_admin(db, actor)
     vai_tro = await _lay_vai_tro(db, ma, khoa=True)
     if vai_tro.ma == MA_VAI_TRO_ADMIN:
         raise LoiNghiepVu("PHAI_CON_ADMIN", "Không thể thay đổi quyền của vai trò Admin")
@@ -121,13 +145,8 @@ async def cap_nhat_quyen(
     for ma_quyen in quyen_moi:
         if ma_quyen not in danh_muc:
             loi.append({"truong": f"quyen.{ma_quyen}", "loi": "Mã quyền không tồn tại"})
-        elif ma_quyen in QUYEN_CHI_CHO_VAI_TRO and vai_tro.ma != QUYEN_CHI_CHO_VAI_TRO[ma_quyen]:
-            loi.append(
-                {
-                    "truong": f"quyen.{ma_quyen}",
-                    "loi": f"Quyền này chỉ dành cho vai trò {QUYEN_CHI_CHO_VAI_TRO[ma_quyen]}",
-                }
-            )
+        elif (duoc_cap := vai_tro_duoc_cap(ma_quyen)) is not None and vai_tro.ma != duoc_cap:
+            loi.append({"truong": f"quyen.{ma_quyen}", "loi": f"Quyền này chỉ dành cho vai trò {duoc_cap}"})
     for bat_buoc in QUYEN_BAT_BUOC:
         if quyen_moi.get(bat_buoc) != "day_du":
             loi.append({"truong": f"quyen.{bat_buoc}", "loi": "Quyền này bắt buộc ở mức đầy đủ cho mọi vai trò"})
@@ -143,6 +162,11 @@ async def cap_nhat_quyen(
         ).all()
     }
     ma_theo_id = {v: k for k, v in danh_muc.items()}
+    if tinh_phien_ban({ma_theo_id[q_id]: _muc_tu_gioi_han(g) for q_id, g in hien_co.items()}) != phien_ban:
+        raise LoiNghiepVu(
+            "DU_LIEU_DA_THAY_DOI",
+            "Phân quyền của vai trò này vừa được thay đổi, hãy tải lại rồi kiểm tra các thay đổi trước khi lưu",
+        )
     them: list[str] = []
     bo: list[str] = []
     doi_muc: list[str] = []

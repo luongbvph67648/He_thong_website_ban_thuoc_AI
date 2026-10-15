@@ -9,8 +9,9 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, create_async_engin
 from app.seed.co_ban import seed_co_ban
 
 # Dữ liệu seed cơ bản giữ nguyên giữa các test. `cau_hinh` có khóa ngoại tới `nhan_vien` nên phải TRUNCATE cùng
-# `nhan_vien` rồi seed lại.
-BANG_GIU_LAI = ("vai_tro", "quyen", "vai_tro_quyen", "alembic_version")
+# `nhan_vien` rồi seed lại. `quyen` và `vai_tro_quyen` cũng TRUNCATE rồi seed lại: seed cố ý không ghi đè phân quyền
+# đã có (để không phá chỉnh sửa của Admin), nên test AD18 commit thật sẽ để lại ma trận lệch cho test sau.
+BANG_GIU_LAI = ("vai_tro", "alembic_version")
 
 
 async def tao_lai_database(url: str) -> None:
@@ -32,7 +33,7 @@ async def tao_lai_database(url: str) -> None:
 
 
 async def don_dep_sau_commit(engine: AsyncEngine) -> None:
-    """Xóa mọi dữ liệu test đã commit thật, giữ lại vai trò/quyền và seed lại cấu hình."""
+    """Xóa mọi dữ liệu test đã commit thật, giữ lại vai trò và khôi phục quyền, phân quyền, cấu hình về mặc định."""
     async with engine.begin() as conn:
         ten_bang = (
             await conn.execute(

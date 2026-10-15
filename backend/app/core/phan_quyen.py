@@ -14,6 +14,7 @@ from typing import Literal
 import jwt
 from fastapi import Request
 from sqlalchemy import event, select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.core.bao_mat import giai_ma_access_token
@@ -22,8 +23,10 @@ from app.core.db import Db
 from app.core.loi import LoiNghiepVu
 from app.core.thoi_gian import bay_gio_utc
 from app.models.enums import TrangThaiTaiKhoan
-from app.models.he_thong import NhanVien, Quyen, VaiTroQuyen
+from app.models.he_thong import NhanVien, Quyen, VaiTro, VaiTroQuyen
 from app.models.khach_hang import KhachHang
+
+MA_VAI_TRO_ADMIN = "ADMIN"
 
 _TIEN_TO = "bearer "
 
@@ -144,6 +147,17 @@ def xoa_cache_quyen_sau_commit(db) -> None:
     """
     xoa_cache_quyen()
     event.listen(db.sync_session, "after_commit", lambda _phien: xoa_cache_quyen(), once=True)
+
+
+async def dam_bao_la_admin(db: AsyncSession, nguoi_thuc_hien: NhanVien) -> None:
+    """Lớp phòng thủ thứ hai cho thao tác chỉ Admin được làm (quản trị tài khoản AD01, phân quyền AD18).
+
+    `staff.manage`/`role.manage` không gán được cho vai trò khác qua AD18, nhưng dữ liệu cấu hình sai (gán thẳng vào DB)
+    không được biến thành quyền tạo Admin hay tự cấp quyền. Dùng ở đầu mọi hàm GHI của hai chức năng đó.
+    """
+    ma_vai_tro = await db.scalar(select(VaiTro.ma).where(VaiTro.id == nguoi_thuc_hien.vai_tro_id))
+    if ma_vai_tro != MA_VAI_TRO_ADMIN:
+        raise LoiNghiepVu("KHONG_CO_QUYEN", "Chỉ Admin mới được thực hiện thao tác này")
 
 
 def xoa_cache_quyen() -> None:

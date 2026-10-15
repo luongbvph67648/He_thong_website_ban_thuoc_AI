@@ -24,6 +24,7 @@ from app.core.dien_thoai import che_sdt
 from app.core.loi import LoiNghiepVu
 from app.core.ma_chung_tu import ma_nhan_vien
 from app.core.nhat_ky import ghi_nhat_ky
+from app.core.phan_quyen import dam_bao_la_admin
 from app.core.phan_trang import ThamSoPhanTrang, lay_trang, sap_xep_theo
 from app.core.thoi_gian import bay_gio_utc
 from app.models.enums import TrangThaiTaiKhoan
@@ -183,6 +184,7 @@ async def chi_tiet(db: AsyncSession, nhan_vien_id: int) -> NhanVien:
 
 async def tao(db: AsyncSession, actor: NhanVien, du_lieu: NhanVienTao, *, ip: str) -> KetQuaCoMatKhauTam:
     """Tạo tài khoản với mật khẩu tạm ngẫu nhiên, bắt đổi ở lần đăng nhập đầu."""
+    await dam_bao_la_admin(db, actor)
     vai_tro = await _vai_tro_theo_ma(db, du_lieu.vai_tro)
     await _dam_bao_email_chua_dung(db, du_lieu.email)
     mat_khau_tam = tao_mat_khau_tam()
@@ -217,6 +219,7 @@ async def tao(db: AsyncSession, actor: NhanVien, du_lieu: NhanVienTao, *, ip: st
 
 async def sua(db: AsyncSession, actor: NhanVien, nhan_vien_id: int, du_lieu: NhanVienSua, *, ip: str) -> NhanVien:
     """Sửa họ tên, email, số điện thoại, vai trò. Đổi vai trò thu hồi mọi phiên (giao diện nạp lại quyền)."""
+    await dam_bao_la_admin(db, actor)
     dich, admin_khac = await _khoa_dich_va_cac_admin(db, nhan_vien_id)
     gui = du_lieu.model_fields_set
     cu: dict[str, str | None] = {}
@@ -262,6 +265,7 @@ async def sua(db: AsyncSession, actor: NhanVien, nhan_vien_id: int, du_lieu: Nha
 
 async def khoa(db: AsyncSession, actor: NhanVien, nhan_vien_id: int, *, ip: str) -> NhanVien:
     """Khóa tài khoản: không đăng nhập/làm mới được nữa và mọi phiên bị thu hồi ngay."""
+    await dam_bao_la_admin(db, actor)
     dich, admin_khac = await _khoa_dich_va_cac_admin(db, nhan_vien_id)
     if dich.id == actor.id:
         raise _tu_thay_doi("khóa")
@@ -278,6 +282,7 @@ async def khoa(db: AsyncSession, actor: NhanVien, nhan_vien_id: int, *, ip: str)
 
 async def mo_khoa(db: AsyncSession, actor: NhanVien, nhan_vien_id: int, *, ip: str) -> NhanVien:
     """Mở khóa tài khoản (cả khóa của Admin lẫn khóa tạm do đoán mật khẩu), xóa bộ đếm sai."""
+    await dam_bao_la_admin(db, actor)
     dich, _ = await _khoa_dich_va_cac_admin(db, nhan_vien_id)
     if dich.trang_thai == TrangThaiTaiKhoan.hoat_dong and dich.khoa_den is None and dich.so_lan_dang_nhap_sai == 0:
         return dich
@@ -291,6 +296,7 @@ async def mo_khoa(db: AsyncSession, actor: NhanVien, nhan_vien_id: int, *, ip: s
 
 async def dat_lai_mat_khau(db: AsyncSession, actor: NhanVien, nhan_vien_id: int, *, ip: str) -> KetQuaCoMatKhauTam:
     """Đặt mật khẩu tạm mới, bắt đổi ở lần đăng nhập kế, xóa khóa tạm và thu hồi mọi phiên. Không mở khóa của Admin."""
+    await dam_bao_la_admin(db, actor)
     dich, _ = await _khoa_dich_va_cac_admin(db, nhan_vien_id)
     if dich.id == actor.id:
         raise _tu_thay_doi("đặt lại mật khẩu của")
@@ -307,6 +313,7 @@ async def dat_lai_mat_khau(db: AsyncSession, actor: NhanVien, nhan_vien_id: int,
 
 async def xoa_mem(db: AsyncSession, actor: NhanVien, nhan_vien_id: int, *, ip: str) -> None:
     """Xóa mềm (không xóa cứng: chứng từ cũ vẫn trỏ tới người lập). Thu hồi mọi phiên."""
+    await dam_bao_la_admin(db, actor)
     dich, admin_khac = await _khoa_dich_va_cac_admin(db, nhan_vien_id)
     if dich.id == actor.id:
         raise _tu_thay_doi("xóa")
