@@ -8,9 +8,11 @@ from app.core.middleware import HEADER_REQUEST_ID, RequestIdMiddleware
 from app.health import router as health_router
 from app.modules.nhan_vien.router_auth import router as nhan_vien_auth_router
 from app.modules.nhan_vien.router_noi_bo import router as nhan_vien_noi_bo_router
+from app.modules.nhan_vien.router_quan_tri import router as nhan_vien_quan_tri_router
 from app.modules.tai_khoan.router_cong_khai import router as tai_khoan_cong_khai_router
 from app.modules.tai_khoan.router_khach import router as tai_khoan_khach_router
 from app.modules.thong_bao.router_noi_bo import router as thong_bao_noi_bo_router
+from app.modules.vai_tro.router_noi_bo import router as vai_tro_noi_bo_router
 
 
 def create_app() -> FastAPI:
@@ -33,6 +35,8 @@ def create_app() -> FastAPI:
     app.include_router(nhan_vien_auth_router, prefix="/api/v1")
     app.include_router(nhan_vien_noi_bo_router, prefix="/api/v1")
     app.include_router(thong_bao_noi_bo_router, prefix="/api/v1")
+    app.include_router(nhan_vien_quan_tri_router, prefix="/api/v1")
+    app.include_router(vai_tro_noi_bo_router, prefix="/api/v1")
     return app
 
 

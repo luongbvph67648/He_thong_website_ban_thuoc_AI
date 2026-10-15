@@ -12,6 +12,8 @@ HoTen = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1, ma
 
 
 class VaiTroDoc(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     ma: str
     ten: str
 

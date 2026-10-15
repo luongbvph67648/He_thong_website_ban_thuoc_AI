@@ -39,6 +39,17 @@ def _chuan_hoa_email(gia_tri: object) -> str | None:
 EmailTuyChon = Annotated[str | None, BeforeValidator(_chuan_hoa_email)]
 
 
+def _email_bat_buoc(gia_tri: object) -> str:
+    email = _chuan_hoa_email(gia_tri)
+    if email is None:
+        raise ValueError("Email không được để trống")
+    return email
+
+
+EmailBatBuoc = Annotated[str, BeforeValidator(_email_bat_buoc)]
+"""Email bắt buộc: cắt khoảng trắng, đổi sang chữ thường, kiểm tra định dạng (dùng cho tài khoản nhân viên)."""
+
+
 class OtpYeuCau(BaseModel):
     so_dien_thoai: SoDienThoai
     # `don_thuoc_khach` thêm khi làm đơn thuốc của khách vãng lai (T5.x)

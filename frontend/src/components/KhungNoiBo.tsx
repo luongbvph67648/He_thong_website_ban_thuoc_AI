@@ -8,6 +8,7 @@ import type { MucDieuHuong } from '../lib/dieuHuong'
 import { DUONG_DANG_NHAP_NOI_BO, DUONG_TAI_KHOAN_NOI_BO } from '../lib/hoSoNoiBo'
 import { usePhien } from '../stores/phien'
 import { ChuongThongBao } from './ChuongThongBao'
+import { useDongBoPhienNoiBo } from './useDongBoPhienNoiBo'
 import { duongDayDu, xayMenu } from './xayMenu'
 
 const { Sider, Header, Content } = Layout
@@ -25,6 +26,7 @@ export function KhungNoiBo({ goc, tieuDe, muc }: Props) {
   const vitri = useLocation()
   const dieuHuong = useNavigate()
   const queryClient = useQueryClient()
+  useDongBoPhienNoiBo()
   const items = useMemo(() => xayMenu(goc, muc, quyen), [goc, muc, quyen])
 
   // Mục đang chọn: đường dẫn dài nhất là tiền tố của địa chỉ hiện tại (để trang con vẫn sáng mục cha).

@@ -13,7 +13,7 @@ from typing import Literal
 
 import jwt
 from fastapi import Request
-from sqlalchemy import select
+from sqlalchemy import event, select
 from sqlalchemy.orm import selectinload
 
 from app.core.bao_mat import giai_ma_access_token
@@ -135,6 +135,15 @@ async def nhan_vien_hien_tai(request: Request, db: Db) -> NhanVien:
 
 # Cache quyền theo vai trò: {vai_tro_id: (thời điểm nạp, {mã quyền: mức})}. Dùng đồng hồ đơn điệu, không dùng giờ máy.
 _cache_quyen: dict[int, tuple[float, dict[str, MucCuaVaiTro]]] = {}
+
+
+def xoa_cache_quyen_sau_commit(db) -> None:
+    """Xóa cache quyền ngay và LẦN NỮA sau khi transaction của `db` commit.
+
+    Chỉ xóa trước commit thì một request khác chạy giữa lúc xóa và lúc commit sẽ đọc dữ liệu cũ rồi cache lại 60 giây.
+    """
+    xoa_cache_quyen()
+    event.listen(db.sync_session, "after_commit", lambda _phien: xoa_cache_quyen(), once=True)
 
 
 def xoa_cache_quyen() -> None:

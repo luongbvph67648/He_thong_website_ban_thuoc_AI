@@ -7,6 +7,7 @@ kiểm tra chữ ký token.
 import asyncio
 import hashlib
 import hmac
+import secrets
 import uuid
 from datetime import timedelta
 
@@ -43,6 +44,24 @@ async def bam_mat_khau_async(mat_khau: str) -> str:
 
 async def kiem_tra_mat_khau_async(mat_khau: str, ma_bam: str) -> bool:
     return await asyncio.to_thread(kiem_tra_mat_khau, mat_khau, ma_bam)
+
+
+_CHU_MAT_KHAU_TAM = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ"  # bỏ ký tự dễ nhầm: i l o I O
+_SO_MAT_KHAU_TAM = "23456789"  # bỏ 0 và 1
+
+
+def tao_mat_khau_tam(do_dai: int = 12) -> str:
+    """Mật khẩu tạm ngẫu nhiên (CSPRNG) cho tài khoản nhân viên mới hoặc vừa được Admin đặt lại.
+
+    Luôn có chữ và số nên qua `mat_khau_du_manh`; không có ký tự dễ nhầm vì Admin đọc/chép cho nhân viên. Chỉ hiện một
+    lần cho Admin và bắt đổi ngay ở lần đăng nhập đầu (`phai_doi_mat_khau`); không lưu dạng rõ ở đâu cả.
+    """
+    if do_dai < 8:
+        raise ValueError("Mật khẩu tạm cần tối thiểu 8 ký tự")
+    ky_tu = [secrets.choice(_CHU_MAT_KHAU_TAM), secrets.choice(_SO_MAT_KHAU_TAM)]
+    ky_tu += [secrets.choice(_CHU_MAT_KHAU_TAM + _SO_MAT_KHAU_TAM) for _ in range(do_dai - 2)]
+    secrets.SystemRandom().shuffle(ky_tu)
+    return "".join(ky_tu)
 
 
 def mat_khau_du_manh(mat_khau: str) -> bool:

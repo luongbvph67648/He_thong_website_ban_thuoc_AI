@@ -115,3 +115,52 @@ def test_openapi_cho_trang_va_tien_dung_de_sinh_client_typescript():
     schemas = app.openapi()["components"]["schemas"]
     assert schemas["Muc"]["properties"]["gia"]["type"] == "string"
     assert "Trang_Muc_" in schemas
+
+
+# --- Sắp xếp (spec 06 mục 5): `sap_xep=-created_at`, chỉ nhận trường nằm trong danh sách cho phép ---------------------
+
+
+async def test_sap_xep_tang_giam_va_khoa_phu_on_dinh(db):
+    from app.core.phan_trang import sap_xep_theo
+    from app.models.he_thong import NhanVien
+    from tests.factories import tao_nhan_vien
+
+    cho_phep = {"ho_ten": NhanVien.ho_ten}
+    for ten in ("Bình", "An", "An", "Cường"):  # hai dòng trùng tên: khóa phụ `id` quyết định thứ tự
+        await tao_nhan_vien(db, ho_ten=ten)
+
+    async def doc(sap_xep):
+        stmt = sap_xep_theo(select(NhanVien), sap_xep, cho_phep, mac_dinh="ho_ten", khoa_phu=NhanVien.id)
+        return [
+            (n.ho_ten, n.id) for n in (await db.scalars(stmt.where(NhanVien.ho_ten.in_(["An", "Bình", "Cường"])))).all()
+        ]
+
+    tang = await doc("ho_ten")
+    giam = await doc("-ho_ten")
+    assert [t for t, _ in tang] == ["An", "An", "Bình", "Cường"]
+    assert [t for t, _ in giam] == ["Cường", "Bình", "An", "An"]
+    assert [i for t, i in tang if t == "An"] == sorted(i for t, i in tang if t == "An")
+    assert [i for t, i in giam if t == "An"] == sorted((i for t, i in giam if t == "An"), reverse=True)
+    assert await doc(None) == tang  # không gửi thì theo mặc định
+
+
+@pytest.mark.parametrize(
+    "sap_xep", ["mat_khau_hash", "-mat_khau_hash", "id; drop table nhan_vien", "", "--ho_ten", "ho_ten,-id"]
+)
+def test_sap_xep_truong_ngoai_danh_sach_bi_tu_choi(sap_xep):
+    from app.core.loi import LoiNghiepVu
+    from app.core.phan_trang import sap_xep_theo
+    from app.models.he_thong import NhanVien
+
+    with pytest.raises(LoiNghiepVu) as loi:
+        sap_xep_theo(select(NhanVien), sap_xep, {"ho_ten": NhanVien.ho_ten}, mac_dinh="ho_ten", khoa_phu=NhanVien.id)
+    assert loi.value.ma_loi == "DU_LIEU_KHONG_HOP_LE"
+    assert loi.value.chi_tiet[0]["truong"] == "sap_xep"
+
+
+def test_sap_xep_mac_dinh_phai_nam_trong_danh_sach_cho_phep():
+    from app.core.phan_trang import sap_xep_theo
+    from app.models.he_thong import NhanVien
+
+    with pytest.raises(ValueError, match="mac_dinh"):
+        sap_xep_theo(select(NhanVien), None, {"ho_ten": NhanVien.ho_ten}, mac_dinh="created_at", khoa_phu=NhanVien.id)

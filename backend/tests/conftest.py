@@ -12,7 +12,7 @@ Database:
 - `engine_tam`, `engine_co_bang`: database tạm riêng cho một test.
 
 HTTP: `app` (ứng dụng thật, request dùng chung transaction của test), `client`, `client_https` (giữ cookie refresh
-`Secure`), `dang_nhap_khach`,
+`Secure`), `clients_theo_vai_tro` (ba client nhân viên một lúc), `dang_nhap_khach`,
 `dang_nhap_duoc_si`, `dang_nhap_kho`, `dang_nhap_admin` (client đã gắn access token của tài khoản vừa tạo).
 """
 
@@ -349,3 +349,19 @@ def bat_log():
     yield doc_dong
     logger.removeHandler(handler)
     logger.setLevel(cu)
+
+
+@pytest_asyncio.fixture
+async def clients_theo_vai_tro(app, db):
+    """Ba client đã đăng nhập, mỗi vai trò một: `{"PHARMACIST": client, "WAREHOUSE": ..., "ADMIN": ...}`."""
+    clients = {}
+    for vai_tro in ("PHARMACIST", "WAREHOUSE", "ADMIN"):
+        nv = await tao_nhan_vien(db, vai_tro)
+        clients[vai_tro] = httpx.AsyncClient(
+            transport=httpx.ASGITransport(app=app),
+            base_url="http://test",
+            headers={"Authorization": f"Bearer {tao_access_token(nv.id, 'noi_bo')}"},
+        )
+    yield clients
+    for c in clients.values():
+        await c.aclose()

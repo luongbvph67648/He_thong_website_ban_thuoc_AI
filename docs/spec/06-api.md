@@ -82,6 +82,27 @@
   - `POST /api/v1/noi-bo/thong-bao/{id}/da-doc` (gọi lại vẫn 200), `POST /api/v1/noi-bo/thong-bao/da-doc-tat-ca` -> `{da_cap_nhat}`.
   - `lien_ket` chỉ là đường dẫn nội bộ của ứng dụng (bắt đầu bằng một `/`); service tạo thông báo từ chối URL ngoài, và giao diện cũng không bao giờ điều hướng tới URL ngoài.
 
+### 3.4 Quản lý tài khoản nhân viên (AD01, `staff.manage`)
+Mọi route dưới `/api/v1/noi-bo/nhan-vien`; đọc cần mức `xem`, ghi cần `day_du`. `{id}` là số nguyên 1..2147483647 (ngoài khoảng là `400 DU_LIEU_KHONG_HOP_LE`, không bao giờ 500; id hợp lệ nhưng không có là `404`). Phản hồi `NhanVienQuanTriDoc` `{id, ma_nhan_vien, ho_ten, email, so_dien_thoai, vai_tro: {ma, ten}, trang_thai, phai_doi_mat_khau, khoa_den, created_at, updated_at}` không bao giờ có mật khẩu hay hash; nhân viên đã xóa mềm không xuất hiện ở đâu (`404`).
+- `GET /noi-bo/nhan-vien?q=&vai_tro=&trang_thai=&sap_xep=&trang=&kich_thuoc=` -> trang `NhanVienQuanTriDoc`. `sap_xep` (mục 5) nhận `created_at` (mặc định `-created_at`, mới tạo nhất trước), `ma_nhan_vien`, `ho_ten`, `email` (tên và email không phân biệt dấu/hoa thường); trường khác là `400`; luôn thêm `id` làm khóa phụ nên thứ tự ổn định giữa các trang. `q` tìm tên không phân biệt dấu/hoa thường, email, mã (ký tự `%` `_` `\` trong `q` được hiểu theo nghĩa đen). `GET /noi-bo/nhan-vien/{id}` -> `NhanVienQuanTriDoc`.
+- `POST /noi-bo/nhan-vien` `{ho_ten, email, so_dien_thoai?, vai_tro}` -> 201 `NhanVienCoMatKhauTam` (= `NhanVienQuanTriDoc` + `mat_khau_tam`). Mật khẩu tạm 12 ký tự ngẫu nhiên (CSPRNG, chữ và số, bỏ ký tự dễ nhầm), **chỉ có trong phản hồi này**, DB chỉ lưu hash; tài khoản có `phai_doi_mat_khau = true`. Email lưu chữ thường, không trùng với bất kỳ nhân viên nào kể cả đã xóa mềm (`409 TRUNG_DU_LIEU`, `chi_tiet.truong = "email"`); `vai_tro` không tồn tại là `400 DU_LIEU_KHONG_HOP_LE`.
+- `PATCH /noi-bo/nhan-vien/{id}` `{ho_ten?, email?, so_dien_thoai?, vai_tro?}` -> `NhanVienQuanTriDoc`. Chỉ đổi trường được gửi (`so_dien_thoai` rỗng/null là xóa số; trường lạ là `400`). **Đổi vai trò thu hồi mọi phiên của nhân viên đó** (phiên cũ mang quyền cũ).
+- `POST /noi-bo/nhan-vien/{id}/khoa`, `/mo-khoa` -> `NhanVienQuanTriDoc`. Khóa: `trang_thai = bi_khoa`, thu hồi mọi phiên, lần làm mới kế bị `403 TAI_KHOAN_BI_KHOA` và xóa cookie (mục 3.2); mở khóa xóa luôn `khoa_den` và bộ đếm đăng nhập sai.
+- `POST /noi-bo/nhan-vien/{id}/dat-lai-mat-khau` -> `NhanVienCoMatKhauTam`: sinh mật khẩu tạm mới, đặt `phai_doi_mat_khau`, thu hồi mọi phiên, xóa khóa tạm (`khoa_den`, bộ đếm sai). Không mở khóa của Admin (`trang_thai` giữ nguyên, dùng `mo-khoa`).
+- `DELETE /noi-bo/nhan-vien/{id}` -> 204. Xóa mềm (`deleted_at`) và thu hồi mọi phiên; bản ghi và nhật ký cũ giữ nguyên, **không có xóa cứng**.
+- **Quy tắc an toàn:** Admin không tự khóa, tự xóa, tự đổi vai trò, tự đặt lại mật khẩu của mình (`403 TU_THAY_DOI_KHONG_DUOC`; tự đổi mật khẩu dùng `doi-mat-khau` ở mục 3.3). Mọi thao tác làm Admin hoạt động cuối cùng mất khả năng đăng nhập (khóa, xóa, hạ vai trò) là `409 PHAI_CON_ADMIN`. Để hai Admin không thể đồng thời làm nhau mất quyền mà vượt kiểm tra, mỗi thao tác khóa dòng đích và MỌI dòng Admin chưa xóa trong một câu `ORDER BY id FOR UPDATE`.
+- Mọi thao tác ghi nhật ký (`tao`, `sua`, `khoa`, `mo_khoa`, `dat_lai_mat_khau`, `xoa`) với giá trị cũ/mới; mật khẩu tạm và hash không bao giờ vào nhật ký, số điện thoại ghi dạng che.
+
+### 3.5 Vai trò và phân quyền (AD18, `role.manage`)
+Mọi route dưới `/api/v1/noi-bo/vai-tro`; `{ma}` chỉ gồm `A-Z` và `_`.
+- `GET /noi-bo/vai-tro` -> `[{ma, ten, mo_ta, so_nhan_vien, so_quyen, chinh_sua_duoc}]`.
+- `GET /noi-bo/vai-tro/{ma}` -> `{ma, ten, mo_ta, so_nhan_vien, chinh_sua_duoc, quyen: [...]}`: **toàn bộ** mã quyền của hệ thống (dạng `{ma, nhom, mo_ta, muc: "day_du" | "chi_xem" | null, bat_buoc, chi_cho_vai_tro}`) để giao diện dựng ma trận một lần gọi.
+- `PUT /noi-bo/vai-tro/{ma}/quyen` `{quyen: {<mã quyền>: "day_du" | "chi_xem"}}` -> `VaiTroChiTiet`. Thay TOÀN BỘ quyền của vai trò: mã không có trong `quyen` là bị gỡ. Khóa dòng vai trò `FOR UPDATE` nên hai Admin sửa cùng lúc được tuần tự hóa.
+  - `ADMIN` không sửa được (`409 PHAI_CON_ADMIN`; `chinh_sua_duoc = false`).
+  - `400 DU_LIEU_KHONG_HOP_LE` (kèm danh sách lỗi trong `chi_tiet`) khi mã quyền không có trong `quyen.yaml`, khi `profile.self` bị gỡ hoặc hạ xuống `chi_xem` (mọi nhân viên phải tự đổi được mật khẩu và hồ sơ), hoặc khi gán `content.professional.edit` / `content.approve` cho vai trò khác `PHARMACIST` (quyền chuyên môn, spec 03 mục 7).
+  - Ghi nhật ký `sua` bảng `vai_tro_quyen` với phần khác biệt dạng danh sách `them`, `bo`, `doi_muc`.
+  - **Hiệu lực:** quyền được đọc từ DB mỗi request (bộ nhớ đệm 60 giây, xóa ngay sau commit của thao tác này) nên thay đổi có hiệu lực ở request kế tiếp và KHÔNG thu hồi phiên; menu giao diện của nhân viên đang đăng nhập tự cập nhật khi họ quay lại cửa sổ hoặc sau tối đa 5 phút qua `GET /noi-bo/toi` (spec 09).
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:
@@ -95,7 +116,7 @@
 |---|---|---|
 | 400 | `DU_LIEU_KHONG_HOP_LE` | Validate thất bại; `chi_tiet` là danh sách `{truong, loi}` |
 | 401 | `CHUA_DANG_NHAP`, `TOKEN_HET_HAN`, `SAI_THONG_TIN_DANG_NHAP` | |
-| 403 | `KHONG_CO_QUYEN`, `TAI_KHOAN_BI_KHOA`, `PHAI_DOI_MAT_KHAU`, `TU_DUYET_KHONG_DUOC` | |
+| 403 | `KHONG_CO_QUYEN`, `TAI_KHOAN_BI_KHOA`, `PHAI_DOI_MAT_KHAU`, `TU_DUYET_KHONG_DUOC`, `TU_THAY_DOI_KHONG_DUOC` (Admin tự khóa, tự xóa, tự đổi vai trò, tự đặt lại mật khẩu) | |
 | 404 | `KHONG_TIM_THAY` | Kể cả khi tài nguyên tồn tại nhưng thuộc khách khác |
 | 405 | `PHUONG_THUC_KHONG_DUOC_PHEP` | Gọi sai phương thức HTTP; giữ header `Allow` |
 | 409 | `HET_HANG`, `CHUYEN_TRANG_THAI_KHONG_HOP_LE`, `DA_CO_NGUOI_XU_LY`, `GIA_DA_THAY_DOI`, `TRUNG_DU_LIEU`, `PHAI_CON_ADMIN`, `DANH_MUC_CON_SAN_PHAM` | |

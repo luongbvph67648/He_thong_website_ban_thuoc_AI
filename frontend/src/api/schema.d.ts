@@ -320,6 +320,157 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/noi-bo/nhan-vien": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Danh sách nhân viên (AD01)
+         * @description `sap_xep` nhận `created_at` (mặc định, giảm dần), `ma_nhan_vien`, `ho_ten`, `email`; thêm `-` để giảm dần.
+         */
+        get: operations["danh_sach_api_v1_noi_bo_nhan_vien_get"];
+        put?: never;
+        /**
+         * Tạo tài khoản nhân viên (AD01)
+         * @description Mật khẩu tạm sinh ngẫu nhiên, chỉ hiện trong phản hồi này; nhân viên bị bắt đổi ở lần đăng nhập đầu.
+         */
+        post: operations["tao_api_v1_noi_bo_nhan_vien_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/nhan-vien/{nhan_vien_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chi tiết nhân viên (AD01) */
+        get: operations["chi_tiet_api_v1_noi_bo_nhan_vien__nhan_vien_id__get"];
+        put?: never;
+        post?: never;
+        /** Xóa mềm nhân viên (AD01) */
+        delete: operations["xoa_api_v1_noi_bo_nhan_vien__nhan_vien_id__delete"];
+        options?: never;
+        head?: never;
+        /** Sửa nhân viên, gán vai trò (AD01) */
+        patch: operations["sua_api_v1_noi_bo_nhan_vien__nhan_vien_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/noi-bo/nhan-vien/{nhan_vien_id}/khoa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Khóa tài khoản, thu hồi phiên (AD01) */
+        post: operations["khoa_api_v1_noi_bo_nhan_vien__nhan_vien_id__khoa_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/nhan-vien/{nhan_vien_id}/mo-khoa": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mở khóa tài khoản (AD01) */
+        post: operations["mo_khoa_api_v1_noi_bo_nhan_vien__nhan_vien_id__mo_khoa_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/nhan-vien/{nhan_vien_id}/dat-lai-mat-khau": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Đặt lại mật khẩu tạm (AD01)
+         * @description Sinh mật khẩu tạm mới (chỉ hiện một lần), bắt đổi ở lần đăng nhập kế, thu hồi mọi phiên của nhân viên đó.
+         */
+        post: operations["dat_lai_mat_khau_api_v1_noi_bo_nhan_vien__nhan_vien_id__dat_lai_mat_khau_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/vai-tro": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Danh sách vai trò (AD18) */
+        get: operations["danh_sach_api_v1_noi_bo_vai_tro_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/vai-tro/{ma}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ma trận quyền của một vai trò (AD18) */
+        get: operations["chi_tiet_api_v1_noi_bo_vai_tro__ma__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/vai-tro/{ma}/quyen": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Thay toàn bộ quyền của vai trò (AD18)
+         * @description Mã quyền không có trong `quyen` bị gỡ. ADMIN không sửa được; `profile.self` bắt buộc ở mức đầy đủ.
+         */
+        put: operations["cap_nhat_quyen_api_v1_noi_bo_vai_tro__ma__quyen_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -334,6 +485,16 @@ export interface components {
             ho_ten?: string | null;
             /** So Dien Thoai */
             so_dien_thoai?: string | null;
+        };
+        /**
+         * CapNhatQuyenYeuCau
+         * @description Thay TOÀN BỘ quyền của vai trò: mã nào không có trong `quyen` thì vai trò không còn quyền đó.
+         */
+        CapNhatQuyenYeuCau: {
+            /** Quyen */
+            quyen: {
+                [key: string]: "day_du" | "chi_xem";
+            };
         };
         /**
          * CapTokenPhanHoi
@@ -443,6 +604,88 @@ export interface components {
             email: string | null;
         };
         /**
+         * NhanVienCoMatKhauTam
+         * @description Phản hồi tạo tài khoản và đặt lại mật khẩu: `mat_khau_tam` chỉ hiện lần này, không lưu dạng rõ.
+         */
+        NhanVienCoMatKhauTam: {
+            /** Id */
+            id: number;
+            /** Ma Nhan Vien */
+            ma_nhan_vien: string;
+            /** Ho Ten */
+            ho_ten: string;
+            /** Email */
+            email: string;
+            /** So Dien Thoai */
+            so_dien_thoai: string | null;
+            vai_tro: components["schemas"]["VaiTroDoc"];
+            trang_thai: components["schemas"]["TrangThaiTaiKhoan"];
+            /** Phai Doi Mat Khau */
+            phai_doi_mat_khau: boolean;
+            /** Khoa Den */
+            khoa_den: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Updated At */
+            updated_at: string | null;
+            /** Mat Khau Tam */
+            mat_khau_tam: string;
+        };
+        /** NhanVienQuanTriDoc */
+        NhanVienQuanTriDoc: {
+            /** Id */
+            id: number;
+            /** Ma Nhan Vien */
+            ma_nhan_vien: string;
+            /** Ho Ten */
+            ho_ten: string;
+            /** Email */
+            email: string;
+            /** So Dien Thoai */
+            so_dien_thoai: string | null;
+            vai_tro: components["schemas"]["VaiTroDoc"];
+            trang_thai: components["schemas"]["TrangThaiTaiKhoan"];
+            /** Phai Doi Mat Khau */
+            phai_doi_mat_khau: boolean;
+            /** Khoa Den */
+            khoa_den: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Updated At */
+            updated_at: string | null;
+        };
+        /**
+         * NhanVienSua
+         * @description Chỉ gửi trường cần đổi. Đổi `vai_tro` thu hồi mọi phiên của nhân viên đó.
+         */
+        NhanVienSua: {
+            /** Ho Ten */
+            ho_ten?: string | null;
+            /** Email */
+            email?: string | null;
+            /** So Dien Thoai */
+            so_dien_thoai?: string | null;
+            /** Vai Tro */
+            vai_tro?: string | null;
+        };
+        /** NhanVienTao */
+        NhanVienTao: {
+            /** Ho Ten */
+            ho_ten: string;
+            /** Email */
+            email: string;
+            /** So Dien Thoai */
+            so_dien_thoai?: string | null;
+            /** Vai Tro */
+            vai_tro: string;
+        };
+        /**
          * NhanVienToi
          * @description Hồ sơ của chính nhân viên đang đăng nhập, kèm quyền để giao diện ẩn/hiện menu (lớp phụ, backend vẫn kiểm tra).
          */
@@ -505,6 +748,24 @@ export interface components {
             het_han_giay: number;
             nhan_vien: components["schemas"]["NhanVienToi"];
         };
+        /**
+         * QuyenTrongVaiTro
+         * @description Một mã quyền và mức mà vai trò đang có (`null` là không có).
+         */
+        QuyenTrongVaiTro: {
+            /** Ma */
+            ma: string;
+            /** Nhom */
+            nhom: string | null;
+            /** Mo Ta */
+            mo_ta: string | null;
+            /** Muc */
+            muc: ("day_du" | "chi_xem") | null;
+            /** Bat Buoc */
+            bat_buoc: boolean;
+            /** Chi Cho Vai Tro */
+            chi_cho_vai_tro: string | null;
+        };
         /** SoChuaDoc */
         SoChuaDoc: {
             /** So Chua Doc */
@@ -543,6 +804,22 @@ export interface components {
              */
             created_at: string;
         };
+        /**
+         * TrangThaiTaiKhoan
+         * @enum {string}
+         */
+        TrangThaiTaiKhoan: "hoat_dong" | "bi_khoa";
+        /** Trang[NhanVienQuanTriDoc] */
+        Trang_NhanVienQuanTriDoc_: {
+            /** Du Lieu */
+            du_lieu: components["schemas"]["NhanVienQuanTriDoc"][];
+            /** Tong */
+            tong: number;
+            /** Trang */
+            trang: number;
+            /** Kich Thuoc */
+            kich_thuoc: number;
+        };
         /** Trang[ThongBaoDoc] */
         Trang_ThongBaoDoc_: {
             /** Du Lieu */
@@ -554,12 +831,42 @@ export interface components {
             /** Kich Thuoc */
             kich_thuoc: number;
         };
+        /** VaiTroChiTiet */
+        VaiTroChiTiet: {
+            /** Ma */
+            ma: string;
+            /** Ten */
+            ten: string;
+            /** Mo Ta */
+            mo_ta: string | null;
+            /** So Nhan Vien */
+            so_nhan_vien: number;
+            /** Chinh Sua Duoc */
+            chinh_sua_duoc: boolean;
+            /** Quyen */
+            quyen: components["schemas"]["QuyenTrongVaiTro"][];
+        };
         /** VaiTroDoc */
         VaiTroDoc: {
             /** Ma */
             ma: string;
             /** Ten */
             ten: string;
+        };
+        /** VaiTroTomTat */
+        VaiTroTomTat: {
+            /** Ma */
+            ma: string;
+            /** Ten */
+            ten: string;
+            /** Mo Ta */
+            mo_ta: string | null;
+            /** So Nhan Vien */
+            so_nhan_vien: number;
+            /** So Quyen */
+            so_quyen: number;
+            /** Chinh Sua Duoc */
+            chinh_sua_duoc: boolean;
         };
         /** ValidationError */
         ValidationError: {
@@ -1097,6 +1404,354 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ThongBaoDoc"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    danh_sach_api_v1_noi_bo_nhan_vien_get: {
+        parameters: {
+            query?: {
+                /** @description Tìm theo tên (không phân biệt dấu), email, mã */
+                q?: string | null;
+                /** @description Mã vai trò: PHARMACIST, WAREHOUSE, ADMIN */
+                vai_tro?: string | null;
+                trang_thai?: components["schemas"]["TrangThaiTaiKhoan"] | null;
+                /** @description Sắp xếp theo một trường, dấu `-` phía trước là giảm dần, ví dụ `-created_at` */
+                sap_xep?: string | null;
+                /** @description Số trang, bắt đầu từ 1 */
+                trang?: number;
+                /** @description Số dòng mỗi trang */
+                kich_thuoc?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Trang_NhanVienQuanTriDoc_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tao_api_v1_noi_bo_nhan_vien_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NhanVienTao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NhanVienCoMatKhauTam"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chi_tiet_api_v1_noi_bo_nhan_vien__nhan_vien_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nhan_vien_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NhanVienQuanTriDoc"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    xoa_api_v1_noi_bo_nhan_vien__nhan_vien_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nhan_vien_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sua_api_v1_noi_bo_nhan_vien__nhan_vien_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nhan_vien_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NhanVienSua"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NhanVienQuanTriDoc"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    khoa_api_v1_noi_bo_nhan_vien__nhan_vien_id__khoa_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nhan_vien_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NhanVienQuanTriDoc"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mo_khoa_api_v1_noi_bo_nhan_vien__nhan_vien_id__mo_khoa_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nhan_vien_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NhanVienQuanTriDoc"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    dat_lai_mat_khau_api_v1_noi_bo_nhan_vien__nhan_vien_id__dat_lai_mat_khau_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nhan_vien_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NhanVienCoMatKhauTam"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    danh_sach_api_v1_noi_bo_vai_tro_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaiTroTomTat"][];
+                };
+            };
+        };
+    };
+    chi_tiet_api_v1_noi_bo_vai_tro__ma__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ma: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaiTroChiTiet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cap_nhat_quyen_api_v1_noi_bo_vai_tro__ma__quyen_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ma: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CapNhatQuyenYeuCau"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VaiTroChiTiet"];
                 };
             };
             /** @description Validation Error */

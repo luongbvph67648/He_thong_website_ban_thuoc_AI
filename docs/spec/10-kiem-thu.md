@@ -29,7 +29,7 @@
   - Token khách gọi `/noi-bo` và token nội bộ gọi `/toi` → 401.
   - Response nội bộ cho Admin/kho không chứa khóa `ho_so_suc_khoe`, `di_ung`, `benh_nen`. Response cho dược sĩ không chứa `gia_nhap`, `gia_von`.
   - Hàm cổng sức khỏe: 4 trường hợp đúng/sai theo spec 03 mục 5.1, kèm kiểm tra có ghi nhật ký.
-  - Tách nhiệm vụ: tự duyệt phiếu điều chỉnh/hủy/xuất trả bị chặn; Admin tự khóa hoặc tự hạ quyền bị chặn; khóa Admin cuối cùng bị chặn (`PHAI_CON_ADMIN`).
+  - Tách nhiệm vụ: tự duyệt phiếu điều chỉnh/hủy/xuất trả bị chặn; Admin tự khóa, tự xóa, tự đổi vai trò, tự đặt lại mật khẩu bị chặn (`TU_THAY_DOI_KHONG_DUOC`); khóa/xóa/hạ vai trò Admin cuối cùng bị chặn (`PHAI_CON_ADMIN`), kể cả khi hai Admin làm nhau đồng thời (2 session thật, đúng một bên thành công).
 
 ## 4. Bất biến tồn kho và tranh chấp (`tests/bat_bien/`)
 - **Hàm `kiem_tra_bat_bien(db)`:** chạy 5 bất biến ở spec 04 mục 3.2 bằng SQL, trả danh sách vi phạm. Gọi ở cuối **mọi** test thuộc module `kho`, `ban_hang`, `don_thuoc`, `sau_ban` (fixture autouse).

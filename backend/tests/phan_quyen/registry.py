@@ -17,6 +17,19 @@ REGISTRY: dict[tuple[str, str], tuple[str, str]] = {
     ("GET", f"{TIEN_TO_NOI_BO}/thong-bao/so-chua-doc"): ("profile.self", "xem"),
     ("POST", f"{TIEN_TO_NOI_BO}/thong-bao/da-doc-tat-ca"): ("profile.self", "day_du"),
     ("POST", f"{TIEN_TO_NOI_BO}/thong-bao/{{thong_bao_id}}/da-doc"): ("profile.self", "day_du"),
+    # AD01: chỉ Admin có `staff.manage` (day_du).
+    ("GET", f"{TIEN_TO_NOI_BO}/nhan-vien"): ("staff.manage", "xem"),
+    ("POST", f"{TIEN_TO_NOI_BO}/nhan-vien"): ("staff.manage", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/nhan-vien/{{nhan_vien_id}}"): ("staff.manage", "xem"),
+    ("PATCH", f"{TIEN_TO_NOI_BO}/nhan-vien/{{nhan_vien_id}}"): ("staff.manage", "day_du"),
+    ("DELETE", f"{TIEN_TO_NOI_BO}/nhan-vien/{{nhan_vien_id}}"): ("staff.manage", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/nhan-vien/{{nhan_vien_id}}/khoa"): ("staff.manage", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/nhan-vien/{{nhan_vien_id}}/mo-khoa"): ("staff.manage", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/nhan-vien/{{nhan_vien_id}}/dat-lai-mat-khau"): ("staff.manage", "day_du"),
+    # AD18: chỉ Admin có `role.manage` (day_du).
+    ("GET", f"{TIEN_TO_NOI_BO}/vai-tro"): ("role.manage", "xem"),
+    ("GET", f"{TIEN_TO_NOI_BO}/vai-tro/{{ma}}"): ("role.manage", "xem"),
+    ("PUT", f"{TIEN_TO_NOI_BO}/vai-tro/{{ma}}/quyen"): ("role.manage", "day_du"),
 }
 
 # Route nội bộ cố ý KHÔNG cần quyền vì chạy trước khi có phiên (đăng nhập) hoặc chỉ dựa vào cookie refresh.

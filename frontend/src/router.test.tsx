@@ -12,14 +12,19 @@ import { taoRoutes } from './router'
 import { renderTai } from './test/render'
 
 // Khung nội bộ có chuông thông báo gọi API: thay client bằng bản giả để test không đụng tới mạng.
-const { GET, POST } = vi.hoisted(() => ({
-  GET: vi.fn(async (duong: string) =>
-    duong.endsWith('/so-chua-doc')
-      ? { data: { so_chua_doc: 0 } }
-      : { data: { du_lieu: [], tong: 0, trang: 1, kich_thuoc: 10 } },
-  ),
-  POST: vi.fn(async (_duong: string) => ({ response: { status: 204 } })),
-}))
+const { GET, POST, GET_MAC_DINH } = vi.hoisted(() => {
+  // Mặc định máy chủ "không trả hồ sơ" để không ghi đè phiên giả của từng test; test riêng thay bằng mockImplementation.
+  const macDinh = async (duong: string): Promise<{ data?: unknown; error?: unknown }> => {
+    if (duong.endsWith('/so-chua-doc')) return { data: { so_chua_doc: 0 } }
+    if (duong.endsWith('/noi-bo/toi')) return { error: { ma_loi: 'LOI_HE_THONG', thong_diep: 'x', chi_tiet: null } }
+    return { data: { du_lieu: [], tong: 0, trang: 1, kich_thuoc: 10 } }
+  }
+  return {
+    GET_MAC_DINH: macDinh,
+    GET: vi.fn(macDinh),
+    POST: vi.fn(async (_duong: string) => ({ response: { status: 204 } })),
+  }
+})
 vi.mock('./api/client', () => ({ api: { GET, POST } }))
 
 const GOC_REPO = resolve(__dirname, '../..')
@@ -133,6 +138,10 @@ describe('khu cửa hàng', () => {
 })
 
 describe('khu nhân viên', () => {
+  beforeEach(() => {
+    GET.mockReset()
+    GET.mockImplementation(GET_MAC_DINH)
+  })
   const duocSi = { loai: 'noi_bo', vaiTro: 'PHARMACIST', quyen: { 'order.view': 'day_du', 'pos.sell': 'day_du' } } as const
 
   it('chưa đăng nhập bị chuyển tới trang đăng nhập nội bộ', async () => {
@@ -198,6 +207,31 @@ describe('khu nhân viên', () => {
   it('trang đăng nhập nội bộ truy cập được khi chưa đăng nhập', async () => {
     renderTai('/nhan-vien/dang-nhap')
     expect(await screen.findByRole('heading', { name: 'Đăng nhập nội bộ' })).toBeInTheDocument()
+  })
+
+  it('quyền đổi trên máy chủ thì menu của phiên đang mở cập nhật theo, không cần đăng nhập lại', async () => {
+    GET.mockImplementation(async (duong: string) => {
+      if (duong.endsWith('/noi-bo/toi')) {
+        return {
+          data: {
+            id: 1,
+            ma_nhan_vien: 'NV0001',
+            ho_ten: 'Người dùng thử',
+            email: 'x@example.com',
+            so_dien_thoai: null,
+            vai_tro: { ma: 'PHARMACIST', ten: 'Dược sĩ bán hàng' },
+            phai_doi_mat_khau: false,
+            quyen: { 'order.view': 'day_du', 'stock.view': 'chi_xem' }, // đã bỏ pos.sell, thêm stock.view
+          },
+        }
+      }
+      return duong.endsWith('/so-chua-doc') ? { data: { so_chua_doc: 0 } } : { data: { du_lieu: [], tong: 0, trang: 1, kich_thuoc: 10 } }
+    })
+    renderTai('/nhan-vien/don-hang', duocSi)
+    const menu = await screen.findByRole('menu')
+    await waitFor(() => expect(within(menu).getByText('Tồn kho')).toBeInTheDocument())
+    expect(within(menu).queryByText('Bán tại quầy')).not.toBeInTheDocument()
+    expect(usePhien.getState().quyen).toEqual({ 'order.view': 'day_du', 'stock.view': 'chi_xem' })
   })
 
   it('header có chuông thông báo lấy số chưa đọc từ API', async () => {

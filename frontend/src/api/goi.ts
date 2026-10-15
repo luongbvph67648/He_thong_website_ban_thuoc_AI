@@ -2,11 +2,20 @@ import { laLoiApi, type LoiApi } from './loi'
 
 export type KetQuaGoi<T> = { ok: true; data: T } | { ok: false; loi: LoiApi | null }
 
-/** Gọi API và quy mọi kết quả (kể cả lỗi mạng) về một dạng; `loi = null` nghĩa là không nhận được phản hồi hợp lệ. */
-export async function goi<T>(thucHien: () => Promise<{ data?: T; error?: unknown }>): Promise<KetQuaGoi<T>> {
+/**
+ * Gọi API và quy mọi kết quả (kể cả lỗi mạng) về một dạng; `loi = null` nghĩa là không nhận được phản hồi hợp lệ.
+ *
+ * Phản hồi 2xx không có thân (204 của xóa mềm, đăng xuất) làm openapi-fetch trả `data: undefined`, nên thành công phải
+ * dựa vào `response.ok` chứ không chỉ vào `data`. Ngược lại phản hồi lỗi không có thân cho `error = ''` (falsy), nên
+ * không được suy ra thành công từ việc `error` rỗng.
+ */
+export async function goi<T>(
+  thucHien: () => Promise<{ data?: T; error?: unknown; response?: Pick<Response, 'ok'> }>,
+): Promise<KetQuaGoi<T>> {
   try {
-    const { data, error } = await thucHien()
+    const { data, error, response } = await thucHien()
     if (data !== undefined && !error) return { ok: true, data }
+    if (data === undefined && !error && response?.ok) return { ok: true, data: undefined as T }
     return { ok: false, loi: laLoiApi(error) ? error : null }
   } catch {
     return { ok: false, loi: null }

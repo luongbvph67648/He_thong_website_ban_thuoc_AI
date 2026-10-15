@@ -105,3 +105,15 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
   - **Giới hạn:** bảng `nhat_ky_he_thong` "chỉ INSERT" hiện chỉ được bảo đảm bằng việc ứng dụng không có route sửa/xóa, chưa có trigger chặn UPDATE/DELETE ở DB (cần migration mới qua `/doi-schema`, ghi ở "Việc phát sinh").
   - Cookie refresh nhân viên tên `refresh_token_noi_bo`, `Path=/api/v1/noi-bo/auth`; đăng nhập nội bộ dùng email; nhân viên không có luồng "quên mật khẩu" tự phục vụ (Admin đặt lại ở T1.4).
 - **Hệ quả:** spec 03 mục 8, spec 06 mục 3.3, spec 09 mục 1, spec 10 mục 3; `backend/CLAUDE.md`, `frontend/CLAUDE.md`.
+
+## QĐ-13: Quản lý nhân viên, vai trò và phân quyền (2026-10-15, task T1.4)
+- **Quyết định:**
+  - **Mã lỗi mới `TU_THAY_DOI_KHONG_DUOC` (403)** cho Admin tự khóa, tự xóa, tự đổi vai trò, tự đặt lại mật khẩu của mình (tách khỏi `TU_DUYET_KHONG_DUOC` của phiếu kho). Mất Admin hoạt động cuối cùng là `409 PHAI_CON_ADMIN`.
+  - **Luôn còn ≥ 1 Admin hoạt động được bảo đảm dưới đồng thời:** mỗi thao tác khóa dòng đích và MỌI dòng Admin chưa xóa trong một câu `ORDER BY id FOR UPDATE`, rồi mới đếm. Nếu chỉ khóa dòng đích thì hai Admin cùng khóa nhau vẫn qua được kiểm tra của nhau và hệ thống không còn Admin nào (đã tái hiện và có test hai session thật).
+  - **Vai trò ADMIN bất biến qua AD18** (`409 PHAI_CON_ADMIN`); `profile.self` bắt buộc ở mức đầy đủ cho mọi vai trò (nếu không nhân viên không tự đổi mật khẩu được và bị kẹt ở màn bắt đổi); `content.professional.edit` và `content.approve` chỉ gán được cho PHARMACIST (spec 03 mục 7: Admin không sửa nội dung chuyên môn).
+  - **Đổi vai trò của một nhân viên thu hồi mọi phiên của họ; đổi quyền của một vai trò KHÔNG thu hồi phiên.** Quyền được đọc từ DB ở mỗi request nên quyền mới có hiệu lực ở request kế tiếp (cache 60 giây được xóa sau commit); giao diện của người đang đăng nhập cập nhật menu qua `GET /noi-bo/toi` khi focus lại cửa sổ hoặc sau tối đa 5 phút. Không thu hồi phiên hàng loạt chỉ vì chỉnh một quyền để tránh đẩy cả vai trò ra đăng nhập lại.
+  - **Mật khẩu tạm** 12 ký tự từ CSPRNG, chỉ trả trong phản hồi tạo/đặt lại mật khẩu, DB chỉ lưu hash, không vào nhật ký, giao diện hiện đúng một lần trong hộp thoại và xóa khỏi DOM khi đóng. Không có cách xem lại; quên thì Admin đặt lại.
+  - **Email nhân viên là duy nhất không phân biệt hoa thường, kể cả với tài khoản đã xóa mềm** (tránh người cũ đăng nhập lại hay lẫn nhật ký); hai Admin tạo cùng email cùng lúc: bên thua nhận `409 TRUNG_DU_LIEU` nhờ savepoint chứ không phải 500.
+  - Không có xóa cứng nhân viên: chứng từ, phiếu và nhật ký cũ vẫn trỏ tới người lập.
+  - Id trong path dùng `IdInt`/`IdBigInt` (`core/tham_so.py`): id ngoài khoảng của cột là 400.
+- **Hệ quả:** spec 03 mục 7, 8; spec 06 mục 3.4, 3.5 và bảng mã lỗi; spec 09 mục 2.3; spec 10 mục 3; `backend/CLAUDE.md`, `frontend/CLAUDE.md`.

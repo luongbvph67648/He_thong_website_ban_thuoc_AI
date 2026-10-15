@@ -32,6 +32,8 @@ interface TrangThaiPhien {
     phaiDoiMatKhau?: boolean
   }) => void
   datToken: (accessToken: string) => void
+  /** Nhận hồ sơ, quyền, cờ đổi mật khẩu mới từ máy chủ (phiên nội bộ đang mở): không làm gì nếu không đổi hoặc đã đổi người. */
+  capNhatTuMayChu: (moi: { hoSo: HoSoPhien; quyen: QuyenCuaToi; phaiDoiMatKhau: boolean }) => void
   /** Cập nhật một phần hồ sơ (ví dụ sau khi sửa họ tên), giữ nguyên token và quyền. */
   capNhatHoSo: (hoSo: Partial<HoSoPhien>) => void
   dangXuat: () => void
@@ -52,6 +54,15 @@ export const usePhien = create<TrangThaiPhien>()((set) => ({
     set({ accessToken, loai, hoSo, quyen, phaiDoiMatKhau })
   },
   datToken: (accessToken) => set({ accessToken }),
+  capNhatTuMayChu: ({ hoSo, quyen, phaiDoiMatKhau }) =>
+    set((s) => {
+      if (s.loai !== 'noi_bo' || s.hoSo?.id !== hoSo.id) return {}
+      const khongDoi =
+        s.phaiDoiMatKhau === phaiDoiMatKhau &&
+        JSON.stringify(s.quyen) === JSON.stringify(quyen) &&
+        JSON.stringify(s.hoSo) === JSON.stringify({ ...s.hoSo, ...hoSo })
+      return khongDoi ? {} : { hoSo: { ...s.hoSo, ...hoSo }, quyen, phaiDoiMatKhau }
+    }),
   capNhatHoSo: (hoSo) => set((s) => (s.hoSo ? { hoSo: { ...s.hoSo, ...hoSo } } : {})),
   dangXuat: () => {
     xoaGoiY()

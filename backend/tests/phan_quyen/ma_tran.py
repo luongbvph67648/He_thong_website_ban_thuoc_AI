@@ -118,7 +118,9 @@ def ky_vong_duoc_phep(vai_tro: str, ma: str, muc: str, phuong_thuc: str) -> bool
 
 
 def duong_dan_thu(duong_dan: str) -> str:
-    return re.sub(r"\{[^}]+\}", "1", duong_dan)
+    """Điền tham số đường dẫn bằng giá trị HỢP LỆ nhưng không tồn tại (id 2 tỉ, mã vai trò lạ) để vai trò đủ quyền nhận
+    404 chứ không bao giờ đụng tới dữ liệu thật, và để lỗi 400 của tham số không che mất kết quả kiểm tra quyền."""
+    return re.sub(r"\{ma\}", "KHONG_CO_VAI_TRO", re.sub(r"\{(?!ma\})[^}]+\}", "2000000000", duong_dan))
 
 
 async def goi_route(client, phuong_thuc: str, duong_dan: str):

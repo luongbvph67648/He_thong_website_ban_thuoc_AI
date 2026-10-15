@@ -8,7 +8,7 @@ src/
   main.tsx, App.tsx          # router gốc, QueryClientProvider, ConfigProvider (vi_VN)
   api/schema.d.ts            # SINH TỰ ĐỘNG bằng `npm run gen:api`, không sửa tay
   api/client.ts              # openapi-fetch: gắn access token, refresh 1 lần khi 401, credentials: 'include'
-  api/goi.ts                 # goi(): quy mọi kết quả (kể cả lỗi mạng) về {ok, data|loi}; thongDiep* cho lỗi thường gặp
+  api/goi.ts                 # goi(): quy mọi kết quả (kể cả lỗi mạng, 204 không thân) về {ok, data|loi}; thongDiep* cho lỗi thường gặp
   api/khoiPhuc.ts            # khoiPhucPhien(): lấy lại phiên khi tải trang (chạy đúng một lần)
   api/dangXuat.ts            # dangXuatKhach(): thu hồi phiên phía máy chủ rồi xóa store
   khu/cua-hang/              # layout + trang của khách (/)
@@ -38,6 +38,8 @@ src/
   - Trang của khu nội bộ khai báo một lần trong `khu/nhan-vien/menu.ts` hoặc `khu/quan-tri/menu.ts` (đường dẫn, nhãn, mã quyền, mã chức năng); `router.tsx` sinh route bọc `<YeuCauQuyen ma=... muc="xem">` và menu lọc theo quyền từ cùng bảng đó. Thêm trang mới: thêm một dòng vào bảng, rồi thay `TrangDangXayDung` bằng trang thật. Test `router.test.tsx` đối chiếu bảng với spec 09 và `quyen.yaml`.
   - Nút thao tác bọc `<YeuCauQuyen ma="order.confirm" kieu="nut">` (mức đầy đủ), ẩn hẳn khi chỉ có `chi_xem`.
   - UI chỉ là lớp phụ: backend vẫn kiểm tra quyền.
+- **Đồng bộ phiên nội bộ:** `KhungNoiBo` gọi `useDongBoPhienNoiBo` (`GET /noi-bo/toi` khi focus lại cửa sổ và mỗi 5 phút, cập nhật vai trò/quyền vào store) để Admin đổi phân quyền thì menu của nhân viên đang mở đổi theo. Test sự kiện focus phải phát `visibilitychange` trên `window` (TanStack Query nghe ở `window`, sự kiện phát từ `document` mà không nổi bọt sẽ không tới).
+- **Mật khẩu tạm** (AD01) chỉ nằm trong state của một Modal mount có điều kiện: đóng là biến khỏi DOM, không lưu ở store/cache/URL.
 - **Thông báo nội bộ:** `components/ChuongThongBao.tsx` (query key `['noi-bo', 'thong-bao', ...]`, làm mới mỗi phút). Chỉ điều hướng tới `lien_ket` khi là đường dẫn nội bộ. Không dùng antd `List` (deprecated từ 6.6): dùng phần tử tự dựng hoặc `<button>`.
 - **Hiển thị**
   - Tiền: `dinhDangTien()` (ví dụ `125.000 ₫`).

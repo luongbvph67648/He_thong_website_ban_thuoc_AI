@@ -69,7 +69,8 @@ Trang tài khoản cá nhân `/nhan-vien/tai-khoan` (hồ sơ: họ tên, số �
 | Đường dẫn | Chức năng | Quyền |
 |---|---|---|
 | `/` (dashboard) | AD14 | `report.all` |
-| `/nhan-vien`, `/vai-tro` | AD01, AD18 | `staff.manage`, `role.manage` |
+| `/nhan-vien` | AD01 | `staff.manage` |
+| `/vai-tro` | AD18 | `role.manage` |
 | `/khach-hang` | AD02 | `customer.manage` |
 | `/danh-muc`, `/san-pham`, `/du-lieu-chung` | AD03, AD04, AD05 | `category.manage`, `product.commercial.manage`, `master_data.manage` |
 | `/khuyen-mai` | AD06 | `promotion.manage` |
@@ -80,6 +81,12 @@ Trang tài khoản cá nhân `/nhan-vien/tai-khoan` (hồ sơ: họ tên, số �
 | `/hoan-tien` | AD17 | `refund.confirm` |
 | `/nhat-ky` | AD15 | `audit.view` |
 | `/xem/don-hang`, `/xem/chung-tu-kho`, `/xem/chuyen-mon` | AD16 | `order.view`, `stock_doc.view`, `content.view` (mức xem) |
+
+#### Trang quản lý nhân viên (`/quan-tri/nhan-vien`, AD01) và vai trò, phân quyền (`/quan-tri/vai-tro`, AD18)
+- **Nhân viên:** bảng lọc theo tên/email/mã (tìm không phân biệt dấu), vai trò, trạng thái; bộ lọc và số trang nằm trên URL (`?q=&vai_tro=&trang_thai=&trang=`) nên tải lại hay chia sẻ liên kết vẫn giữ nguyên. Hàng của chính mình tắt Khóa, Đặt lại mật khẩu, Xóa kèm giải thích (backend cũng chặn). Khóa, đặt lại mật khẩu, xóa đều hỏi xác nhận; nút thao tác bọc `YeuCauQuyen` nên chỉ hiện với mức đầy đủ.
+- **Mật khẩu tạm** (sau khi tạo hoặc đặt lại) hiện trong một hộp thoại chỉ đóng bằng nút "Đã ghi lại, đóng" (không đóng khi bấm ra ngoài); đóng xong là phần tử biến khỏi DOM, giao diện không giữ mật khẩu ở đâu khác và không có cách xem lại.
+- **Ma trận quyền:** chọn vai trò, mỗi mã quyền một nhóm lựa chọn (Không có / Chỉ xem / Đầy đủ) gom theo nhóm; vai trò ADMIN, `profile.self` ("Không có" và "Chỉ xem" bị khóa) và quyền chỉ dành cho một vai trò hiển thị tắt kèm lý do. Bấm lưu mở hộp xác nhận liệt kê từng thay đổi (cũ → mới) trước khi gọi `PUT`.
+- **Đồng bộ quyền cho phiên đang mở** (`useDongBoPhienNoiBo` trong khung nội bộ): gọi `GET /noi-bo/toi` khi cửa sổ được focus lại và mỗi 5 phút, cập nhật vai trò, quyền và cờ đổi mật khẩu vào store phiên, nên Admin đổi phân quyền thì menu của nhân viên đang đăng nhập đổi theo mà không cần đăng nhập lại. Chỉ là lớp giao diện: backend kiểm tra quyền thật ở mỗi request.
 
 ## 3. Quy tắc hiển thị nghiệp vụ
 - **Thuốc kê đơn:**

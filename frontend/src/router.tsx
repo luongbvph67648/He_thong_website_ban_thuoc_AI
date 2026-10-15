@@ -16,14 +16,16 @@ import { MUC_NHAN_VIEN } from './khu/nhan-vien/menu'
 import TrangDangNhapNoiBo from './khu/nhan-vien/TrangDangNhap'
 import TrangTaiKhoanNoiBo from './khu/nhan-vien/TrangTaiKhoan'
 import QuanTriLayout from './khu/quan-tri/QuanTriLayout'
+import TrangNhanVien from './khu/quan-tri/nhan-vien/TrangNhanVien'
+import TrangVaiTro from './khu/quan-tri/vai-tro/TrangVaiTro'
 import { MUC_QUAN_TRI } from './khu/quan-tri/menu'
 
 /** Route của một khu nội bộ: mỗi trang bọc `YeuCauQuyen` (mức xem; nút thao tác tự kiểm tra mức đầy đủ). */
-function routeCuaKhu(muc: readonly MucDieuHuong[]): RouteObject[] {
+function routeCuaKhu(muc: readonly MucDieuHuong[], trangThat: Record<string, ReactNode> = {}): RouteObject[] {
   return muc.map((m) => {
     const trang = (
       <YeuCauQuyen ma={m.quyen} muc="xem">
-        <TrangDangXayDung ten={m.nhan} chucNang={m.chucNang} />
+        {trangThat[m.duong] ?? <TrangDangXayDung ten={m.nhan} chucNang={m.chucNang} />}
       </YeuCauQuyen>
     )
     return m.duong === '/' ? { index: true, element: trang } : { path: m.duong.slice(1), element: trang }
@@ -35,6 +37,12 @@ const TRANG_THAT: Record<string, ReactNode> = {
   '/dang-ky': <TrangDangKy />,
   '/dang-nhap': <TrangDangNhap />,
   '/quen-mat-khau': <TrangQuenMatKhau />,
+}
+
+/** Trang khu quản trị đã làm thật (khóa là đường dẫn trong `MUC_QUAN_TRI`); còn lại là trang giữ chỗ. */
+const TRANG_QUAN_TRI_THAT: Record<string, ReactNode> = {
+  '/nhan-vien': <TrangNhanVien />,
+  '/vai-tro': <TrangVaiTro />,
 }
 
 /** Toàn bộ route của ứng dụng (tách khỏi `createBrowserRouter` để test dựng bằng memory router). */
@@ -61,7 +69,7 @@ export function taoRoutes(): RouteObject[] {
     {
       path: '/quan-tri',
       element: <QuanTriLayout />,
-      children: [...routeCuaKhu(MUC_QUAN_TRI), { path: '*', element: <Trang404 veTrang="/quan-tri" nhanVe="Về tổng quan" /> }],
+      children: [...routeCuaKhu(MUC_QUAN_TRI, TRANG_QUAN_TRI_THAT), { path: '*', element: <Trang404 veTrang="/quan-tri" nhanVe="Về tổng quan" /> }],
     },
     {
       path: '/',

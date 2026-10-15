@@ -59,7 +59,7 @@ _Dựng khung dự án, CSDL đúng ERD, seed, hạ tầng test. Chưa có chứ
   - **Log truy cập** mỗi request chỉ ghi **mẫu route** (`/xac-nhan-don/{token}`), không ghi giá trị trong path hay query string. Log truy cập của uvicorn bị tắt vì nó in cả query string.
   - **Sửa sau rà soát nghiệp vụ** (7 phát hiện, đã tái hiện bằng test trước khi sửa): (1) log lỗi lộ tham số SQL và dòng `DETAIL:` của PostgreSQL → `hide_parameters=True` + che dòng DETAIL/HINT/CONTEXT; lỗi 500 xử lý trong middleware, không ném lại cho uvicorn nên không còn traceback thô thứ hai; (2) `Tien` giới hạn dưới 10^12, không âm (`TienCoDau` cho số âm), chuẩn hóa `-0`, số quá lớn thành lỗi validate thay vì 500; (3) log theo mẫu route; (4) `chi_tiet` của lỗi chứa `Decimal`/`date`/model không còn làm handler nổ; (5) `trang` tối đa 1.000.000; (6) regex `request_id` dùng `fullmatch`; (7) mã `LOI_HTTP` vào bảng spec 06, 5xx lạ không echo `detail`.
   - **Tiền:** `lam_tron_vnd` half-up (2.5 → 3), từ chối `float` và `bool`. Kiểu `Tien` nhận số đồng nguyên, xuất JSON dạng chuỗi `"125000.00"`; đã kiểm OpenAPI sinh `string` cho T0.7.
-  - **Phần để task sau:** `core/config.py` chưa thêm biến mới (chưa có chỗ dùng). Chưa làm sắp xếp `sap_xep` của phân trang (làm cùng endpoint danh sách đầu tiên, T1.4). `ruff` cấu hình ở T0.6; đã chạy thử ruff không cấu hình, sạch (trừ B008 với `Depends`, là mẫu chuẩn của FastAPI).
+  - **Phần để task sau:** `core/config.py` chưa thêm biến mới (chưa có chỗ dùng). Chưa làm sắp xếp `sap_xep` của phân trang (đã làm ở T1.4: `core/phan_trang.sap_xep_theo` + `SapXepQuery`). `ruff` cấu hình ở T0.6; đã chạy thử ruff không cấu hình, sạch (trừ B008 với `Depends`, là mẫu chuẩn của FastAPI).
   - **Thêm phụ thuộc `tzdata`** để `zoneinfo` có dữ liệu múi giờ trên Windows.
   - **Fixture test:** `engine_tam` tạo database tạm cho từng test; T0.6 sẽ thay bằng DB test dựng từ migration.
 
@@ -242,17 +242,23 @@ _Đăng ký/đăng nhập 2 loại tài khoản, RBAC, nhật ký, cấu hình._
   - **Chưa làm / để task sau:** Admin đặt lại mật khẩu và khóa/mở tài khoản nhân viên, kèm thu hồi phiên (T1.4); thông báo của khách (KTV13); gửi thông báo từ các nghiệp vụ (đơn mới, chat, kho: HT07 và các task nghiệp vụ, dùng `thong_bao.service.gui_cho_nhan_vien`). Chạy `/review-nghiep-vu` gộp T1.1–T1.3 ngay sau commit này.
 
 
-### [ ] T1.4 · Quản lý nhân viên, vai trò và quyền
+### [x] T1.4 · Quản lý nhân viên, vai trò và quyền
 - **Chức năng:** AD01 (Quản lý tài khoản nhân viên), AD18 (Quản lý vai trò & phân quyền)
 - **Phụ thuộc:** T1.3
 - **Bảng:** `nhan_vien`, `vai_tro`, `phien_dang_nhap`, `nhat_ky_he_thong`, `quyen`, `vai_tro_quyen`
 - **Tiêu chí chấp nhận:**
-  - [ ] CRUD nhân viên (không xóa cứng), khóa/mở, đặt lại mật khẩu (sinh mật khẩu tạm + `phai_doi_mat_khau`), gán vai trò; khóa → thu hồi phiên.
-  - [ ] Chặn tự khóa/tự hạ quyền; luôn còn ≥ 1 Admin hoạt động (`ma_loi = "PHAI_CON_ADMIN"`).
-  - [ ] Xem quyền, gán/bỏ quyền cho PHARMACIST/WAREHOUSE; không bỏ quyền của ADMIN. Mọi thay đổi ghi nhật ký.
+  - [x] CRUD nhân viên (không xóa cứng), khóa/mở, đặt lại mật khẩu (sinh mật khẩu tạm + `phai_doi_mat_khau`), gán vai trò; khóa → thu hồi phiên.
+  - [x] Chặn tự khóa/tự hạ quyền; luôn còn ≥ 1 Admin hoạt động (`ma_loi = "PHAI_CON_ADMIN"`).
+  - [x] Xem quyền, gán/bỏ quyền cho PHARMACIST/WAREHOUSE; không bỏ quyền của ADMIN. Mọi thay đổi ghi nhật ký.
 - **Giao diện:**
-  - [ ] Danh sách nhân viên (lọc, tìm), form nhân viên, màn ma trận vai trò - quyền.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Danh sách nhân viên (lọc, tìm), form nhân viên, màn ma trận vai trò - quyền.
+- **Ghi chú triển khai:**
+  - **Backend:** `modules/nhan_vien/{quan_tri,router_quan_tri,schemas_quan_tri}.py` (AD01) và `modules/vai_tro/*` (AD18); API ở spec 06 mục 3.4, 3.5. Quyết định ở QĐ-13: mã lỗi mới `TU_THAY_DOI_KHONG_DUOC` (403, đã thêm vào spec 06 và `core/loi.py`); khóa mọi dòng Admin theo id tăng dần trong một câu để "luôn còn ≥ 1 Admin" đúng cả khi hai Admin làm nhau đồng thời; ADMIN bất biến, `profile.self` bắt buộc, quyền chuyên môn chỉ PHARMACIST; đổi vai trò thu hồi phiên, đổi quyền vai trò thì không (giao diện đồng bộ qua `/noi-bo/toi`).
+  - **Phần dùng chung thêm vào:** `core/phan_trang.sap_xep_theo` + `SapXepQuery` (tham số `sap_xep` của spec 06 mục 5, danh sách trường cho phép theo endpoint, khóa phụ `id`; áp cho `GET /noi-bo/nhan-vien`, giao diện chưa có cột bấm sắp xếp), `core/bao_mat.tao_mat_khau_tam()` (CSPRNG), `core/tham_so.py` (`IdInt`, `IdBigInt`), `core/phan_quyen.xoa_cache_quyen_sau_commit(db)`; fixture `clients_theo_vai_tro` chuyển lên `tests/conftest.py`; registry và ma trận phân quyền mở rộng cho route AD01/AD18 (ca id `2000000000`, vai trò `KHONG_CO_VAI_TRO`).
+  - **Giao diện:** `/quan-tri/nhan-vien` (bảng lọc đồng bộ URL, form tạo/sửa, mật khẩu tạm một lần) và `/quan-tri/vai-tro` (ma trận quyền, hộp xác nhận liệt kê thay đổi); `useDongBoPhienNoiBo` cập nhật quyền của phiên đang mở. Lệch spec 09: hàng `/nhan-vien`, `/vai-tro` của bảng 2.3 tách làm hai dòng (mỗi trang một mã quyền).
+  - **Lỗi chỉ lộ khi chạy trên Chromium thật, đã sửa:** `goi()` coi `data === undefined` là thất bại nên `DELETE → 204` báo nhầm "không kết nối được máy chủ" và không tải lại danh sách (test đơn vị dùng mock không có `response.ok` nên bỏ sót); cảnh báo antd `maskClosable` đã lỗi thời. Kiểm chứng trình duyệt 27/27 (tạo, mật khẩu tạm một lần, trùng email, tìm không dấu, đổi mật khẩu lần đầu, khóa → mất phiên, đặt lại, đổi quyền → menu phiên đang mở cập nhật không cần đăng nhập lại, xóa mềm).
+  - **Kiểm thử:** backend 848 test; frontend 290 test (cả `TZ=America/Los_Angeles`). 26 đột biến (bỏ khóa dòng Admin, bỏ kiểm tra tự thay đổi, bỏ xóa cache sau commit, bỏ thu hồi phiên, …) đều bị test bắt.
+  - **Việc để task sau:** nút CLI khôi phục Admin duy nhất (đã ghi ở "Việc phát sinh").
 
 ### [ ] T1.5 · Quản lý khách hàng
 - **Chức năng:** AD02 (Quản lý khách hàng)
@@ -805,7 +811,7 @@ Lỗi hoặc việc phát hiện trong lúc làm nhưng nằm ngoài phạm vi t
 - [ ] (T1.3) Admin duy nhất quên mật khẩu thì không có đường khôi phục (nhân viên không có "quên mật khẩu" tự phục vụ, Admin khác đặt lại ở T1.4): thêm lệnh CLI `python -m app.seed --dat-lai-admin` hoặc tương đương khi làm T1.4/T8.3.
 - [ ] (T1.3) `nhat_ky_he_thong` "chỉ INSERT" mới được bảo đảm bằng việc ứng dụng không có route sửa/xóa; thêm trigger chặn UPDATE/DELETE ở DB qua migration mới (`/doi-schema`) khi rà soát bảo mật T8.2.
 - [ ] (T1.3-rv) `core/nhat_ky.py::che_du_lieu_nhay_cam` còn thiếu khóa `dang_mang_thai`, `dang_cho_con_bu`, `nam_sinh`, `ghi_chu` (của `di_ung`), `hoat_chat_id`, `thong_tin_nhan_hoan`; và `ghi_nhat_ky` nên bỏ hẳn giá trị cũ/mới khi `bang` là `ho_so_suc_khoe`/`di_ung` (spec 03 mục 5.1 chỉ ghi `bang` + `ban_ghi_id`). Chưa có nơi gọi nên chưa rò; làm trước task đầu tiên ghi nhật ký dữ liệu sức khỏe (T4.x/T5.x).
-- [ ] (T1.3-rv) `POST /noi-bo/thong-bao/{id}/da-doc` với id vượt int64 trả 500 thay vì 404 (asyncpg `value out of int64 range`): thêm kiểu `IdPath` (`Path(ge=1, le=2**63-1)`) dùng chung cho mọi route `{id}`.
+- [ ] (T1.3-rv) `POST /noi-bo/thong-bao/{id}/da-doc` với id vượt int64 trả 500 thay vì 404 (asyncpg `value out of int64 range`). Kiểu dùng chung đã có ở `core/tham_so.py` (`IdInt`, `IdBigInt`, T1.4, đang dùng cho AD01): đổi `thong_bao_id: int` thành `IdBigInt` và áp cho mọi route `{id}` mới từ T1.5 trở đi.
 - [ ] (T1.3-rv) PyJWT kiểm `exp` trước `aud`: token nội bộ hết hạn gửi tới route `khach_tuy_chon` bị trả `TOKEN_HET_HAN` (đáng lẽ coi là vãng lai), token khách hết hạn gửi tới `/noi-bo` cũng vậy (đáng lẽ `CHUA_DANG_NHAP`). Giải mã với `verify_exp=False`, kiểm `aud` rồi tự kiểm `exp` trong `giai_ma_access_token`.
 - [ ] (T1.3-rv) `thong_bao.service.kiem_tra_lien_ket` chưa chặn ký tự điều khiển (`"/\t/evil.com"` thành `//evil.com` khi trình duyệt phân tích); frontend đã chặn nên chưa khai thác được, nhưng phía server cần tương đương `?tiep=` (QĐ-11).
 - [ ] (T1.3-rv) Giới hạn theo IP (`core/gioi_han.py`, `phien_http.dia_chi_ip`): gom IPv6 theo /64 (mỗi địa chỉ trong một dải có bộ đếm riêng nên lách được) và cấu hình `--proxy-headers`/`forwarded-allow-ips` khi chạy sau nginx (T8.3), nếu không cả site dùng chung một bộ đếm theo IP của proxy.
