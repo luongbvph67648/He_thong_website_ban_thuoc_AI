@@ -18,7 +18,7 @@
 | `/api/v1/toi/*` | Khách thành viên | `khach_hien_tai`; mọi dữ liệu lọc theo khách trong token |
 | `/api/v1/noi-bo/*` | Nhân viên | `yeu_cau_quyen(...)` |
 | `/api/v1/webhook/*` | VNPay, MoMo, GHN | Chữ ký hoặc token của đối tác (spec 08) |
-| `/api/v1/health` | Hạ tầng | Không |
+| `/api/v1/health` | Hạ tầng | Không. Trả 200 `{"trang_thai": "ok", "db": "ok"}`; CSDL không truy vấn được thì 503 `{"trang_thai": "loi", "db": "loi"}` (không lộ chi tiết lỗi) |
 
 **Ví dụ đường dẫn chuẩn:**
 - Khách:

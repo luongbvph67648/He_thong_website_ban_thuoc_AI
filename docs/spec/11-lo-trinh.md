@@ -28,15 +28,20 @@ Khi làm xong task: tích từng tiêu chí, đổi trạng thái, ghi lệch so
 
 _Dựng khung dự án, CSDL đúng ERD, seed, hạ tầng test. Chưa có chức năng nghiệp vụ._
 
-### [ ] T0.1 · Khởi tạo monorepo và môi trường dev
+### [x] T0.1 · Khởi tạo monorepo và môi trường dev
 - **Phụ thuộc:** —
 - **Tiêu chí chấp nhận:**
-  - [ ] `docker-compose.yml` có `db` (image `pgvector/pgvector:pg16`, volume dữ liệu) và `mailpit` (xem email OTP khi dev).
-  - [ ] `backend/`: dự án `uv` (Python 3.12), FastAPI app factory `app/main.py`, `GET /api/v1/health` trả `{"trang_thai": "ok", "db": "ok"}` (có truy vấn `SELECT 1`).
-  - [ ] `frontend/`: Vite + React + TypeScript chạy được `npm run dev`, gọi được `/api/v1/health` qua proxy Vite.
-  - [ ] `.env.example` ở `backend/` liệt kê đủ biến trong spec 01 (giá trị giả); `.gitignore` loại `.env`, `storage/`, `node_modules/`, `.venv/`.
-  - [ ] Lệnh trong phần "Lệnh thường dùng" của `CLAUDE.md` chạy được đúng như ghi (cập nhật nếu khác).
-- **Ghi chú triển khai:** _(trống)_
+  - [x] `docker-compose.yml` có `db` (image `pgvector/pgvector:pg16`, volume dữ liệu) và `mailpit` (xem email OTP khi dev).
+  - [x] `backend/`: dự án `uv` (Python 3.12), FastAPI app factory `app/main.py`, `GET /api/v1/health` trả `{"trang_thai": "ok", "db": "ok"}` (có truy vấn `SELECT 1`).
+  - [x] `frontend/`: Vite + React + TypeScript chạy được `npm run dev`, gọi được `/api/v1/health` qua proxy Vite.
+  - [x] `.env.example` ở `backend/` liệt kê đủ biến trong spec 01 (giá trị giả); `.gitignore` loại `.env`, `storage/`, `node_modules/`, `.venv/`.
+  - [x] Lệnh trong phần "Lệnh thường dùng" của `CLAUDE.md` chạy được đúng như ghi (cập nhật nếu khác).
+- **Ghi chú triển khai:**
+  - **Docker chưa chạy thật.** Môi trường làm T0.1 không có Docker daemon. `docker-compose.yml` mới được kiểm bằng `docker compose config -q`. Phần chạy thật dùng PostgreSQL 16 + pgvector cài trên máy, cùng chuỗi kết nối với compose (`postgres:postgres@localhost:5432/nha_thuoc`). Lần đầu chạy trên máy có Docker cần xác nhận lại `docker compose up -d db mailpit`.
+  - **Health check:** ngoài trường hợp ok, khi CSDL lỗi thì trả 503 `{"trang_thai": "loi", "db": "loi"}`. Đã bổ sung vào spec 06.
+  - **Test thêm sớm:** đã cài `pytest`, `pytest-asyncio`, `httpx` và viết `tests/test_health.py` (2 test). T0.6 sẽ xây `conftest.py`, DB test riêng và CI.
+  - **Phần để task sau:** `core/config.py` mới khai báo `DATABASE_URL`, `CORS_ORIGINS`; các biến khác thêm dần khi dùng. `core/db.py` mới có `engine` và `get_engine()`; `get_db` (transaction theo request) để T0.2.
+  - **Frontend:** template `create-vite` hiện tại cho Vite 8, React 19, TypeScript 6 và dùng **oxlint** thay ESLint (`npm run lint`). Đã gộp 3 file tsconfig thành 1 để `npx tsc --noEmit` thực sự kiểm tra code; bản template dùng project references nên lệnh này không kiểm tra gì.
 
 ### [ ] T0.2 · Hạ tầng backend dùng chung
 - **Phụ thuộc:** T0.1

@@ -28,20 +28,24 @@ docs/database ERD (DBML/SQL) và file Excel đánh giá
 Mỗi thư mục `backend/` và `frontend/` có `CLAUDE.md` riêng ghi quy ước chi tiết.
 
 ## Lệnh thường dùng
-Các lệnh này có hiệu lực sau task T0.1–T0.7. Nếu lệnh thực tế khác thì cập nhật lại mục này.
+Lệnh có ghi `(từ Tx.y)` chỉ chạy được sau khi task đó xong. Nếu lệnh thực tế khác thì cập nhật lại mục này.
+
+Lần đầu chạy: sao chép `backend/.env.example` thành `backend/.env`.
 
 ```bash
 docker compose up -d db mailpit                       # Postgres + Mailpit (http://localhost:8025)
 cd backend && uv sync                                 # cài phụ thuộc
-cd backend && uv run alembic upgrade head             # migration
-cd backend && uv run python -m app.seed --mau         # seed + dữ liệu mẫu
+cd backend && uv run alembic upgrade head             # migration (từ T0.4)
+cd backend && uv run python -m app.seed --mau         # seed + dữ liệu mẫu (từ T0.5)
 cd backend && uv run uvicorn app.main:app --reload    # API http://localhost:8000/docs
-cd backend && uv run python -m app.jobs               # worker job nền
-cd backend && uv run ruff check . && uv run ruff format --check .
-cd backend && uv run pytest -q                        # cần docker db đang chạy
-cd frontend && npm install && npm run dev             # http://localhost:5173
-cd frontend && npm run gen:api                        # sinh type từ OpenAPI (backend phải đang chạy)
-cd frontend && npm run lint && npx tsc --noEmit && npm test
+cd backend && uv run python -m app.jobs               # worker job nền (từ T3.2)
+cd backend && uv run ruff check . && uv run ruff format --check .   # (từ T0.6)
+cd backend && uv run pytest -q                        # cần db đang chạy
+cd frontend && npm install && npm run dev             # http://localhost:5173, proxy /api → :8000
+cd frontend && npm run gen:api                        # sinh type từ OpenAPI, backend phải đang chạy (từ T0.7)
+cd frontend && npm run lint && npx tsc --noEmit       # lint bằng oxlint
+cd frontend && npm test                               # vitest (từ T0.7)
+cd frontend && npm run build
 ```
 
 ## Quy tắc bắt buộc

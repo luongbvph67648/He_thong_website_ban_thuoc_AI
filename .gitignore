@@ -1,0 +1,17 @@
+# Bí mật và dữ liệu cục bộ
+.env
+storage/
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+
+# Node / build
+node_modules/
+dist/
+
+# Hệ điều hành
+.DS_Store
