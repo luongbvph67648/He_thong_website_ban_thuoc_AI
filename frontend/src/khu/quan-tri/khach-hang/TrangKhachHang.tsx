@@ -111,7 +111,9 @@ export default function TrangKhachHang() {
           showSizeChanger: false,
           onChange: (t) => doiThamSo({ trang: t > 1 ? String(t) : undefined }),
         }}
-        onChange={(_, __, sorter) => {
+        onChange={(_, __, sorter, extra) => {
+          // antd gọi `onChange` này cho cả lần bấm trang (sau `pagination.onChange`); xử lý ở đây sẽ xóa `trang` vừa đặt.
+          if (extra.action !== 'sort') return
           const s = Array.isArray(sorter) ? sorter[0] : (sorter as SorterResult<KhachHang>)
           const truong = String(s?.columnKey ?? '')
           doiThamSo({ sap_xep: s?.order && TRUONG_SAP_XEP.some((t) => t === truong) ? `${s.order === 'descend' ? '-' : ''}${truong}` : undefined })

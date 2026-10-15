@@ -70,7 +70,9 @@ export function NutKhoaMoKhoaKhach({ khach, kieu = 'link' }: Props) {
             <Typography.Paragraph>
               Khách bị đăng xuất khỏi mọi thiết bị và không đăng nhập được cho tới khi bạn mở khóa.
             </Typography.Paragraph>
-            <label htmlFor={`ly-do-khoa-${khach.id}`}>Lý do (không bắt buộc, ghi vào nhật ký hệ thống)</label>
+            <label htmlFor={`ly-do-khoa-${khach.id}`}>
+              Lý do (không bắt buộc, ghi vào nhật ký hệ thống). Không nhập số điện thoại hay thông tin sức khỏe của khách.
+            </label>
             <Input.TextArea
               id={`ly-do-khoa-${khach.id}`}
               value={lyDo}

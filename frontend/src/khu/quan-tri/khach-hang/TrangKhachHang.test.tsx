@@ -91,6 +91,31 @@ describe('TrangKhachHang', () => {
     await waitFor(() => expect(thamSoGanNhat()).toEqual({ q: 'trần', trang_thai: 'bi_khoa', sap_xep: '-ho_ten', trang: 1, kich_thuoc: 20 })) // về trang 1
   })
 
+  it('bấm nút chuyển trang: gọi API với trang mới, giữ nguyên tìm kiếm và sắp xếp, URL có trang', async () => {
+    // Lỗi từng có: antd gọi cả `pagination.onChange` lẫn `Table.onChange` cho một lần bấm trang, và xử lý sắp xếp ở
+    // `Table.onChange` xóa mất `trang` vừa đặt, nên không bao giờ sang được trang 2.
+    GET.mockResolvedValue(trang(KHACH, 45))
+    const nguoi = userEvent.setup()
+    dung('/khach-hang?q=an&sap_xep=-ho_ten')
+    await screen.findByText('Nguyễn Văn An')
+    await nguoi.click(screen.getByTitle('2'))
+    await waitFor(() => expect(thamSoGanNhat()).toEqual({ q: 'an', trang_thai: undefined, sap_xep: '-ho_ten', trang: 2, kich_thuoc: 20 }))
+    await nguoi.click(screen.getByTitle('3'))
+    await waitFor(() => expect(thamSoGanNhat().trang).toBe(3))
+    await nguoi.click(screen.getByTitle('1'))
+    await waitFor(() => expect(thamSoGanNhat().trang).toBe(1))
+    expect(thamSoGanNhat().sap_xep).toBe('-ho_ten') // chuyển trang không làm mất sắp xếp
+  })
+
+  it('đổi sắp xếp khi đang ở trang 2 thì về trang 1', async () => {
+    GET.mockResolvedValue(trang(KHACH, 45))
+    const nguoi = userEvent.setup()
+    dung('/khach-hang?trang=2')
+    await screen.findByText('Nguyễn Văn An')
+    await nguoi.click(screen.getByText('Họ và tên'))
+    await waitFor(() => expect(thamSoGanNhat()).toMatchObject({ sap_xep: 'ho_ten', trang: 1 }))
+  })
+
   it('bấm tiêu đề cột để sắp xếp: tăng, giảm rồi về mặc định', async () => {
     const nguoi = userEvent.setup()
     dung()
@@ -118,6 +143,7 @@ describe('TrangKhachHang', () => {
     await nguoi.click(within(await dong('Nguyễn Văn An')).getByRole('button', { name: 'Khóa' }))
     const hop = await screen.findByRole('dialog')
     expect(within(hop).getByText(/đăng xuất khỏi mọi thiết bị/)).toBeInTheDocument()
+    expect(within(hop).getByText(/Không nhập số điện thoại hay thông tin sức khỏe/)).toBeInTheDocument() // lý do không được kiểm tra nội dung
     expect(POST).not.toHaveBeenCalled()
     await nguoi.type(within(hop).getByRole('textbox', { name: /Lý do/ }), '  Hủy đơn liên tục  ')
     const truoc = GET.mock.calls.length
