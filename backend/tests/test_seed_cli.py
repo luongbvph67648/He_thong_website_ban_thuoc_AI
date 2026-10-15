@@ -95,3 +95,42 @@ async def test_thong_tin_admin_sai_thoat_ma_2_khong_ghi_gi_va_khong_lo_mat_khau(
 async def test_thanh_cong_khong_in_mat_khau_admin(engine_moi):
     ket_qua = await chay_cli(engine_moi, "--mau")
     assert MAT_KHAU_ADMIN not in ket_qua.stdout + ket_qua.stderr
+
+
+async def test_tu_choi_nap_mau_vao_may_chu_khong_phai_cuc_bo_truoc_khi_ket_noi(engine_moi):
+    """Chặn trước mọi kết nối: máy chủ ".invalid" không phân giải được, nên nếu chặn muộn thì lỗi kết nối chứ không phải mã 2."""
+    moi_truong = {
+        **os.environ,
+        "DATABASE_URL": "postgresql+asyncpg://postgres:x@csdl-that.invalid:5432/nha_thuoc",
+        "ADMIN_EMAIL": "admin@example.com",
+        "ADMIN_MAT_KHAU": MAT_KHAU_ADMIN,
+    }
+    ket_qua = await asyncio.to_thread(
+        subprocess.run,
+        [sys.executable, "-m", "app.seed", "--mau"],
+        cwd=BACKEND_DIR,
+        env=moi_truong,
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert ket_qua.returncode == 2
+    assert "csdl-that.invalid" in ket_qua.stderr and "--cho-phep-may-chu-khac" in ket_qua.stderr
+
+
+async def test_lan_dau_bat_buoc_co_admin_nhung_lan_sau_co_the_bo_trong(engine_moi):
+    chua_co = await chay_cli(engine_moi, email="", mat_khau="")
+    assert chua_co.returncode == 2 and "chưa có Admin" in chua_co.stderr
+    assert await dem(engine_moi, "vai_tro") == 0  # lỗi thì hoàn tác cả seed, không để dở dang
+
+    assert (await chay_cli(engine_moi)).returncode == 0
+    lan_sau = await chay_cli(engine_moi, email="", mat_khau="")
+    assert lan_sau.returncode == 0, lan_sau.stderr
+    assert "đã có Admin hoạt động" in lan_sau.stdout
+    assert await dem(engine_moi, "nhan_vien") == 1
+
+
+async def test_mat_khau_admin_la_gia_tri_mau_bi_tu_choi(engine_moi):
+    ket_qua = await chay_cli(engine_moi, mat_khau="doi-mat-khau-nay-123")
+    assert ket_qua.returncode == 2 and "giá trị mẫu" in ket_qua.stderr
+    assert await dem(engine_moi, "nhan_vien") == 0

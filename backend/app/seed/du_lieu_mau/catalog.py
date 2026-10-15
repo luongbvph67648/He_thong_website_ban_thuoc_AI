@@ -55,7 +55,7 @@ class SanPhamMau:
 
     @property
     def sku(self) -> str:
-        return f"SP{self.ma:04d}"
+        return f"MAU-SP{self.ma:04d}"  # tiền tố riêng: không bao giờ trùng SKU của hàng thật
 
     @property
     def so_dang_ky(self) -> str | None:

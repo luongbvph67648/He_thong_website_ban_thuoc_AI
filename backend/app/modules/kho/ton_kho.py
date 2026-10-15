@@ -7,6 +7,7 @@ xuất, hoàn nhập, biệt trữ, trừ tồn, điều chỉnh thêm ở T3.1 
 
 from collections.abc import Iterable
 from dataclasses import dataclass
+from datetime import datetime
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -55,8 +56,18 @@ def _kiem_tra_so_luong(so_luong: int) -> None:
         raise ValueError("so_luong phải lớn hơn 0")
 
 
-async def nhap_kho(db: AsyncSession, lo: LoThuoc, so_luong: int, chung_tu: ChungTu) -> BienDongKho:
-    """Cộng `so_luong` (đơn vị cơ sở) vào tồn kho bán của lô và ghi thẻ kho `nhap_kho`."""
+async def nhap_kho(
+    db: AsyncSession, lo: LoThuoc, so_luong: int, chung_tu: ChungTu, luc: datetime | None = None
+) -> BienDongKho:
+    """Cộng `so_luong` (đơn vị cơ sở) vào tồn kho bán của lô và ghi thẻ kho `nhap_kho`.
+
+    `luc`: thời điểm ghi thẻ kho, mặc định là bây giờ; chỉ truyền khi nhập lại dữ liệu cũ (seed, chuyển đổi) để thẻ
+    kho mang ngày của chứng từ gốc, báo cáo nhập - xuất - tồn theo kỳ mới khớp.
+
+    Hàm khóa MỘT lô. Phiếu nhập nhiều dòng phải gọi `khoa_cac_lo` với TẤT CẢ id lô trước (khóa theo id tăng dần) rồi mới
+    gọi `nhap_kho` từng dòng, nếu không hai phiếu khóa các lô theo thứ tự ngược nhau có thể deadlock. Tính lại giá nhập
+    bình quân gia quyền (KHO02) và kiểm tra trạng thái lô (khóa, thu hồi) thuộc dịch vụ phiếu nhập ở T3.1.
+    """
     _kiem_tra_so_luong(so_luong)
     (lo_khoa,) = await khoa_cac_lo(db, [lo.id])
     lo_khoa.so_luong_ton += so_luong
@@ -70,6 +81,7 @@ async def nhap_kho(db: AsyncSession, lo: LoThuoc, so_luong: int, chung_tu: Chung
         chung_tu_loai=chung_tu.loai,
         chung_tu_id=chung_tu.id,
         nhan_vien_id=chung_tu.nhan_vien_id,
+        **({"created_at": luc} if luc is not None else {}),
     )
     db.add(bien_dong)
     await db.flush()

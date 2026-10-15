@@ -84,3 +84,33 @@ async def test_khoa_cac_lo_doc_gia_tri_moi_nhat_cua_lo_da_nap(db):
     assert lo.so_luong_ton == 10  # đối tượng trong bộ nhớ đã cũ
     (khoa,) = await khoa_cac_lo(db, [lo.id])
     assert khoa is lo and lo.so_luong_ton == 99
+
+
+async def test_nhap_kho_co_the_ghi_the_kho_vao_thoi_diem_cu(db):
+    """Nhập dữ liệu cũ (seed, chuyển đổi): thẻ kho mang ngày của chứng từ gốc."""
+    from datetime import UTC, datetime
+
+    lo = await tao_lo(db)
+    luc = datetime(2026, 1, 5, 9, 0, tzinfo=UTC)
+    bien_dong = await nhap_kho(db, lo, 10, ChungTu("phieu_nhap", 1), luc=luc)
+    assert bien_dong.created_at == luc
+
+
+async def test_khoa_cac_lo_phat_ra_order_by_id_va_for_update(db):
+    """Thứ tự khóa là điều kiện chống deadlock nên kiểm ngay trong câu SQL (kết quả trả về luôn sắp xếp nên không đủ)."""
+    from sqlalchemy import event
+
+    a, b = await tao_lo(db), await tao_lo(db)
+    cau_lenh: list[str] = []
+
+    def ghi(conn, cursor, statement, *_):
+        cau_lenh.append(statement)
+
+    ket_noi = (await db.connection()).sync_connection
+    event.listen(ket_noi, "before_cursor_execute", ghi)
+    try:
+        await khoa_cac_lo(db, [b.id, a.id])
+    finally:
+        event.remove(ket_noi, "before_cursor_execute", ghi)
+    (truy_van,) = [c for c in cau_lenh if "FROM lo_thuoc" in c]
+    assert "ORDER BY lo_thuoc.id" in truy_van and truy_van.rstrip().endswith("FOR UPDATE")

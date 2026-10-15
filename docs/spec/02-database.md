@@ -109,7 +109,9 @@ Ràng buộc "mỗi đơn có tối đa 1 vận đơn `giao_hang` còn hiệu l�
   - `WAREHOUSE` – Nhân viên kho.
   - `ADMIN` – Quản trị.
 - **`quyen`, `vai_tro_quyen`:** đọc từ `docs/spec/data/quyen.yaml`. Mức `chi_xem` lưu vào `vai_tro_quyen.gioi_han = 'chi_xem'`; mức `day_du` để `NULL`.
-- **Admin đầu tiên:** đọc từ `ADMIN_EMAIL`, `ADMIN_MAT_KHAU`, đặt `phai_doi_mat_khau = true`.
+- **Chạy lại seed:** danh mục `quyen` luôn đồng bộ theo yaml (quyền đã bỏ khỏi yaml bị gỡ cùng các cặp của nó). Cách gán `vai_tro_quyen` chỉ được khởi tạo cho quyền MỚI (lần đầu, hoặc quyền mới thêm ở bản phát hành sau); quyền đã có thì giữ nguyên vì Admin được gán/bỏ quyền lúc chạy (AD18). `vai_tro` chỉ thêm vai trò còn thiếu; `cau_hinh` chỉ thêm khóa còn thiếu. Hai tiến trình seed chạy cùng lúc được tuần tự hóa bằng khóa tư vấn PostgreSQL.
+- **Admin đầu tiên:** đọc từ `ADMIN_EMAIL`, `ADMIN_MAT_KHAU`, đặt `phai_doi_mat_khau = true`. Mật khẩu tối thiểu 12 ký tự (chặt hơn mức chung 8 của spec 06 vì tài khoản này giữ toàn quyền và được tạo từ file cấu hình) và không được là giá trị mẫu của `.env.example`. Bắt buộc ở lần chạy đầu; khi đã có Admin hoạt động thì có thể để trống. Email trùng nhân viên không phải Admin bị từ chối.
+- **Dữ liệu mẫu (`--mau`):** tài khoản mẫu có mật khẩu công khai nên CLI chỉ nạp vào CSDL ở máy cục bộ (`localhost`, `127.0.0.1`, `::1`, `db`), trừ khi thêm `--cho-phep-may-chu-khac`. SKU mẫu có tiền tố `MAU-` và số lô mẫu cũng vậy, để không bao giờ đụng hàng thật.
 - **`cau_hinh`:**
 
 | Khóa | Mặc định | Dùng ở |

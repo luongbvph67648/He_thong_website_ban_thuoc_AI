@@ -45,6 +45,9 @@ def mat_khau_du_manh(mat_khau: str) -> bool:
 
 DOI_TUONG_HOP_LE = ("khach", "noi_bo")  # claim `aud`: khách hàng hoặc nhân viên (không dùng chung token)
 KHOA_JWT_TOI_THIEU = 32
+TIEN_TO_GIA_TRI_MAU = "doi-"
+"""Giá trị mẫu trong `.env.example` đều bắt đầu bằng "doi-" (ví dụ `doi-gia-tri-nay-...`): đã công khai trong repo nên
+không được dùng làm bí mật thật."""
 _THUAT_TOAN = "HS256"
 
 
@@ -52,6 +55,8 @@ def _khoa_jwt() -> str:
     khoa = settings.JWT_SECRET.get_secret_value()
     if len(khoa) < KHOA_JWT_TOI_THIEU:
         raise RuntimeError(f"JWT_SECRET chưa đặt hoặc ngắn hơn {KHOA_JWT_TOI_THIEU} ký tự (xem backend/.env.example)")
+    if khoa.startswith(TIEN_TO_GIA_TRI_MAU):
+        raise RuntimeError("JWT_SECRET vẫn là giá trị mẫu của .env.example: hãy sinh chuỗi ngẫu nhiên riêng")
     return khoa
 
 

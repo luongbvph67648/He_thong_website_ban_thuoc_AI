@@ -90,9 +90,10 @@ async def don_cua_toi(ma_don: str, kh: KhachHang = Depends(khach_hien_tai), db=D
 ## Seed (`app/seed/`)
 - `uv run python -m app.seed` (vai trò, quyền, cấu hình mặc định, Admin từ `ADMIN_EMAIL`/`ADMIN_MAT_KHAU`) và `--mau` (dữ liệu mẫu để demo). Chạy lại an toàn.
 - `seed_co_ban(db, admin=...)` và `seed_mau(db)` nhận session, **không commit** (CLI bọc transaction). Test dùng trực tiếp hai hàm này.
-- Quyền đọc từ `docs/spec/data/quyen.yaml` và đồng bộ đúng theo file (quyền thừa bị gỡ). `cau_hinh` chỉ thêm khóa còn thiếu, không ghi đè giá trị Admin đã sửa. Đổi mặc định ở `seed/co_ban.py::CAU_HINH_MAC_DINH` thì phải khớp bảng ở spec 02 mục 6 (test đối chiếu từng khóa).
-- Dữ liệu mẫu ở `seed/du_lieu_mau/catalog.py` (toàn bộ là dữ liệu giả); lô hàng luôn nhập qua phiếu nhập + `ton_kho.nhap_kho`, không gán tồn trực tiếp. Tài khoản mẫu dùng chung mật khẩu công khai `MAT_KHAU_MAU`: **không chạy `--mau` trên môi trường thật**.
-- Ngoại lệ về `print`: CLI `app/seed/__main__.py` in kết quả cho người chạy; không in mật khẩu.
+- Quyền đọc từ `docs/spec/data/quyen.yaml`: danh mục `quyen` đồng bộ theo file (quyền thừa bị gỡ), nhưng cách gán `vai_tro_quyen` chỉ khởi tạo cho quyền MỚI để không hoàn tác chỉnh sửa của Admin (AD18). `cau_hinh` và `vai_tro` chỉ thêm cái còn thiếu. Mọi hàm seed gọi `khoa_seed(db)` (khóa tư vấn) nên hai tiến trình chạy cùng lúc không vi phạm unique. Đổi mặc định ở `seed/co_ban.py::CAU_HINH_MAC_DINH` thì phải khớp bảng ở spec 02 mục 6 (test đối chiếu từng khóa).
+- Dữ liệu mẫu ở `seed/du_lieu_mau/catalog.py` (toàn bộ là dữ liệu giả, SKU và số lô có tiền tố `MAU-`); lô hàng luôn nhập qua phiếu nhập + `ton_kho.nhap_kho`, không gán tồn trực tiếp. Tài khoản mẫu dùng chung mật khẩu công khai `MAT_KHAU_MAU`: CLI từ chối `--mau` với CSDL không ở máy cục bộ (trừ `--cho-phep-may-chu-khac`).
+- Admin đầu tiên: mật khẩu tối thiểu 12 ký tự, không được là giá trị mẫu (bắt đầu bằng `doi-`); `JWT_SECRET` cũng bị từ chối nếu là giá trị mẫu.
+- Ngoại lệ về `print`: CLI `app/seed/__main__.py` in kết quả cho người chạy; không in mật khẩu Admin (chỉ in `MAT_KHAU_MAU`, vốn công khai).
 
 ## Job nền (`app/jobs/`)
 - Mỗi job là một hàm `async def chay(db)` trong file `htXX_<ten>.py`, đăng ký lịch trong `app/jobs/__main__.py`.

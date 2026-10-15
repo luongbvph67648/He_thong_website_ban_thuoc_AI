@@ -14,7 +14,7 @@ from sqlalchemy import text
 from app.core.bao_mat import kiem_tra_mat_khau
 from app.core.thoi_gian import bay_gio_utc, hom_nay_vn
 from app.seed.co_ban import QUYEN_YAML, TaiKhoanAdmin, seed_co_ban
-from app.seed.du_lieu_mau import MAT_KHAU_MAU, seed_mau
+from app.seed.du_lieu_mau import MAT_KHAU_MAU, seed_mau, trang_thai_lo
 
 SPEC_DATABASE = Path(__file__).resolve().parents[2] / "docs" / "spec" / "02-database.md"
 ADMIN = TaiKhoanAdmin(email="admin@example.com", mat_khau="Mat-khau-thu-123")
@@ -134,6 +134,8 @@ async def test_khong_co_thong_tin_admin_thi_bo_qua_admin(db):
         ("admin@example.com", "", "mật khẩu"),
         ("admin@example.com", "abcdefgh", "mật khẩu"),  # thiếu số
         ("admin@example.com", "abc123", "mật khẩu"),  # quá ngắn
+        ("admin@example.com", "abcd1234", "mật khẩu"),  # đủ chuẩn chung (8 ký tự) nhưng Admin cần tối thiểu 12
+        ("admin@example.com", "doi-mat-khau-nay-123", "giá trị mẫu"),  # nguyên văn .env.example
     ],
 )
 async def test_thong_tin_admin_khong_hop_le_bi_tu_choi(db, email, mat_khau, thong_diep):
@@ -151,6 +153,19 @@ async def test_chay_lai_khong_nhan_ban_du_lieu(db):
     await seed_co_ban(db, admin=ADMIN)
     assert {b: await dem(db, b) for b in bang} == lan_1
     assert lan_1["nhan_vien"] == 1
+
+
+async def test_email_admin_trung_nhan_vien_khac_vai_tro_bi_tu_choi(db):
+    """Không báo "đã có sẵn" khi email đó là của dược sĩ: hệ thống vẫn chưa có Admin."""
+    await seed_co_ban(db)
+    await db.execute(
+        text(
+            "INSERT INTO nhan_vien (ma_nhan_vien, ho_ten, email, mat_khau_hash, vai_tro_id) "
+            "SELECT 'NV9999', 'Dược sĩ', 'admin@example.com', 'x', id FROM vai_tro WHERE ma = 'PHARMACIST'"
+        )
+    )
+    with pytest.raises(ValueError, match="không phải Admin"):
+        await seed_co_ban(db, admin=ADMIN)
 
 
 async def test_chay_lai_khong_dat_lai_mat_khau_admin(db):
@@ -178,31 +193,93 @@ async def test_chay_lai_them_khoa_cau_hinh_moi_con_thieu(db):
     assert gia_tri == 30000
 
 
-async def test_dong_bo_vai_tro_quyen_theo_yaml(db):
-    """quyen.yaml là nguồn sự thật: quyền thừa trong DB bị gỡ, quyền thiếu được thêm lại."""
-    await seed_co_ban(db)
-    await db.execute(
-        text(
-            "INSERT INTO vai_tro_quyen (vai_tro_id, quyen_id) "
-            "SELECT v.id, q.id FROM vai_tro v, quyen q WHERE v.ma = 'WAREHOUSE' AND q.ma = 'order.confirm'"
-        )
+async def cap_vai_tro_quyen(db) -> set[tuple[str, str]]:
+    ket_qua = await hang(
+        db,
+        "SELECT v.ma, q.ma FROM vai_tro_quyen vq JOIN vai_tro v ON v.id = vq.vai_tro_id "
+        "JOIN quyen q ON q.id = vq.quyen_id",
     )
+    return {(v, q) for v, q in ket_qua}
+
+
+async def test_chay_lai_khong_hoan_tac_chinh_sua_phan_quyen_cua_admin(db):
+    """AD18: Admin gán/bỏ quyền cho vai trò lúc chạy. Triển khai lại rồi seed không được trả về mặc định."""
+    await seed_co_ban(db)
     await db.execute(
         text(
             "DELETE FROM vai_tro_quyen WHERE quyen_id = (SELECT id FROM quyen WHERE ma = 'order.view') "
             "AND vai_tro_id = (SELECT id FROM vai_tro WHERE ma = 'PHARMACIST')"
         )
     )
-    await seed_co_ban(db)
-    cap = {
-        (v, q)
-        for v, q in await hang(
-            db,
-            "SELECT v.ma, q.ma FROM vai_tro_quyen vq JOIN vai_tro v ON v.id = vq.vai_tro_id JOIN quyen q ON q.id = vq.quyen_id",
+    await db.execute(
+        text(
+            "INSERT INTO vai_tro_quyen (vai_tro_id, quyen_id) SELECT v.id, q.id FROM vai_tro v, quyen q "
+            "WHERE v.ma = 'WAREHOUSE' AND q.ma = 'order.confirm'"
         )
-    }
-    assert ("WAREHOUSE", "order.confirm") not in cap
-    assert ("PHARMACIST", "order.view") in cap
+    )
+    await db.execute(text("UPDATE vai_tro SET ten = 'Dược sĩ (tên do Admin đặt)' WHERE ma = 'PHARMACIST'"))
+    truoc = await cap_vai_tro_quyen(db)
+    await seed_co_ban(db)
+    assert await cap_vai_tro_quyen(db) == truoc
+    assert ("PHARMACIST", "order.view") not in truoc and ("WAREHOUSE", "order.confirm") in truoc
+    (ten,) = (await hang(db, "SELECT ten FROM vai_tro WHERE ma = 'PHARMACIST'"))[0]
+    assert ten == "Dược sĩ (tên do Admin đặt)"
+
+
+async def test_quyen_moi_trong_yaml_duoc_cap_mac_dinh_con_quyen_bi_go_thi_xoa(db, tmp_path):
+    """Phát hành thêm quyền mới: chỉ quyền mới được cấp mặc định; quyền đã bỏ khỏi yaml bị gỡ cùng các cặp của nó."""
+    du_lieu = doc_quyen_yaml()
+    await seed_co_ban(db)
+    bi_bo = du_lieu["quyen"].pop()["ma"]
+    du_lieu["quyen"].append(
+        {"ma": "thu.moi", "nhom": "thu", "mo_ta": "Quyền thử", "chuc_nang": ["X"], "vai_tro": {"WAREHOUSE": "chi_xem"}}
+    )
+    yaml_moi = tmp_path / "quyen.yaml"
+    yaml_moi.write_text(yaml.safe_dump(du_lieu, allow_unicode=True), encoding="utf-8")
+
+    ket_qua = await seed_co_ban(db, duong_dan_quyen=yaml_moi)
+
+    cap = await cap_vai_tro_quyen(db)
+    assert ("WAREHOUSE", "thu.moi") in cap
+    assert (
+        await hang(
+            db, "SELECT gioi_han FROM vai_tro_quyen vq JOIN quyen q ON q.id = vq.quyen_id WHERE q.ma = 'thu.moi'"
+        )
+    )[0][0] == "chi_xem"
+    assert not any(q == bi_bo for _, q in cap) and await dem(db, f"quyen WHERE ma = '{bi_bo}'") == 0
+    assert ket_qua["quyen_moi"] == 1
+
+
+async def test_yaml_co_cap_quyen_sai_bi_tu_choi_va_khong_ghi_gi(db, tmp_path):
+    du_lieu = doc_quyen_yaml()
+    du_lieu["quyen"][0]["vai_tro"]["PHARMACIST"] = "toan_quyen"
+    yaml_hong = tmp_path / "quyen.yaml"
+    yaml_hong.write_text(yaml.safe_dump(du_lieu, allow_unicode=True), encoding="utf-8")
+    with pytest.raises(ValueError, match="quyen.yaml"):
+        await seed_co_ban(db, duong_dan_quyen=yaml_hong)
+    assert await dem(db, "vai_tro") == 0
+
+
+async def test_seed_mau_chay_song_song_cho_nhau_va_khong_loi(db_that):
+    """Hai tiến trình `--mau` cùng lúc: `seed_mau` kiểm tra rồi mới chèn nên nếu không tuần tự hóa, tiến trình sau
+    không thấy dữ liệu chưa commit của tiến trình trước và vi phạm unique."""
+    import asyncio
+
+    async with db_that() as s, s.begin():
+        await seed_co_ban(s)
+    async with db_that() as a, db_that() as b:
+        await a.begin()
+        await b.begin()
+        moi_a = await seed_mau(a)  # a giữ khóa seed, chưa commit
+        viec_b = asyncio.create_task(seed_mau(b))
+        await asyncio.sleep(0.5)
+        assert not viec_b.done(), "seed thứ hai phải chờ seed thứ nhất"
+        await a.commit()
+        moi_b = await asyncio.wait_for(viec_b, timeout=20)
+        await b.commit()
+    assert moi_a["san_pham"] == 42 and moi_b == {}
+    async with db_that() as s:
+        assert await dem(s, "san_pham") == 42
 
 
 # --- Dữ liệu mẫu ----------------------------------------------------------------------------------------------------
@@ -455,10 +532,70 @@ async def test_mau_chay_lai_khong_nhan_ban(co_mau):
     assert ton > 0 and isinstance(ton, int | Decimal)
 
 
-async def test_mau_khong_co_san_pham_ke_don_trong_khuyen_mai_theo_pham_vi(co_mau):
-    """Quy tắc 6: thuốc kê đơn không được giảm giá, kể cả dữ liệu mẫu."""
+def test_trang_thai_lo_dung_tai_cac_ranh_gioi():
+    """Spec 04 mục 1.4 và 3.1: HSD bằng hôm nay là hết hạn (FEFO chỉ lấy HSD > hôm nay); cận hạn khi còn DƯỚI ngưỡng."""
+    from datetime import date, timedelta
+
+    hom_nay = date(2026, 6, 15)
+    ngay = lambda n: hom_nay + timedelta(days=n)  # noqa: E731
+    assert trang_thai_lo(ngay(-1), hom_nay, 90) == "het_han"
+    assert trang_thai_lo(ngay(0), hom_nay, 90) == "het_han"
+    assert trang_thai_lo(ngay(1), hom_nay, 90) == "can_han"
+    assert trang_thai_lo(ngay(89), hom_nay, 90) == "can_han"
+    assert trang_thai_lo(ngay(90), hom_nay, 90) == "dang_ban"
+    assert trang_thai_lo(ngay(91), hom_nay, 90) == "dang_ban"
+    assert trang_thai_lo(ngay(30), hom_nay, 30) == "dang_ban"  # ngưỡng lấy từ cấu hình, không cố định 90
+
+
+async def test_mau_sku_co_tien_to_rieng_va_khong_dung_vao_san_pham_that(db_chua_seed):
+    from tests.factories import tao_san_pham
+
+    await seed_co_ban(db_chua_seed)
+    that = await tao_san_pham(db_chua_seed, sku="SP0008", ten="Sản phẩm thật của nhà thuốc")
+    await seed_mau(db_chua_seed)
+    assert all(
+        r[0].startswith("MAU-SP")
+        for r in await hang(db_chua_seed, "SELECT sku FROM san_pham WHERE id <> :i", i=that.id)
+    )
+    assert (
+        await dem(db_chua_seed, f"lo_thuoc WHERE san_pham_id = {that.id}") == 0
+    )  # seed không gắn tồn giả vào hàng thật
+
+
+async def test_mau_chay_lai_sang_ngay_hoac_nam_moi_khong_nhan_ban_lo(co_mau):
+    """Số lô không chứa năm, nên chạy lại vào ngày khác (kể cả sang năm) vẫn nhận ra lô cũ."""
+    from datetime import date
+
+    lan_dau = {b: await dem(co_mau, b) for b in ("lo_thuoc", "phieu_nhap", "ct_phieu_nhap", "bien_dong_kho")}
+    tong_ton = (await hang(co_mau, "SELECT sum(so_luong_ton) FROM lo_thuoc"))[0][0]
+    tong_tien = (await hang(co_mau, "SELECT sum(tong_tien) FROM phieu_nhap"))[0][0]
+    assert await seed_mau(co_mau, hom_nay=date(hom_nay_vn().year + 1, 1, 1)) == {}
+    assert {b: await dem(co_mau, b) for b in lan_dau} == lan_dau
+    assert (await hang(co_mau, "SELECT sum(so_luong_ton) FROM lo_thuoc"))[0][0] == tong_ton
+    assert (await hang(co_mau, "SELECT sum(tong_tien) FROM phieu_nhap"))[0][0] == tong_tien
+
+
+async def test_mau_ngay_san_xuat_khong_o_tuong_lai_va_truoc_han_su_dung(co_mau):
     sai = await hang(
-        co_mau,
-        "SELECT p.id FROM khuyen_mai_pham_vi p LEFT JOIN san_pham sp ON sp.id = p.san_pham_id WHERE sp.loai_san_pham = 'thuoc_ke_don'",
+        co_mau, "SELECT so_lo FROM lo_thuoc WHERE ngay_san_xuat > current_date OR ngay_san_xuat >= han_su_dung"
     )
     assert sai == []
+
+
+async def test_mau_the_kho_nhap_cung_ngay_voi_phieu_nhap(co_mau):
+    lech = await hang(
+        co_mau,
+        "SELECT b.id FROM bien_dong_kho b JOIN phieu_nhap p ON p.id = b.chung_tu_id "
+        "WHERE b.chung_tu_loai = 'phieu_nhap' AND b.created_at <> p.ngay_nhap",
+    )
+    assert lech == []
+
+
+async def test_mau_chay_lai_sau_khi_khach_sua_dia_chi_va_nha_san_xuat_khong_loi(co_mau):
+    await co_mau.execute(
+        text("UPDATE dia_chi SET dia_chi_chi_tiet = '12A Nguyễn Huệ' WHERE dia_chi_chi_tiet = '12 Nguyễn Huệ'")
+    )
+    await co_mau.execute(text("UPDATE nha_san_xuat SET quoc_gia = 'Thái Lan' WHERE quoc_gia = 'Ấn Độ'"))
+    truoc = {b: await dem(co_mau, b) for b in ("dia_chi", "nha_san_xuat")}
+    assert await seed_mau(co_mau) == {}
+    assert {b: await dem(co_mau, b) for b in truoc} == truoc

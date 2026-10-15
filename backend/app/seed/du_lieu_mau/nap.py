@@ -35,6 +35,7 @@ from app.models.san_pham import (
     TuongTacHoatChat,
 )
 from app.modules.kho.ton_kho import ChungTu, nhap_kho
+from app.seed.co_ban import khoa_seed
 from app.seed.du_lieu_mau import catalog
 from app.seed.du_lieu_mau.catalog import SanPhamMau
 
@@ -93,7 +94,7 @@ async def _nap_danh_muc_phu(db: AsyncSession, dem: Counter) -> tuple[dict[str, i
         dem["thuong_hieu"] += moi
     nha_san_xuat: dict[str, int] = {}
     for ten, quoc_gia in catalog.NHA_SAN_XUAT:
-        doi_tuong, moi = await _lay_hoac_tao(db, NhaSanXuat, {"ten": ten, "quoc_gia": quoc_gia})
+        doi_tuong, moi = await _lay_hoac_tao(db, NhaSanXuat, {"ten": ten}, {"quoc_gia": quoc_gia})
         nha_san_xuat[ten] = doi_tuong.id
         dem["nha_san_xuat"] += moi
     hoat_chat: dict[str, int] = {}
@@ -235,6 +236,8 @@ async def _nap_khach_hang(db: AsyncSession, dem: Counter) -> None:
             },
         )
         dem["khach_hang"] += moi
+        if not moi:
+            continue  # khách đã có (có thể đã sửa sổ địa chỉ): không thêm địa chỉ mẫu nữa
         for chi_tiet, ma_tinh, ten_tinh, ma_quan, ma_xa, ten_xa, mac_dinh in dia_chi:
             _, moi_dc = await _lay_hoac_tao(
                 db,
@@ -311,11 +314,10 @@ async def _nap_ton_kho(
     nha_cung_cap: list[NhaCungCap],
     nv_kho: NhanVien,
     dem: Counter,
+    hom_nay: date,
 ) -> None:
     """Mỗi nhà cung cấp một phiếu nhập mẫu chứa mọi lô của sản phẩm thuộc nó."""
-    hom_nay = hom_nay_vn()
     nguong = await _nguong_can_han(db)
-    yy = f"{hom_nay.year % 100:02d}"
     phieu_theo_ncc: dict[int, PhieuNhap] = {}
 
     for sp_mau, sp in san_pham:
@@ -329,7 +331,7 @@ async def _nap_ton_kho(
         ncc = nha_cung_cap[chi_so_ncc]
 
         for lo in lo_mau:
-            so_lo = f"{sp_mau.ma:04d}{lo.chu_lo}{yy}"
+            so_lo = f"MAU-{sp_mau.ma:04d}{lo.chu_lo}"  # không chứa năm: chạy lại sang năm mới vẫn nhận ra lô cũ
             da_co = (
                 await db.execute(select(LoThuoc.id).where(LoThuoc.san_pham_id == sp.id, LoThuoc.so_lo == so_lo))
             ).first()
@@ -344,7 +346,7 @@ async def _nap_ton_kho(
             lo_thuoc = LoThuoc(
                 san_pham_id=sp.id,
                 so_lo=so_lo,
-                ngay_san_xuat=han - timedelta(days=730),
+                ngay_san_xuat=min(han - timedelta(days=730), hom_nay - timedelta(days=30)),  # không ở tương lai
                 han_su_dung=han,
                 gia_nhap=gia_von_co_so,
                 trang_thai=trang_thai_lo(han, hom_nay, nguong),
@@ -363,7 +365,9 @@ async def _nap_ton_kho(
                 )
             )
             await db.flush()
-            await nhap_kho(db, lo_thuoc, so_luong_co_so, ChungTu("phieu_nhap", phieu.id, nv_kho.id))
+            await nhap_kho(
+                db, lo_thuoc, so_luong_co_so, ChungTu("phieu_nhap", phieu.id, nv_kho.id), luc=phieu.ngay_nhap
+            )
             dem["lo_thuoc"] += 1
 
     for phieu in phieu_theo_ncc.values():  # tổng tiền = tổng các dòng, tính lại sau khi thêm lô
@@ -404,8 +408,12 @@ async def _lay_hoac_tao_phieu_nhap(
     return phieu
 
 
-async def seed_mau(db: AsyncSession) -> dict[str, int]:
-    """Nạp toàn bộ dữ liệu mẫu. Cần `seed_co_ban` chạy trước (vai trò). Trả số đối tượng MỚI tạo ở lần chạy này."""
+async def seed_mau(db: AsyncSession, *, hom_nay: date | None = None) -> dict[str, int]:
+    """Nạp toàn bộ dữ liệu mẫu. Cần `seed_co_ban` chạy trước (vai trò). Trả số đối tượng MỚI tạo ở lần chạy này.
+
+    `hom_nay` (giờ VN) chỉ để test chạy giả lập ngày khác; mặc định là hôm nay.
+    """
+    await khoa_seed(db)
     vai_tro_id = {ma: id_ for id_, ma in (await db.execute(select(VaiTro.id, VaiTro.ma))).all()}
     if not {"PHARMACIST", "WAREHOUSE"} <= vai_tro_id.keys():
         raise RuntimeError("Chưa có vai trò: chạy seed_co_ban (uv run python -m app.seed) trước khi nạp dữ liệu mẫu")
@@ -420,7 +428,7 @@ async def seed_mau(db: AsyncSession) -> dict[str, int]:
     await _nap_tuong_tac(db, id_hoat_chat, dem)
     nhan_vien = await _nap_nhan_vien(db, vai_tro_id, dem)
     nha_cung_cap = await _nap_nha_cung_cap(db, dem)
-    await _nap_ton_kho(db, san_pham, nha_cung_cap, nhan_vien["WAREHOUSE"], dem)
+    await _nap_ton_kho(db, san_pham, nha_cung_cap, nhan_vien["WAREHOUSE"], dem, hom_nay or hom_nay_vn())
     await _nap_khach_hang(db, dem)
     await _nap_khuyen_mai(db, dem)
     return {ten: so_luong for ten, so_luong in dem.items() if so_luong}

@@ -126,3 +126,11 @@ def test_khong_co_khoa_hoac_khoa_ngan_thi_tu_choi_tao_token(monkeypatch, khoa):
         tao_access_token(1, "khach")
     with pytest.raises(RuntimeError, match="JWT_SECRET"):
         giai_ma_access_token("a.b.c", "khach")
+
+
+def test_khoa_jwt_con_la_gia_tri_mau_cua_env_example_bi_tu_choi(monkeypatch):
+    mau = "doi-gia-tri-nay-thanh-chuoi-ngau-nhien-it-nhat-32-ky-tu"
+    assert len(mau) >= 32  # dài đủ, nhưng là giá trị công khai trong repo
+    monkeypatch.setattr(settings, "JWT_SECRET", SecretStr(mau))
+    with pytest.raises(RuntimeError, match="giá trị mẫu"):
+        tao_access_token(1, "khach")

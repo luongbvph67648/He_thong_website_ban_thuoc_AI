@@ -124,6 +124,13 @@ _Dựng khung dự án, CSDL đúng ERD, seed, hạ tầng test. Chưa có chứ
   - **Chưa có:** ảnh sản phẩm và `thong_tin_chuyen_mon` (làm ở T2.x, tránh nội dung y khoa chưa thẩm định); mã tỉnh/huyện/xã của địa chỉ mẫu là mã giả cho adapter vận chuyển giả. Dữ liệu tương tác thuốc chỉ minh họa luồng cảnh báo.
   - **Cảnh báo an toàn:** tài khoản mẫu dùng chung mật khẩu công khai `MAT_KHAU_MAU`; CLI in cảnh báo "chỉ dùng cục bộ". Không chạy `--mau` trên môi trường thật.
   - Thêm phụ thuộc `argon2-cffi`, `pyyaml`; `ruff` (cấu hình đã làm ở T0.4).
+  - **Sửa sau rà soát nghiệp vụ** (không có lỗi nghiêm trọng; 4 mức trung bình và vài mức nhẹ, đã sửa kèm test, phá thử thấy test fail):
+    - Mật khẩu mẫu của `.env.example` (`doi-mat-khau-nay-123`) qua được kiểm tra nên Admin có thể bị tạo với mật khẩu công khai → Admin cần ≥ 12 ký tự và bị từ chối nếu bắt đầu bằng `doi-`; `JWT_SECRET` mẫu cũng bị từ chối. Email Admin trùng nhân viên khác vai trò bị từ chối thay vì báo "đã có sẵn".
+    - `--mau` không có chặn nào khi chạy nhầm trên môi trường thật → CLI từ chối nếu máy chủ CSDL không phải `localhost`, `127.0.0.1`, `::1`, `db` (trừ `--cho-phep-may-chu-khac`); SKU và số lô mẫu có tiền tố `MAU-` nên không đụng hàng thật (trước đây `SP0008` thật bị gắn tồn giả).
+    - Seed ghi đè chỉnh sửa phân quyền của Admin (AD18) → `vai_tro_quyen` chỉ khởi tạo cho quyền mới, `vai_tro` chỉ thêm còn thiếu. Spec 02 mục 6 đã ghi rõ.
+    - Số lô mẫu chứa năm nên chạy lại sang năm mới nhân đôi lô và tồn → bỏ năm khỏi số lô.
+    - Nhẹ: khóa tư vấn cho seed (hai tiến trình cùng lúc từng lỗi unique); địa chỉ khách chỉ thêm khi khách mới, nhà sản xuất nhận diện theo tên (sửa dữ liệu mẫu rồi chạy lại không còn lỗi); ngày sản xuất không ở tương lai; thẻ kho nhập mẫu mang ngày của phiếu nhập (`nhap_kho(luc=...)`); CLI chỉ bắt buộc ADMIN_* khi hệ thống chưa có Admin; test mới cho ranh giới trạng thái lô, thứ tự `ORDER BY id ... FOR UPDATE` của `khoa_cac_lo`, chạy lại khác ngày/năm; bỏ test khuyến mãi theo phạm vi vì luôn đúng một cách vô nghĩa (dữ liệu mẫu không có phạm vi).
+    - Ghi vào docstring `nhap_kho`: phiếu nhiều dòng phải `khoa_cac_lo` tất cả id trước; tính lại giá bình quân và kiểm tra trạng thái lô thuộc dịch vụ phiếu nhập (T3.1).
 
 ### [x] T0.6 · Hạ tầng test và CI
 - **Phụ thuộc:** T0.5
@@ -757,4 +764,4 @@ _Báo cáo tổng hợp, rà soát bảo mật/hiệu năng, dữ liệu demo, t
 
 Lỗi hoặc việc phát hiện trong lúc làm nhưng nằm ngoài phạm vi task đang làm. Ghi một dòng `- [ ] (Tx.y) mô tả`, xử lý sau.
 
-- _(chưa có)_
+- [ ] (T0.5) `QUYEN_YAML` nằm ngoài `backend/` (`docs/spec/data/quyen.yaml`): khi đóng image Docker ở T8.3 nếu chỉ copy `backend/` thì `python -m app.seed` lỗi `FileNotFoundError`. Khi đóng gói, copy file này vào image hoặc đặt đường dẫn qua biến môi trường.
