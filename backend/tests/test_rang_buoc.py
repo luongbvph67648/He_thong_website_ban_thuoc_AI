@@ -10,12 +10,8 @@ bảng (DDL của Postgres nằm trong transaction nên rollback là trở lại
 """
 
 import pytest
-import pytest_asyncio
 from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
-
-from app.core.config import settings
-from scripts.so_sanh_schema import chay_alembic, db_tam
 
 pytestmark = pytest.mark.asyncio(loop_scope="module")
 
@@ -23,14 +19,6 @@ CHECK_VIOLATION = "23514"
 UNIQUE_VIOLATION = "23505"
 
 NULL = "NULL"
-
-
-@pytest_asyncio.fixture(scope="module", loop_scope="module")
-async def engine_migration():
-    """Database tạm dựng bằng `alembic upgrade head`, dùng chung cho cả module."""
-    async with db_tam(settings.DATABASE_URL, "nha_thuoc_rb") as engine:
-        await chay_alembic(engine, "upgrade", "head")
-        yield engine
 
 
 # --- Hạ tầng dựng dòng dữ liệu --------------------------------------------------------------------------------------

@@ -104,15 +104,26 @@ _Dựng khung dự án, CSDL đúng ERD, seed, hạ tầng test. Chưa có chứ
   - **Chưa chạy trên Docker** (không có daemon): kiểm trên PostgreSQL 16 cài máy; migration chỉ dùng extension có sẵn trong image `pgvector/pgvector:pg16` (`vector`, `unaccent`, `pg_trgm` đều có trong contrib).
   - **Bỏ qua `/review-nghiep-vu` ở task này:** không có logic nghiệp vụ, chỉ chép ràng buộc từ spec 02 mục 4 (đã đếm 42 CHECK, 10 index, 7 sequence khớp từng dòng và có test từng mục). Rà soát chạy ở task đầu tiên có logic (T1.x).
 
-### [ ] T0.5 · Seed dữ liệu
+### [x] T0.5 · Seed dữ liệu
 - **Phụ thuộc:** T0.4
 - **Bảng:** `vai_tro`, `quyen`, `vai_tro_quyen`, `cau_hinh`, `nhan_vien`, (dữ liệu mẫu)
 - **Tiêu chí chấp nhận:**
-  - [ ] `uv run python -m app.seed`: tạo 3 vai trò, toàn bộ quyền và `vai_tro_quyen` đọc từ `docs/spec/data/quyen.yaml`, các khóa `cau_hinh` mặc định (spec 02 mục 6), tài khoản Admin đầu tiên từ biến môi trường. Chạy lại nhiều lần không nhân bản dữ liệu.
-  - [ ] `uv run python -m app.seed --mau`: dữ liệu mẫu đủ để demo: cây danh mục 3 cấp, ~40 sản phẩm phủ đủ 5 loại (có thuốc kê đơn), hoạt chất + thành phần, đơn vị quy đổi hộp/vỉ/viên, vài cặp tương tác hoạt chất, nhà cung cấp, lô với HSD đa dạng (có lô cận hạn, hết hạn), 1 dược sĩ, 1 nhân viên kho, 2 khách hàng, mã giảm giá.
-  - [ ] Lô mẫu được tạo qua phiếu nhập mẫu kèm dòng `bien_dong_kho` tương ứng, để bất biến tồn kho (spec 04 mục 3.2) đúng ngay từ đầu.
-  - [ ] Test: số dòng `vai_tro_quyen` sau seed bằng số cặp trong `quyen.yaml`.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] `uv run python -m app.seed`: tạo 3 vai trò, toàn bộ quyền và `vai_tro_quyen` đọc từ `docs/spec/data/quyen.yaml`, các khóa `cau_hinh` mặc định (spec 02 mục 6), tài khoản Admin đầu tiên từ biến môi trường. Chạy lại nhiều lần không nhân bản dữ liệu.
+  - [x] `uv run python -m app.seed --mau`: dữ liệu mẫu đủ để demo: cây danh mục 3 cấp, ~40 sản phẩm phủ đủ 5 loại (có thuốc kê đơn), hoạt chất + thành phần, đơn vị quy đổi hộp/vỉ/viên, vài cặp tương tác hoạt chất, nhà cung cấp, lô với HSD đa dạng (có lô cận hạn, hết hạn), 1 dược sĩ, 1 nhân viên kho, 2 khách hàng, mã giảm giá.
+  - [x] Lô mẫu được tạo qua phiếu nhập mẫu kèm dòng `bien_dong_kho` tương ứng, để bất biến tồn kho (spec 04 mục 3.2) đúng ngay từ đầu.
+  - [x] Test: số dòng `vai_tro_quyen` sau seed bằng số cặp trong `quyen.yaml`.
+- **Ghi chú triển khai:**
+  - **Cấu trúc:** `app/seed/co_ban.py` (`seed_co_ban(db, admin=...)`), `app/seed/du_lieu_mau/` (`catalog.py` là bảng dữ liệu, `nap.py` là `seed_mau(db)`), `app/seed/__main__.py` (CLI). Hai hàm seed nhận session và không commit; CLI bọc transaction. Test T0.6 dùng thẳng `seed_co_ban` cho DB test (spec 10 mục 2: seed vai trò/quyền/cấu hình, không seed mẫu).
+  - **Đồng bộ theo `quyen.yaml`:** 3 vai trò, 51 quyền, 69 cặp vai trò-quyền (`day_du` lưu `gioi_han = NULL`, `chi_xem` lưu `'chi_xem'`). Quyền hoặc cặp không còn trong yaml bị gỡ. Khóa `cau_hinh` chỉ thêm khi còn thiếu, không ghi đè giá trị Admin đã sửa. Test đọc bảng `cau_hinh` ngay từ spec 02 mục 6 và so từng khóa (19 khóa), nên sửa spec mà quên seed sẽ bị fail.
+  - **Admin:** `ADMIN_EMAIL`, `ADMIN_MAT_KHAU` kiểm tra (email hợp lệ, mật khẩu ≥ 8 ký tự có chữ và số) **trước khi** đụng DB; tạo mới với `phai_doi_mat_khau = true`, đã có thì giữ nguyên (không đặt lại mật khẩu). Thiếu hoặc sai thì CLI thoát mã 2, không in mật khẩu (`TaiKhoanAdmin.__repr__` che mật khẩu, `ADMIN_MAT_KHAU` là `SecretStr`).
+  - **Dữ liệu mẫu (toàn bộ là dữ liệu giả):** 33 danh mục 3 cấp, 42 sản phẩm (7 kê đơn, 14 không kê đơn, 8 TPCN, 5 dược mỹ phẩm, 8 thiết bị y tế), 31 hoạt chất, 6 cặp tương tác, 3 nhà cung cấp, 67 lô qua 3 phiếu nhập mẫu, 1 dược sĩ, 1 nhân viên kho, 2 khách (3 địa chỉ), 3 mã giảm giá (1 đã hết hạn). Có sẵn các tình huống demo: hết hàng (không lô), chỉ còn lô hết hạn, chỉ còn lô cận hạn (chỉ bán tại quầy), sản phẩm ngừng kinh doanh, lô hết hạn còn hàng chờ phiếu hủy. Hạn sử dụng tính từ ngày chạy; chạy lại không dịch hạn của lô đã có.
+  - **Bất biến tồn kho đúng ngay từ đầu:** mọi lô nhập qua phiếu nhập + `ton_kho.nhap_kho`; test kiểm `so_luong_ton` = tổng thẻ kho khu `kho_ban`, `ton_sau` của thẻ cuối = tồn hiện tại, `so_luong_giu = 0`, tổng phiếu nhập = tổng dòng, số lượng cơ sở = số lượng × hệ số. Phá thử bằng cách gán thẳng `so_luong_ton` trong seed thì test fail.
+  - **Làm sớm hơn lộ trình:** `modules/kho/ton_kho.py` (mới có `nhap_kho` và `khoa_cac_lo`; T3.1 thêm các hàm còn lại) vì quy tắc 2 cấm đổi tồn ở nơi khác; `core/bao_mat.py` (Argon2id, T1.x thêm JWT); `core/ma_chung_tu.py` (mã nhân viên, mã phiếu, lệnh thu hồi từ sequence); `core/slug.py`; `tests/factories.py` (T0.6 mở rộng); fixture `engine_migration` và `db` trong `conftest.py` (phạm vi module, T0.6 thay bằng một DB cho cả phiên).
+  - **Test tranh chấp đầu tiên** (`tests/kho/test_ton_kho_tranh_chap.py`): giao dịch B nạp lô trước, A giữ khóa và commit, B phải chờ rồi tính `ton_sau` trên tồn mới. Bỏ `FOR UPDATE` hoặc `populate_existing` thì test fail.
+  - **Quy ước ranh giới trạng thái lô:** hết hạn khi `han_su_dung <= hôm nay` (khớp truy vấn FEFO ở spec 04 mục 3.1, lô có HSD đúng hôm nay không bán), cận hạn khi còn **dưới** ngưỡng ngày. Hàm `trang_thai_lo` đang nằm trong seed; T3.2 (HT01) dùng lại và nên chuyển vào `modules/kho`.
+  - **Chưa có:** ảnh sản phẩm và `thong_tin_chuyen_mon` (làm ở T2.x, tránh nội dung y khoa chưa thẩm định); mã tỉnh/huyện/xã của địa chỉ mẫu là mã giả cho adapter vận chuyển giả. Dữ liệu tương tác thuốc chỉ minh họa luồng cảnh báo.
+  - **Cảnh báo an toàn:** tài khoản mẫu dùng chung mật khẩu công khai `MAT_KHAU_MAU`; CLI in cảnh báo "chỉ dùng cục bộ". Không chạy `--mau` trên môi trường thật.
+  - Thêm phụ thuộc `argon2-cffi`, `pyyaml`; `ruff` (cấu hình đã làm ở T0.4).
 
 ### [ ] T0.6 · Hạ tầng test và CI
 - **Phụ thuộc:** T0.5

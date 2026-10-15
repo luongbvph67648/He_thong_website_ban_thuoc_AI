@@ -71,10 +71,14 @@ async def don_cua_toi(ma_don: str, kh: KhachHang = Depends(khach_hien_tai), db=D
 - **Tải quan hệ:** mọi `relationship` đặt `lazy="raise"`, truy cập quan hệ chưa nạp sẽ báo lỗi thay vì âm thầm chạy truy vấn (không dùng được trong async). Phải nạp rõ ràng: `select(DonHang).options(selectinload(DonHang.chi_tiet))`. Tên quan hệ nhiều-một lấy từ cột khóa ngoại bỏ đuôi `_id` (`DonHang.khach_hang`); quan hệ một-nhiều chọn lọc (`DonHang.chi_tiet`, `SanPham.don_vi_quy_doi`...) xem trong model. Khóa ngoại kép (`ct_don_hang.(don_vi_id, san_pham_id)`) không có quan hệ, dùng join tường minh.
 - **Khóa chính** dùng `Identity` (như DDL của ERD), không dùng serial. Giá trị mặc định (`created_at`, trạng thái, số lượng 0...) là `server_default`; sau `flush()`/`refresh()` ORM đọc lại từ DB.
 - **Cột tên `metadata`** (`tai_lieu_tri_thuc`) có thuộc tính Python là `metadata_`, vì `metadata` bị `DeclarativeBase` giữ riêng.
-- **Khóa ghi:** `select(LoThuoc).where(...).order_by(LoThuoc.id).with_for_update()`. Luôn khóa theo thứ tự id tăng để tránh deadlock.
+- **Khóa ghi:** `select(LoThuoc).where(...).order_by(LoThuoc.id).with_for_update()`. Luôn khóa theo thứ tự id tăng để tránh deadlock. Dùng `ton_kho.khoa_cac_lo(db, ids)`: nó khóa theo id tăng, dedupe, báo `LookupError` nếu thiếu lô và dùng `populate_existing` để đối tượng đã nạp từ trước được làm mới theo dòng vừa khóa (nếu không, `+=` trên số cũ làm mất cập nhật của giao dịch khác).
+- **Tồn kho:** chỉ đổi qua `modules/kho/ton_kho.py`. Hiện có `nhap_kho(db, lo, so_luong, ChungTu(loai, id, nhan_vien_id))`; các hàm còn lại (spec 04 mục 3) thêm ở T3.1/T4.x, cùng một khuôn: khóa lô, đổi số, ghi `bien_dong_kho` với `ton_sau`, flush. `so_luong` phải là `int` dương (float/bool/0 bị từ chối).
 - **Xóa mềm:** truy vấn mặc định lọc `deleted_at IS NULL` qua helper `chua_xoa(Model)`.
 - **Tiền:** `Decimal`, làm tròn qua `core.tien.lam_tron_vnd()` (half-up). `cong()`/`tru()` cộng trừ rồi làm tròn một lần; hàm tiền từ chối `float`. Trong schema Pydantic dùng kiểu `Tien` (không âm, dưới 10^12, số đồng nguyên, xuất JSON dạng chuỗi `"125000.00"`); chênh lệch có thể âm thì dùng `TienCoDau`.
 - **Thời gian:** `core.thoi_gian.bay_gio_utc()`, `hom_nay_vn()`.
+- **Mật khẩu:** `core.bao_mat.bam_mat_khau` / `kiem_tra_mat_khau` (Argon2id; chuỗi băm hỏng trả `False`, không ném lỗi), `mat_khau_du_manh` (≥ 8 ký tự, có chữ và số). Không tự gọi `argon2` ở nơi khác.
+- **Mã chứng từ:** `core.ma_chung_tu.ma_nhan_vien(db)`, `ma_phieu(db, "phieu_nhap")`, `ma_lenh_thu_hoi(db)` lấy số từ sequence (spec 04 mục 7); sequence không rollback nên mã có thể nhảy số, không bao giờ trùng. Mã của khách (`DH...`) dùng ký tự ngẫu nhiên, làm ở T4.x.
+- **Slug:** `core.slug.tao_slug("Thuốc ho Bổ phế")` → `thuoc-ho-bo-phe`.
 - **Phân trang:** route nhận `tp: PhanTrang`, truy vấn đã có `ORDER BY` thì `dong, tong = await lay_trang(db, stmt, tp)`, trả `tao_trang(dong, tong, tp)` với `response_model=Trang[Schema]`.
 - **Schema:** thay đổi phải theo `/doi-schema`. Migration mới đặt tên `NNNN_<mo_ta>.py`. Sau khi sửa model hoặc migration, chạy `uv run python scripts/so_sanh_schema.py` để chắc cả model lẫn kết quả `alembic upgrade head` vẫn khớp DDL của ERD (test `test_model_khop_ddl_cua_erd` và `test_migration_khop_ddl_cua_erd` cũng kiểm tra).
 - **Migration (Alembic):** `0001_nen` (bảng, enum, extension) và `0002_rang_buoc` (hàm `f_unaccent`, CHECK, partial unique, index GIN/HNSW, sequence) là bản chụp bất biến, không sửa. Quy ước khi thêm migration mới:
@@ -82,6 +86,13 @@ async def don_cua_toi(ma_don: str, kh: KhachHang = Depends(khach_hien_tai), db=D
   - CHECK, partial unique, index biểu thức/GIN/HNSW, hàm và sequence **viết tay bằng SQL** và đặt tên rõ (`ck_<bảng>_<mô tả>`). Model và `alembic check` không biết chúng: `env.py::include_object` bỏ qua index một phần, biểu thức, không phải btree; Alembic không so CHECK/hàm/sequence.
   - Thêm CHECK mới thì thêm một case vào `tests/test_rang_buoc.py` (test `test_moi_check_trong_db_deu_co_test` fail nếu thiếu); thêm partial unique thì thêm vào `CAC_PARTIAL_UNIQUE`.
   - Test chạy Alembic qua `scripts.so_sanh_schema.chay_alembic(engine, "upgrade", "head")` (chạy trong luồng riêng, không ghi đè log). Không gọi `command.upgrade` trực tiếp trong test async vì `env.py` tự dựng vòng lặp asyncio.
+
+## Seed (`app/seed/`)
+- `uv run python -m app.seed` (vai trò, quyền, cấu hình mặc định, Admin từ `ADMIN_EMAIL`/`ADMIN_MAT_KHAU`) và `--mau` (dữ liệu mẫu để demo). Chạy lại an toàn.
+- `seed_co_ban(db, admin=...)` và `seed_mau(db)` nhận session, **không commit** (CLI bọc transaction). Test dùng trực tiếp hai hàm này.
+- Quyền đọc từ `docs/spec/data/quyen.yaml` và đồng bộ đúng theo file (quyền thừa bị gỡ). `cau_hinh` chỉ thêm khóa còn thiếu, không ghi đè giá trị Admin đã sửa. Đổi mặc định ở `seed/co_ban.py::CAU_HINH_MAC_DINH` thì phải khớp bảng ở spec 02 mục 6 (test đối chiếu từng khóa).
+- Dữ liệu mẫu ở `seed/du_lieu_mau/catalog.py` (toàn bộ là dữ liệu giả); lô hàng luôn nhập qua phiếu nhập + `ton_kho.nhap_kho`, không gán tồn trực tiếp. Tài khoản mẫu dùng chung mật khẩu công khai `MAT_KHAU_MAU`: **không chạy `--mau` trên môi trường thật**.
+- Ngoại lệ về `print`: CLI `app/seed/__main__.py` in kết quả cho người chạy; không in mật khẩu.
 
 ## Job nền (`app/jobs/`)
 - Mỗi job là một hàm `async def chay(db)` trong file `htXX_<ten>.py`, đăng ký lịch trong `app/jobs/__main__.py`.
@@ -92,6 +103,7 @@ async def don_cua_toi(ma_don: str, kh: KhachHang = Depends(khach_hien_tai), db=D
 - Cấu trúc `tests/` giống `app/modules/`. Dùng fixture `client`, `db`, `dang_nhap_khach`, `dang_nhap_duoc_si`, `dang_nhap_kho`, `dang_nhap_admin` và factories trong `tests/factories.py`.
 - Test API qua HTTP (`AsyncClient`); test bất biến/tranh chấp gọi service trực tiếp với nhiều session.
 - Fixture `engine_tam` tạo một database tạm cho riêng test (xóa sau test), `engine_co_bang` là database tạm đã có đủ 65 bảng từ model; fixture `mo_client(app, raise_app_exceptions=False)` gọi thẳng vào app, dùng tham số `False` khi test lỗi 500.
+- Fixture `engine_migration` (database dựng bằng `alembic upgrade head`, phạm vi module) và `db` (session trong transaction rollback sau mỗi test, dùng cho test service) ở `tests/conftest.py`; module dùng chúng phải đặt `pytestmark = pytest.mark.asyncio(loop_scope="module")`. Dữ liệu dựng tối thiểu bằng `tests/factories.py` (`tao_san_pham`, `tao_lo`). Test cần commit thật giữa nhiều session (tranh chấp khóa) dùng `engine_tam` + `chay_alembic`, xem `tests/kho/test_ton_kho_tranh_chap.py`.
 - Test cần chạy nhiều case trên cùng database đã migrate (ví dụ `test_rang_buoc.py`) dùng fixture phạm vi module với `loop_scope="module"` và `pytestmark = pytest.mark.asyncio(loop_scope="module")`; mỗi case chạy trong transaction rồi rollback. Muốn chèn dòng mà không dựng khóa ngoại: `SET LOCAL session_replication_role = replica` (cần superuser).
 - Không gọi dịch vụ ngoài: `AI_GIA_LAP=true`, adapter tích hợp ở chế độ `gia`.
 - Chạy nhanh một phần: `uv run pytest tests/ban_hang -q -x`.
