@@ -44,7 +44,7 @@ cd backend && uv run pytest -q                        # cần db đang chạy
 cd frontend && npm install && npm run dev             # http://localhost:5173, proxy /api → :8000
 cd frontend && npm run gen:api                        # sinh type từ OpenAPI, backend phải đang chạy (từ T0.7)
 cd frontend && npm run lint && npx tsc --noEmit       # lint bằng oxlint
-cd frontend && npm test                               # vitest (từ T0.7)
+cd frontend && npm test -- --run                      # vitest một lần (từ T0.7)
 cd frontend && npm run build
 ```
 

@@ -35,6 +35,8 @@
 - **Access token:** JWT HS256.
   - Claim: `sub` (id), `aud` (`khach` | `noi_bo`), `exp` (15 phút), `jti`.
   - Gửi qua header `Authorization: Bearer <token>`.
+  - Đăng nhập và làm mới (`POST .../auth/dang-nhap`, `POST .../auth/lam-moi`) trả thân JSON `{"access_token": "<jwt>"}` (kèm cookie refresh token). Frontend (`api/xacThuc.ts`) dựa vào đúng khóa `access_token`.
+  - Làm mới: khách `POST /api/v1/auth/lam-moi`, nhân viên `POST /api/v1/noi-bo/auth/lam-moi`; cookie refresh được gửi theo `Path` của từng loại.
   - Không lưu quyền trong token. Quyền đọc từ DB (spec 03 mục 8).
 - **Refresh token:**
   - Chuỗi ngẫu nhiên 256 bit, đặt trong cookie `HttpOnly; Secure; SameSite=Lax`, `Path=/api/v1/auth` (khách) hoặc `/api/v1/noi-bo/auth` (nhân viên).

@@ -1,7 +1,9 @@
 import logging
+from typing import Literal
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncEngine
 
@@ -11,7 +13,17 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-@router.get("/health", summary="Kiểm tra tình trạng hệ thống")
+class SucKhoe(BaseModel):
+    trang_thai: Literal["ok", "loi"]
+    db: Literal["ok", "loi"]
+
+
+@router.get(
+    "/health",
+    summary="Kiểm tra tình trạng hệ thống",
+    response_model=SucKhoe,
+    responses={503: {"model": SucKhoe, "description": "Không truy vấn được CSDL"}},
+)
 async def health(engine: AsyncEngine = Depends(get_engine)):
     try:
         async with engine.connect() as conn:

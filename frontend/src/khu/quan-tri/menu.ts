@@ -1,0 +1,25 @@
+import type { MucDieuHuong } from '../../lib/dieuHuong'
+
+/** Trang của khu quản trị, theo docs/spec/09-frontend.md mục 2.3 (test đối chiếu từng dòng với spec). */
+export const MUC_QUAN_TRI: readonly MucDieuHuong[] = [
+  { duong: '/', nhan: 'Tổng quan', nhom: 'Tổng quan', quyen: ['report.all'], chucNang: ['AD14'] },
+  { duong: '/nhan-vien', nhan: 'Nhân viên', nhom: 'Tài khoản', quyen: ['staff.manage'], chucNang: ['AD01'] },
+  { duong: '/vai-tro', nhan: 'Vai trò và phân quyền', nhom: 'Tài khoản', quyen: ['role.manage'], chucNang: ['AD18'] },
+  { duong: '/khach-hang', nhan: 'Khách hàng', nhom: 'Tài khoản', quyen: ['customer.manage'], chucNang: ['AD02'] },
+  { duong: '/danh-muc', nhan: 'Danh mục', nhom: 'Cửa hàng', quyen: ['category.manage'], chucNang: ['AD03'] },
+  { duong: '/san-pham', nhan: 'Sản phẩm', nhom: 'Cửa hàng', quyen: ['product.commercial.manage'], chucNang: ['AD04'] },
+  { duong: '/du-lieu-chung', nhan: 'Dữ liệu chung', nhom: 'Cửa hàng', quyen: ['master_data.manage'], chucNang: ['AD05'] },
+  { duong: '/khuyen-mai', nhan: 'Khuyến mãi', nhom: 'Cửa hàng', quyen: ['promotion.manage'], chucNang: ['AD06'] },
+  { duong: '/noi-dung', nhan: 'Nội dung website', nhom: 'Cửa hàng', quyen: ['cms.manage'], chucNang: ['AD07'] },
+  { duong: '/duyet-phieu', nhan: 'Duyệt phiếu kho', nhom: 'Duyệt và xử lý', quyen: ['stock_doc.approve'], chucNang: ['AD12'] },
+  { duong: '/thu-hoi', nhan: 'Thu hồi lô', nhom: 'Duyệt và xử lý', quyen: ['recall.create'], chucNang: ['AD13'] },
+  { duong: '/hoan-tien', nhan: 'Hoàn tiền', nhom: 'Duyệt và xử lý', quyen: ['refund.confirm'], chucNang: ['AD17'] },
+  { duong: '/cau-hinh', nhan: 'Cấu hình', nhom: 'Hệ thống và AI', quyen: ['config.manage'], chucNang: ['AD08'] },
+  { duong: '/cau-hinh-ai', nhan: 'Cấu hình AI', nhom: 'Hệ thống và AI', quyen: ['ai.config'], chucNang: ['AD09'] },
+  { duong: '/tri-thuc-ai', nhan: 'Tri thức AI', nhom: 'Hệ thống và AI', quyen: ['ai.knowledge.sync'], chucNang: ['AD10'] },
+  { duong: '/giam-sat-ai', nhan: 'Giám sát AI', nhom: 'Hệ thống và AI', quyen: ['ai.monitor'], chucNang: ['AD11'] },
+  { duong: '/nhat-ky', nhan: 'Nhật ký hệ thống', nhom: 'Hệ thống và AI', quyen: ['audit.view'], chucNang: ['AD15'] },
+  { duong: '/xem/don-hang', nhan: 'Xem đơn hàng', nhom: 'Chỉ xem', quyen: ['order.view'], chucNang: ['AD16'] },
+  { duong: '/xem/chung-tu-kho', nhan: 'Xem chứng từ kho', nhom: 'Chỉ xem', quyen: ['stock_doc.view'], chucNang: ['AD16'] },
+  { duong: '/xem/chuyen-mon', nhan: 'Xem nội dung chuyên môn', nhom: 'Chỉ xem', quyen: ['content.view'], chucNang: ['AD16'] },
+]

@@ -19,13 +19,15 @@ src/
 ## Quy tắc
 - **Gọi API**
   - Chỉ gọi qua `api/client.ts` với type từ `schema.d.ts`; không tự viết type trùng với API.
-  - Backend đổi schema thì chạy `npm run gen:api`.
+  - Backend đổi schema thì chạy `npm run gen:api` (backend phải đang chạy ở :8000) và commit `schema.d.ts`. Route backend mới nhớ khai `response_model` để type có dữ liệu thay vì `{}`.
+  - Client tự gắn `Authorization` và làm mới token khi 401 (`api/xacThuc.ts`, QĐ-08); đừng tự `fetch` ngoài client.
+- **Phiên đăng nhập** (`stores/phien.ts`): chỉ ở bộ nhớ, không persist, không đặt token hay hồ sơ vào localStorage/sessionStorage.
 - **Dữ liệu server**
   - Dùng TanStack Query (`useQuery`, `useMutation`) và invalidate theo query key sau mỗi mutation.
   - Zustand chỉ giữ phiên đăng nhập và giỏ hàng local.
 - **Phân quyền trên UI**
-  - Route khu `/nhan-vien` và `/quan-tri` bọc `<YeuCauQuyen ma="order.view">`; menu chỉ hiện mục người dùng có quyền.
-  - Nút thao tác ẩn khi chỉ có quyền `chi_xem`.
+  - Trang của khu nội bộ khai báo một lần trong `khu/nhan-vien/menu.ts` hoặc `khu/quan-tri/menu.ts` (đường dẫn, nhãn, mã quyền, mã chức năng); `router.tsx` sinh route bọc `<YeuCauQuyen ma=... muc="xem">` và menu lọc theo quyền từ cùng bảng đó. Thêm trang mới: thêm một dòng vào bảng, rồi thay `TrangDangXayDung` bằng trang thật. Test `router.test.tsx` đối chiếu bảng với spec 09 và `quyen.yaml`.
+  - Nút thao tác bọc `<YeuCauQuyen ma="order.confirm" kieu="nut">` (mức đầy đủ), ẩn hẳn khi chỉ có `chi_xem`.
   - UI chỉ là lớp phụ: backend vẫn kiểm tra quyền.
 - **Hiển thị**
   - Tiền: `dinhDangTien()` (ví dụ `125.000 ₫`).
@@ -41,5 +43,8 @@ src/
 - **Responsive:** trang khách phải dùng được ở màn hình 360px; khu nội bộ tối thiểu 1280px.
 
 ## Test
+- `npm test` chạy vitest ở chế độ theo dõi; một lần: `npm test -- --run`. Test ở cạnh file (`x.test.ts(x)`).
+- `src/test/render.tsx::renderTai(duong, phien?)` dựng ứng dụng thật (router + provider) tại một đường dẫn với phiên giả; dùng cho test điều hướng và phân quyền.
+- Test hàm thời gian phải đúng ở mọi múi giờ máy (`TZ=America/Los_Angeles npm test -- --run` cũng phải xanh).
 - Vitest + Testing Library cho component có logic (giỏ hàng, tính tiền hiển thị, guard quyền).
 - Playwright cho luồng chính (spec 10 mục 8), chạy với backend + seed mẫu.
