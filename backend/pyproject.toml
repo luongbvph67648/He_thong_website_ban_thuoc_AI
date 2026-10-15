@@ -9,6 +9,7 @@ dependencies = [
     "sqlalchemy[asyncio]",
     "asyncpg",
     "pydantic-settings",
+    "tzdata>=2026.5",
 ]
 
 [dependency-groups]

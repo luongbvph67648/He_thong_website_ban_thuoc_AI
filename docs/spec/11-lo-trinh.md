@@ -43,15 +43,24 @@ _Dựng khung dự án, CSDL đúng ERD, seed, hạ tầng test. Chưa có chứ
   - **Phần để task sau:** `core/config.py` mới khai báo `DATABASE_URL`, `CORS_ORIGINS`; các biến khác thêm dần khi dùng. `core/db.py` mới có `engine` và `get_engine()`; `get_db` (transaction theo request) để T0.2.
   - **Frontend:** template `create-vite` hiện tại cho Vite 8, React 19, TypeScript 6 và dùng **oxlint** thay ESLint (`npm run lint`). Đã gộp 3 file tsconfig thành 1 để `npx tsc --noEmit` thực sự kiểm tra code; bản template dùng project references nên lệnh này không kiểm tra gì.
 
-### [ ] T0.2 · Hạ tầng backend dùng chung
+### [x] T0.2 · Hạ tầng backend dùng chung
 - **Phụ thuộc:** T0.1
 - **Tiêu chí chấp nhận:**
-  - [ ] `core/config.py` (pydantic-settings), `core/db.py` (AsyncEngine, `get_db` mở transaction theo request).
-  - [ ] `core/loi.py`: `LoiNghiepVu(ma_loi, thong_diep, http_status, chi_tiet)` + handler trả đúng định dạng lỗi trong spec 06; lỗi validate của FastAPI cũng trả cùng định dạng (`ma_loi = "DU_LIEU_KHONG_HOP_LE"`).
-  - [ ] `core/tien.py` (`lam_tron_vnd`, cộng/trừ Decimal), `core/thoi_gian.py` (`bay_gio_utc`, `hom_nay_vn`), `core/phan_trang.py` (tham số `trang`, `kich_thuoc`, phản hồi `{du_lieu, tong, trang, kich_thuoc}`).
-  - [ ] Middleware gắn `request_id` vào log (JSON) và header `X-Request-ID`.
-  - [ ] Test đơn vị cho làm tròn tiền, phân trang, định dạng lỗi.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] `core/config.py` (pydantic-settings), `core/db.py` (AsyncEngine, `get_db` mở transaction theo request).
+  - [x] `core/loi.py`: `LoiNghiepVu(ma_loi, thong_diep, http_status, chi_tiet)` + handler trả đúng định dạng lỗi trong spec 06; lỗi validate của FastAPI cũng trả cùng định dạng (`ma_loi = "DU_LIEU_KHONG_HOP_LE"`).
+  - [x] `core/tien.py` (`lam_tron_vnd`, cộng/trừ Decimal), `core/thoi_gian.py` (`bay_gio_utc`, `hom_nay_vn`), `core/phan_trang.py` (tham số `trang`, `kich_thuoc`, phản hồi `{du_lieu, tong, trang, kich_thuoc}`).
+  - [x] Middleware gắn `request_id` vào log (JSON) và header `X-Request-ID`.
+  - [x] Test đơn vị cho làm tròn tiền, phân trang, định dạng lỗi.
+- **Ghi chú triển khai:**
+  - **Commit trước khi gửi response.** `Db = Annotated[..., Depends(get_db, scope="function")]`: mặc định của FastAPI (`scope="request"`) commit sau khi response đã gửi, nên client nhận 200 dù commit có thể lỗi. Đã có test chứng minh (đổi sang `scope="request"` thì test fail với `200 == 500`). Hệ quả: generator của response streaming (SSE) phải tự mở session riêng.
+  - **Chặn `commit()`/`rollback()` tay.** SQLAlchemy cho gọi `commit()` trong `begin()` mà không báo lỗi, khiến phần đã commit ở lại DB dù request sau đó lỗi. `PhienRequest` raise `RuntimeError`; savepoint (`begin_nested`) vẫn dùng được. Quy tắc "service không commit" trong `CLAUDE.md` giờ được máy kiểm tra.
+  - **Bảng mã lỗi có test đối chiếu với spec 06.** Thêm mã `PHUONG_THUC_KHONG_DUOC_PHEP` (405) vào spec; lỗi HTTP khác của framework dùng `LOI_HTTP`.
+  - **Lỗi 500** trả `{"ma_loi": "LOI_HE_THONG", "chi_tiet": {"request_id": ...}}`, không lộ chi tiết. Log lỗi ghi stack trace kèm `request_id`.
+  - **Log truy cập** mỗi request chỉ ghi `path`, không ghi query string (tránh lộ OTP/token).
+  - **Tiền:** `lam_tron_vnd` half-up (2.5 → 3), từ chối `float` và `bool`. Kiểu `Tien` nhận số đồng nguyên, xuất JSON dạng chuỗi `"125000.00"`; đã kiểm OpenAPI sinh `string` cho T0.7.
+  - **Phần để task sau:** `core/config.py` chưa thêm biến mới (chưa có chỗ dùng). Chưa làm sắp xếp `sap_xep` của phân trang (làm cùng endpoint danh sách đầu tiên, T1.4). `ruff` cấu hình ở T0.6; đã chạy thử ruff không cấu hình, sạch (trừ B008 với `Depends`, là mẫu chuẩn của FastAPI).
+  - **Thêm phụ thuộc `tzdata`** để `zoneinfo` có dữ liệu múi giờ trên Windows.
+  - **Fixture test:** `engine_tam` tạo database tạm cho từng test; T0.6 sẽ thay bằng DB test dựng từ migration.
 
 ### [ ] T0.3 · Model SQLAlchemy cho 65 bảng
 - **Phụ thuộc:** T0.2

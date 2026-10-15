@@ -70,7 +70,10 @@ docker-compose.yml
 | Thành phần | Vị trí | Ghi chú |
 |---|---|---|
 | Cấu hình | `core/config.py` | `Settings` (pydantic-settings) đọc `.env`; truy cập qua `settings` |
-| Phiên DB | `core/db.py` | `get_db()` mở transaction theo request; commit khi thành công |
+| Phiên DB | `core/db.py` | Alias `Db`: mỗi request một session + một transaction, commit **trước** khi gửi response, rollback khi lỗi; cấm `commit()`/`rollback()` tay |
+| Tiền và thời gian | `core/tien.py`, `core/thoi_gian.py` | `lam_tron_vnd`, `cong`, `tru`, kiểu `Tien`; `bay_gio_utc`, `hom_nay_vn` |
+| Phân trang | `core/phan_trang.py` | `PhanTrang`, `Trang[T]`, `lay_trang` (spec 06 mục 5) |
+| Log và request id | `core/log.py`, `core/middleware.py` | Log JSON có `request_id`; header `X-Request-ID`; log truy cập mỗi request (không ghi query string) |
 | Bảo mật | `core/bao_mat.py` | Argon2 (argon2-cffi), JWT (PyJWT, HS256), hash refresh token bằng SHA-256 |
 | Phân quyền | `core/phan_quyen.py` | `khach_hien_tai`, `khach_tuy_chon`, `nhan_vien_hien_tai`, `yeu_cau_quyen` (spec 03) |
 | Lỗi | `core/loi.py` | `LoiNghiepVu` + handler (spec 06 mục 4) |

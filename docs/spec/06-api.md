@@ -60,11 +60,20 @@
 | 401 | `CHUA_DANG_NHAP`, `TOKEN_HET_HAN`, `SAI_THONG_TIN_DANG_NHAP` | |
 | 403 | `KHONG_CO_QUYEN`, `TAI_KHOAN_BI_KHOA`, `PHAI_DOI_MAT_KHAU`, `TU_DUYET_KHONG_DUOC` | |
 | 404 | `KHONG_TIM_THAY` | Kể cả khi tài nguyên tồn tại nhưng thuộc khách khác |
+| 405 | `PHUONG_THUC_KHONG_DUOC_PHEP` | Gọi sai phương thức HTTP; giữ header `Allow` |
 | 409 | `HET_HANG`, `CHUYEN_TRANG_THAI_KHONG_HOP_LE`, `DA_CO_NGUOI_XU_LY`, `GIA_DA_THAY_DOI`, `TRUNG_DU_LIEU`, `PHAI_CON_ADMIN`, `DANH_MUC_CON_SAN_PHAM` | |
 | 422 | `THUOC_KE_DON_KHONG_VAO_GIO`, `VUOT_SO_LUONG_TOI_DA`, `MA_GIAM_GIA_KHONG_HOP_LE`, `QUA_THOI_HAN_DOI_TRA`, `HOAN_VUOT_SO_DA_TRA`, `OTP_SAI`, `OTP_HET_HAN` | Vi phạm quy tắc nghiệp vụ |
 | 429 | `QUA_GIOI_HAN` | Giới hạn tần suất; kèm header `Retry-After` |
 | 502 | `LOI_DOI_TAC` | Cổng thanh toán hoặc vận chuyển lỗi |
-| 500 | `LOI_HE_THONG` | Không lộ stack trace; log có `request_id` |
+| 500 | `LOI_HE_THONG` | Không lộ stack trace; `chi_tiet` là `{"request_id": "..."}`, log có `request_id` |
+
+**Quy ước thực thi** (`core/loi.py`, `core/middleware.py`):
+- Danh sách mã lỗi trong code (`MA_LOI`) phải khớp bảng này. Test `test_bang_ma_loi_khop_spec_06` báo lỗi nếu lệch; thêm mã mới thì sửa cả hai nơi.
+- `LoiNghiepVu(ma_loi, thong_diep, chi_tiet=...)` tự lấy HTTP status từ bảng. `chi_tiet` luôn có mặt trong phản hồi (giá trị `null` nếu không có).
+- Lỗi validate (400): `chi_tiet` là danh sách `{"truong": "dong.1.so_luong", "loi": "Bắt buộc nhập"}`. `truong` là đường dẫn phân cách bằng dấu chấm (bỏ phần `body`/`query`), JSON hỏng thì `truong = "body"`.
+- Lỗi HTTP khác do framework phát sinh (ví dụ 413) dùng `ma_loi = "LOI_HTTP"` và giữ nguyên status.
+- Mọi phản hồi (kể cả lỗi) có header `X-Request-ID`. Client có thể tự gửi header này (8–64 ký tự `A-Za-z0-9._-`), không hợp lệ thì server tự sinh. Trình duyệt đọc được header nhờ `Access-Control-Expose-Headers`.
+- Ngoại lệ về định dạng: `GET /api/v1/health` dùng body riêng (mục 2).
 
 ## 5. Phân trang, lọc, sắp xếp
 - **Tham số:**

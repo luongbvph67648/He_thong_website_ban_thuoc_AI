@@ -14,7 +14,12 @@ app/modules/<module>/
 ```
 - **Router mỏng.** Router chỉ nhận request, gọi service và trả schema. Không viết truy vấn hay logic trong router.
 - **Service nhận `db: AsyncSession` và tác nhân** (`KhachHang` hoặc `NhanVien`), trả model hoặc schema.
-- **Service không commit.** Session theo request (`core/db.get_db`) tự commit khi thành công và rollback khi có ngoại lệ.
+- **Service không commit.** Route khai báo `db: Db` (`from app.core.db import Db`); session này tự commit khi route trả về thành công và rollback khi có ngoại lệ.
+  - `db.commit()` và `db.rollback()` bị chặn và raise `RuntimeError`, vì commit giữa chừng làm phần đã commit ở lại dù sau đó request lỗi.
+  - Cần ID của dòng vừa thêm: `await db.flush()`. Cần hoàn tác một phần: `async with db.begin_nested():` (savepoint). Muốn hủy cả request: raise `LoiNghiepVu`.
+  - Luôn dùng alias `Db`, **không** tự viết `Depends(get_db)`: alias đã đặt `scope="function"` để commit chạy **trước** khi gửi response (mặc định commit chạy sau, client nhận 200 dù commit lỗi).
+  - Response streaming (SSE) không dùng `db` của request bên trong generator vì session đã đóng; generator tự mở `AsyncSession(engine)` riêng.
+  - Việc phải lưu dù request thất bại (ví dụ ghi payload IPN trước khi xử lý) cũng dùng session riêng.
 - **Model dùng chung** đặt ở `app/models/` (theo nhóm ERD). Module không tự khai báo model.
 - **Gọi chéo module** chỉ qua hàm public trong `service.py` của module kia. Riêng tồn kho và trạng thái đơn bắt buộc đi qua:
   - `modules/kho/ton_kho.py`
@@ -46,17 +51,24 @@ async def don_cua_toi(ma_don: str, kh: KhachHang = Depends(khach_hien_tai), db=D
 - **Kiểm tra ngoài mã quyền** (tách nhiệm vụ, chủ sở hữu, dữ liệu sức khỏe) viết trong service, lỗi trả qua `LoiNghiepVu`.
 
 ## Lỗi
-- Raise `LoiNghiepVu(ma_loi="HET_HANG", thong_diep="...", http_status=409, chi_tiet={...})`, không raise `HTTPException` thô.
+- Raise `LoiNghiepVu("HET_HANG", "Sản phẩm X chỉ còn 3 viên", chi_tiet={...})`, không raise `HTTPException` thô. HTTP status tự lấy từ bảng mã lỗi.
 - Mã lỗi viết HOA_KHONG_DAU. Bảng mã lỗi dùng chung ở `docs/spec/06-api.md` mục 4.
-- Mã lỗi mới thì thêm vào bảng đó.
+- Mã lỗi mới thì thêm vào **cả** bảng đó **và** `MA_LOI` trong `core/loi.py` (test `test_bang_ma_loi_khop_spec_06` báo nếu lệch).
+- Lỗi validate của FastAPI, 404, 405 và lỗi không bắt được đều tự trả đúng định dạng `{ma_loi, thong_diep, chi_tiet}`. Lỗi 500 không lộ chi tiết, chỉ trả `request_id`.
+
+## Log
+- Log JSON một dòng (`core/log.py`), mọi dòng tự có `request_id`. Dùng `logging.getLogger(__name__)`, không dùng `print`.
+- Thêm trường riêng qua `extra={...}`, ví dụ `logger.info("Đã tạo đơn", extra={"ma_don": ma})`.
+- **Không ghi** mật khẩu, OTP, token, dữ liệu sức khỏe, và không ghi query string. Middleware chỉ log `path`.
 
 ## CSDL
 - **SQLAlchemy 2 async:** dùng `select()`, không dùng Query API cũ.
 - **Tải quan hệ:** dùng `selectinload` rõ ràng, tránh lazy load trong async.
 - **Khóa ghi:** `select(LoThuoc).where(...).order_by(LoThuoc.id).with_for_update()`. Luôn khóa theo thứ tự id tăng để tránh deadlock.
 - **Xóa mềm:** truy vấn mặc định lọc `deleted_at IS NULL` qua helper `chua_xoa(Model)`.
-- **Tiền:** `Decimal`, làm tròn qua `core.tien.lam_tron_vnd()`.
+- **Tiền:** `Decimal`, làm tròn qua `core.tien.lam_tron_vnd()` (half-up). `cong()`/`tru()` cộng trừ rồi làm tròn một lần; hàm tiền từ chối `float`. Trong schema Pydantic dùng kiểu `Tien`: nhận số đồng nguyên, xuất JSON dạng chuỗi `"125000.00"`.
 - **Thời gian:** `core.thoi_gian.bay_gio_utc()`, `hom_nay_vn()`.
+- **Phân trang:** route nhận `tp: PhanTrang`, truy vấn đã có `ORDER BY` thì `dong, tong = await lay_trang(db, stmt, tp)`, trả `tao_trang(dong, tong, tp)` với `response_model=Trang[Schema]`.
 - **Schema:** thay đổi phải theo `/doi-schema`. Migration mới đặt tên `NNNN_<mo_ta>.py`.
 
 ## Job nền (`app/jobs/`)
@@ -67,6 +79,7 @@ async def don_cua_toi(ma_don: str, kh: KhachHang = Depends(khach_hien_tai), db=D
 ## Test
 - Cấu trúc `tests/` giống `app/modules/`. Dùng fixture `client`, `db`, `dang_nhap_khach`, `dang_nhap_duoc_si`, `dang_nhap_kho`, `dang_nhap_admin` và factories trong `tests/factories.py`.
 - Test API qua HTTP (`AsyncClient`); test bất biến/tranh chấp gọi service trực tiếp với nhiều session.
+- Fixture `engine_tam` tạo một database tạm cho riêng test (xóa sau test); fixture `mo_client(app, raise_app_exceptions=False)` gọi thẳng vào app, dùng tham số `False` khi test lỗi 500.
 - Không gọi dịch vụ ngoài: `AI_GIA_LAP=true`, adapter tích hợp ở chế độ `gia`.
 - Chạy nhanh một phần: `uv run pytest tests/ban_hang -q -x`.
 
