@@ -16,10 +16,14 @@ from app.core.thoi_gian import bay_gio_utc, hom_nay_vn
 from app.seed.co_ban import QUYEN_YAML, TaiKhoanAdmin, seed_co_ban
 from app.seed.du_lieu_mau import MAT_KHAU_MAU, seed_mau
 
-pytestmark = pytest.mark.asyncio(loop_scope="module")
-
 SPEC_DATABASE = Path(__file__).resolve().parents[2] / "docs" / "spec" / "02-database.md"
 ADMIN = TaiKhoanAdmin(email="admin@example.com", mat_khau="Mat-khau-thu-123")
+
+
+@pytest_asyncio.fixture
+async def db(db_chua_seed):
+    """Test seed chạy trên database CHƯA seed (ghi đè fixture `db` mặc định)."""
+    return db_chua_seed
 
 
 async def dem(db, bang: str) -> int:
@@ -204,7 +208,7 @@ async def test_dong_bo_vai_tro_quyen_theo_yaml(db):
 # --- Dữ liệu mẫu ----------------------------------------------------------------------------------------------------
 
 
-@pytest_asyncio.fixture(loop_scope="module")
+@pytest_asyncio.fixture
 async def co_mau(db):
     await seed_co_ban(db)
     await seed_mau(db)

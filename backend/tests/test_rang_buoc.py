@@ -13,8 +13,6 @@ import pytest
 from sqlalchemy import text
 from sqlalchemy.exc import DBAPIError
 
-pytestmark = pytest.mark.asyncio(loop_scope="module")
-
 CHECK_VIOLATION = "23514"
 UNIQUE_VIOLATION = "23505"
 

@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    services:
+      db:
+        # Cùng image với docker-compose.yml: có sẵn vector; unaccent và pg_trgm nằm trong contrib.
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: nha_thuoc
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d nha_thuoc"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    env:
+      # Test cần superuser (SET session_replication_role) và tự tạo/xóa database test.
+      DATABASE_URL: postgresql+asyncpg://postgres:postgres@localhost:5432/nha_thuoc
+      DATABASE_URL_TEST: postgresql+asyncpg://postgres:postgres@localhost:5432/nha_thuoc_test
+      # Test không gọi dịch vụ ngoài: mọi adapter ở chế độ giả.
+      AI_GIA_LAP: "true"
+      EMBEDDING_GIA_LAP: "true"
+      THANH_TOAN_CHE_DO: gia
+      VAN_CHUYEN_CHE_DO: gia
+      TIN_NHAN_CHE_DO: gia
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+      - name: Cài phụ thuộc
+        run: uv sync --locked
+      - name: Ruff (lint)
+        run: uv run ruff check .
+      - name: Ruff (định dạng)
+        run: uv run ruff format --check .
+      - name: Migration lên rồi xuống rồi lên
+        run: |
+          uv run alembic upgrade head
+          uv run alembic downgrade base
+          uv run alembic upgrade head
+          uv run alembic check
+      - name: Model và migration khớp DDL của ERD
+        run: uv run python scripts/so_sanh_schema.py
+      - name: Pytest
+        run: uv run pytest -q
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Cài phụ thuộc
+        run: npm ci
+      - name: Lint
+        run: npm run lint
+      - name: Kiểm tra kiểu
+        run: npx tsc --noEmit
+      - name: Test (vitest)
+        # `--if-present`: bỏ qua cho tới khi T0.7 thêm script `test`; sau đó tự chạy.
+        run: npm test --if-present -- --run
+      - name: Build
+        run: npm run build

@@ -10,8 +10,6 @@ from app.models.kho import BienDongKho, LoThuoc
 from app.modules.kho.ton_kho import ChungTu, khoa_cac_lo, nhap_kho
 from tests.factories import tao_lo
 
-pytestmark = pytest.mark.asyncio(loop_scope="module")
-
 
 async def the_kho(db, lo_id) -> list[BienDongKho]:
     ket_qua = await db.execute(select(BienDongKho).where(BienDongKho.lo_id == lo_id).order_by(BienDongKho.id))

@@ -1,4 +1,19 @@
-"""Fixture dùng chung. T0.6 sẽ mở rộng (DB test từ migration, fixture đăng nhập, factories)."""
+"""Fixture dùng chung (spec 10 mục 2).
+
+Toàn bộ test chạy trong một event loop duy nhất của cả phiên (`asyncio_default_*_loop_scope = "session"` trong
+pyproject), nên fixture phạm vi phiên được dùng chung với mọi test.
+
+Database:
+- `engine_test`: database ở `DATABASE_URL_TEST`, tạo mới bằng `alembic upgrade head` rồi `seed_co_ban` MỘT lần mỗi phiên.
+- `db` / `ket_noi`: mỗi test một transaction ngoài, rollback sau test; session dùng savepoint nên `commit()` trong code
+  không ghi thật. Dùng cho hầu hết test.
+- `db_that`: cho test cần commit thật (tranh chấp nhiều session); dọn bằng TRUNCATE sau test.
+- `engine_migration`, `db_chua_seed`: database tạm đã migrate nhưng CHƯA seed, cho test về migration/seed.
+- `engine_tam`, `engine_co_bang`: database tạm riêng cho một test.
+
+HTTP: `app` (ứng dụng thật, request dùng chung transaction của test), `client`, `dang_nhap_khach`,
+`dang_nhap_duoc_si`, `dang_nhap_kho`, `dang_nhap_admin` (client đã gắn access token của tài khoản vừa tạo).
+"""
 
 import io
 import json
@@ -8,58 +23,195 @@ from contextlib import asynccontextmanager
 import httpx
 import pytest
 import pytest_asyncio
-from sqlalchemy.ext.asyncio import AsyncSession
+from pydantic import SecretStr
+from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
+from app.core.bao_mat import tao_access_token
 from app.core.config import settings
+from app.core.db import PhienRequest, get_db, get_engine, tao_engine
 from app.core.log import BoLocRequestId, JsonFormatter
+from app.main import create_app
+from app.seed.co_ban import seed_co_ban
 from scripts.so_sanh_schema import cau_truc_tu_model, chay_alembic, db_tam
+from tests.factories import tao_khach, tao_nhan_vien
+from tests.ha_tang import don_dep_sau_commit, tao_lai_database
 
 
-@pytest.fixture
+@pytest.fixture(scope="session", autouse=True)
+def khoa_jwt_cho_test():
+    """Khóa ký token riêng cho test, không phụ thuộc `.env` của máy."""
+    cu = settings.JWT_SECRET
+    settings.JWT_SECRET = SecretStr("khoa-jwt-chi-dung-trong-test-" + "0" * 32)
+    yield
+    settings.JWT_SECRET = cu
+
+
+# --- Database -------------------------------------------------------------------------------------------------------
+
+
+@pytest_asyncio.fixture(scope="session")
+async def engine_test():
+    """Database test của cả phiên: migrate từ đầu, seed vai trò/quyền/cấu hình (không seed dữ liệu mẫu)."""
+    await tao_lai_database(settings.DATABASE_URL_TEST)
+    engine = tao_engine(settings.DATABASE_URL_TEST)
+    try:
+        await chay_alembic(engine, "upgrade", "head")
+        async with AsyncSession(engine) as session, session.begin():
+            await seed_co_ban(session)
+        yield engine
+    finally:
+        await engine.dispose()
+
+
+@pytest_asyncio.fixture(scope="session")
+async def engine_migration():
+    """Database tạm đã `alembic upgrade head` nhưng chưa seed, dùng chung cho cả phiên (test phải tự rollback)."""
+    async with db_tam(settings.DATABASE_URL, "nha_thuoc_mig") as engine:
+        await chay_alembic(engine, "upgrade", "head")
+        yield engine
+
+
+async def _giao_dich_ngoai(engine: AsyncEngine):
+    """Connection với một transaction ngoài; rollback khi xong để test không để lại dấu vết."""
+    async with engine.connect() as conn:
+        giao_dich = await conn.begin()
+        try:
+            yield conn
+        finally:
+            await giao_dich.rollback()
+
+
+@pytest_asyncio.fixture
+async def ket_noi(engine_test):
+    async for conn in _giao_dich_ngoai(engine_test):
+        yield conn
+
+
+async def _session_tren(conn):
+    session = AsyncSession(bind=conn, join_transaction_mode="create_savepoint", expire_on_commit=False)
+    try:
+        yield session
+    finally:
+        await session.close()
+
+
+@pytest_asyncio.fixture
+async def db(ket_noi):
+    """Session cho một test: `flush()` thấy dữ liệu, `commit()` chỉ giải phóng savepoint, cuối test rollback hết."""
+    async for session in _session_tren(ket_noi):
+        yield session
+
+
+@pytest_asyncio.fixture
+async def db_chua_seed(engine_migration):
+    """Như `db` nhưng trên database chưa seed (test về seed và migration)."""
+    async for conn in _giao_dich_ngoai(engine_migration):
+        async for session in _session_tren(conn):
+            yield session
+
+
+@pytest_asyncio.fixture
+async def db_that(engine_test):
+    """Factory session cho test cần COMMIT THẬT (tranh chấp giữa nhiều session): `async with db_that() as s, s.begin()`.
+
+    Sau test, mọi dữ liệu bị TRUNCATE (giữ vai trò/quyền, seed lại cấu hình). Test dùng `db_that` không được dùng
+    đồng thời `db` để đọc kết quả, vì hai bên nằm ở hai transaction khác nhau.
+    """
+    try:
+        yield async_sessionmaker(engine_test, expire_on_commit=False)
+    finally:
+        await don_dep_sau_commit(engine_test)
+
+
+@pytest_asyncio.fixture
 async def engine_tam():
     """CSDL tạm riêng cho một test: tạo mới trước test, xóa sau test (không đụng DB dev)."""
     async with db_tam(settings.DATABASE_URL, "nha_thuoc_t") as engine:
         yield engine
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def engine_co_bang(engine_tam):
     """CSDL tạm đã có đủ 65 bảng tạo từ model (create_all)."""
     await cau_truc_tu_model(engine_tam)
     return engine_tam
 
 
-@pytest_asyncio.fixture(scope="module", loop_scope="module")
-async def engine_migration():
-    """Database tạm dựng bằng `alembic upgrade head`, dùng chung cho cả module.
-
-    Module dùng fixture này phải đặt `pytestmark = pytest.mark.asyncio(loop_scope="module")`. T0.6 sẽ thay bằng một DB
-    cho cả phiên test.
-    """
-    async with db_tam(settings.DATABASE_URL, "nha_thuoc_mig") as engine:
-        await chay_alembic(engine, "upgrade", "head")
-        yield engine
+# --- HTTP -----------------------------------------------------------------------------------------------------------
 
 
-@pytest_asyncio.fixture(loop_scope="module")
-async def db(engine_migration):
-    """Session cho một test, nằm trong transaction được rollback khi test xong (`flush()` thấy dữ liệu, không lưu lại).
+@pytest.fixture
+def app(engine_test, ket_noi):
+    """Ứng dụng thật. Session của mỗi request chạy trên cùng transaction ngoài của test, nên thấy dữ liệu factory đã
+    `flush()` và mọi thay đổi bị rollback cuối test. Vẫn giữ nguyên ngữ nghĩa của `get_db`: request thành công thì
+    "commit" (giải phóng savepoint), request lỗi thì hoàn tác phần của request đó."""
 
-    `commit()` trong code được test chỉ giải phóng savepoint, không ghi thật.
-    """
-    async with engine_migration.connect() as conn:
-        giao_dich = await conn.begin()
-        session = AsyncSession(bind=conn, join_transaction_mode="create_savepoint", expire_on_commit=False)
-        try:
-            yield session
-        finally:
-            await session.close()
-            await giao_dich.rollback()
+    async def get_db_test():
+        phien = PhienRequest(bind=ket_noi, join_transaction_mode="create_savepoint", expire_on_commit=False)
+        async with phien, phien.begin():
+            yield phien
+
+    ung_dung = create_app()
+    ung_dung.dependency_overrides[get_db] = get_db_test
+    ung_dung.dependency_overrides[get_engine] = lambda: engine_test
+    return ung_dung
+
+
+class ClientDaDangNhap(httpx.AsyncClient):
+    """`AsyncClient` đã gắn access token; `tai_khoan` là `KhachHang` hoặc `NhanVien` tương ứng."""
+
+    tai_khoan: object
+
+
+def _tao_client(app, token: str | None = None) -> httpx.AsyncClient:
+    tieu_de = {"Authorization": f"Bearer {token}"} if token else {}
+    return httpx.AsyncClient(transport=httpx.ASGITransport(app=app), base_url="http://test", headers=tieu_de)
+
+
+@pytest_asyncio.fixture
+async def client(app):
+    async with _tao_client(app) as c:
+        yield c
+
+
+async def _dang_nhap(app, tai_khoan, aud):
+    c = ClientDaDangNhap(
+        transport=httpx.ASGITransport(app=app),
+        base_url="http://test",
+        headers={"Authorization": f"Bearer {tao_access_token(tai_khoan.id, aud)}"},
+    )
+    c.tai_khoan = tai_khoan
+    async with c:
+        yield c
+
+
+@pytest_asyncio.fixture
+async def dang_nhap_khach(app, db):
+    async for c in _dang_nhap(app, await tao_khach(db), "khach"):
+        yield c
+
+
+@pytest_asyncio.fixture
+async def dang_nhap_duoc_si(app, db):
+    async for c in _dang_nhap(app, await tao_nhan_vien(db, "PHARMACIST"), "noi_bo"):
+        yield c
+
+
+@pytest_asyncio.fixture
+async def dang_nhap_kho(app, db):
+    async for c in _dang_nhap(app, await tao_nhan_vien(db, "WAREHOUSE"), "noi_bo"):
+        yield c
+
+
+@pytest_asyncio.fixture
+async def dang_nhap_admin(app, db):
+    async for c in _dang_nhap(app, await tao_nhan_vien(db, "ADMIN"), "noi_bo"):
+        yield c
 
 
 @pytest.fixture
 def mo_client():
-    """Trả hàm mở httpx client gọi thẳng vào một app ASGI."""
+    """Trả hàm mở httpx client gọi thẳng vào một app ASGI bất kỳ (app dựng riêng trong test)."""
 
     @asynccontextmanager
     async def _mo(app, **tuy_chon):

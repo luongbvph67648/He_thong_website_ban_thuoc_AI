@@ -8,8 +8,6 @@ from sqlalchemy import text
 from app.core.ma_chung_tu import ma_lenh_thu_hoi, ma_nhan_vien, ma_phieu
 from app.core.thoi_gian import hom_nay_vn
 
-pytestmark = pytest.mark.asyncio(loop_scope="module")
-
 YY = f"{hom_nay_vn().year % 100:02d}"
 
 

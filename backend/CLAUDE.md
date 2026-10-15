@@ -100,13 +100,20 @@ async def don_cua_toi(ma_don: str, kh: KhachHang = Depends(khach_hien_tai), db=D
 - Job phải idempotent: chạy lại không gây sai.
 
 ## Test
-- Cấu trúc `tests/` giống `app/modules/`. Dùng fixture `client`, `db`, `dang_nhap_khach`, `dang_nhap_duoc_si`, `dang_nhap_kho`, `dang_nhap_admin` và factories trong `tests/factories.py`.
-- Test API qua HTTP (`AsyncClient`); test bất biến/tranh chấp gọi service trực tiếp với nhiều session.
-- Fixture `engine_tam` tạo một database tạm cho riêng test (xóa sau test), `engine_co_bang` là database tạm đã có đủ 65 bảng từ model; fixture `mo_client(app, raise_app_exceptions=False)` gọi thẳng vào app, dùng tham số `False` khi test lỗi 500.
-- Fixture `engine_migration` (database dựng bằng `alembic upgrade head`, phạm vi module) và `db` (session trong transaction rollback sau mỗi test, dùng cho test service) ở `tests/conftest.py`; module dùng chúng phải đặt `pytestmark = pytest.mark.asyncio(loop_scope="module")`. Dữ liệu dựng tối thiểu bằng `tests/factories.py` (`tao_san_pham`, `tao_lo`). Test cần commit thật giữa nhiều session (tranh chấp khóa) dùng `engine_tam` + `chay_alembic`, xem `tests/kho/test_ton_kho_tranh_chap.py`.
-- Test cần chạy nhiều case trên cùng database đã migrate (ví dụ `test_rang_buoc.py`) dùng fixture phạm vi module với `loop_scope="module"` và `pytestmark = pytest.mark.asyncio(loop_scope="module")`; mỗi case chạy trong transaction rồi rollback. Muốn chèn dòng mà không dựng khóa ngoại: `SET LOCAL session_replication_role = replica` (cần superuser).
+- Cấu trúc `tests/` giống `app/modules/`. Đọc docstring đầu `tests/conftest.py` để biết đủ fixture.
+- **Một event loop cho cả phiên** (`asyncio_default_*_loop_scope = "session"`): fixture async phạm vi phiên dùng chung được với mọi test; không đặt `loop_scope` riêng cho từng module.
+- **Database test** ở `DATABASE_URL_TEST` (tên phải có chữ `test`, nếu không `tao_lai_database` từ chối xóa): xóa và tạo lại, `alembic upgrade head`, `seed_co_ban`, một lần mỗi phiên. Cần PostgreSQL với user superuser.
+- **Chọn fixture:**
+  - `db`: mặc định, session trong transaction ngoài rollback sau test (savepoint, nên `commit()` chỉ giải phóng savepoint). `client`/`app`/`dang_nhap_*` dùng chung transaction đó, request thấy dữ liệu factory đã `flush()`; request lỗi vẫn hoàn tác phần của chính nó như production.
+  - `dang_nhap_khach`, `dang_nhap_duoc_si`, `dang_nhap_kho`, `dang_nhap_admin`: client đã gắn access token thật (`aud` đúng) của tài khoản vừa tạo, có thuộc tính `.tai_khoan`. Dùng nhiều fixture trong một test được (mỗi cái một tài khoản riêng).
+  - `db_that`: test cần commit thật giữa nhiều session (tranh chấp khóa), trả `async_sessionmaker`; sau test TRUNCATE hết, giữ vai trò/quyền và seed lại cấu hình. Ví dụ `tests/kho/test_ton_kho_tranh_chap.py`.
+  - `db_chua_seed`/`engine_migration`: database đã migrate nhưng chưa seed, cho test về seed và migration (`test_rang_buoc.py`, `test_seed.py`). Test dùng `engine_migration` trực tiếp phải tự rollback.
+  - `engine_tam`/`engine_co_bang`: database tạm riêng cho một test (có/không có 65 bảng từ `create_all`). `mo_client(app, raise_app_exceptions=False)` gọi vào app dựng riêng, dùng `False` khi test lỗi 500.
+- **Factories** `tests/factories.py`: `tao_khach`, `tao_nhan_vien(vai_tro)`, `tao_san_pham(loai, don_vi=[...])`, `tao_lo(san_pham, so_luong, han_su_dung, trang_thai)`, `tao_don(khach, trang_thai, dong=[...])`. Giá trị mặc định hợp lệ, tham số nào cũng ghi đè được. `tao_lo(so_luong=...)` nhập qua `ton_kho.nhap_kho` nên thẻ kho khớp tồn.
+- Test API qua HTTP (`AsyncClient`); test bất biến/tranh chấp gọi service trực tiếp với nhiều session. Muốn chèn dòng mà không dựng khóa ngoại: `SET LOCAL session_replication_role = replica` (cần superuser), xem `test_rang_buoc.py`.
+- Test có token dùng `settings.JWT_SECRET` do fixture tự đặt (autouse); `tao_access_token`/`giai_ma_access_token` ở `core/bao_mat.py`.
 - Không gọi dịch vụ ngoài: `AI_GIA_LAP=true`, adapter tích hợp ở chế độ `gia`.
-- Chạy nhanh một phần: `uv run pytest tests/ban_hang -q -x`.
+- Chạy nhanh một phần: `uv run pytest tests/ban_hang -q -x`. CI (`.github/workflows/ci.yml`) chạy ruff, vòng migration lên-xuống-lên + `alembic check`, `scripts/so_sanh_schema.py`, pytest; frontend chạy lint, `tsc`, vitest (khi có script `test`), build.
 
 ## Python
 - Bật `ruff` (lint + format) cho mọi file.

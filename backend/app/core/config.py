@@ -13,6 +13,10 @@ class Settings(BaseSettings):
 
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/nha_thuoc"
     CORS_ORIGINS: str = "http://localhost:5173"
+    DATABASE_URL_TEST: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/nha_thuoc_test"
+    # Khóa ký access token (HS256), tối thiểu 32 ký tự. Không có giá trị mặc định: để trống thì không tạo/giải mã token.
+    JWT_SECRET: SecretStr = SecretStr("")
+    JWT_ACCESS_PHUT: int = 15
     # Tài khoản Admin đầu tiên do `python -m app.seed` tạo. Để trống thì seed báo lỗi (không có giá trị mặc định
     # để khỏi vô tình tạo Admin với mật khẩu đoán được).
     ADMIN_EMAIL: str = ""

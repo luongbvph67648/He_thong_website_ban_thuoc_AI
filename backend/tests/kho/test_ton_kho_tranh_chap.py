@@ -3,22 +3,17 @@
 import asyncio
 
 from sqlalchemy import select
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.kho import BienDongKho, LoThuoc
 from app.modules.kho.ton_kho import ChungTu, nhap_kho
-from scripts.so_sanh_schema import chay_alembic
 from tests.factories import tao_lo
 
 
-async def test_nhap_kho_cho_khoa_lo_roi_tinh_tren_ton_moi_nhat(engine_tam):
-    await chay_alembic(engine_tam, "upgrade", "head")
-    async with AsyncSession(engine_tam) as s, s.begin():
+async def test_nhap_kho_cho_khoa_lo_roi_tinh_tren_ton_moi_nhat(db_that):
+    async with db_that() as s, s.begin():
         lo_id = (await tao_lo(s)).id
 
-    a = AsyncSession(engine_tam, expire_on_commit=False)
-    b = AsyncSession(engine_tam, expire_on_commit=False)
-    try:
+    async with db_that() as a, db_that() as b:
         await a.begin()
         await b.begin()
         lo_a = await a.get(LoThuoc, lo_id)
@@ -33,16 +28,12 @@ async def test_nhap_kho_cho_khoa_lo_roi_tinh_tren_ton_moi_nhat(engine_tam):
         await a.commit()
         bien_dong_b = await asyncio.wait_for(viec_b, timeout=5)
         await b.commit()
-    finally:
-        await a.close()
-        await b.close()
 
     assert bien_dong_b.ton_sau == 50  # tính trên tồn đã commit của a, không phải trên số 0 cũ
-    async with AsyncSession(engine_tam) as s:
+    async with db_that() as s:
         lo = await s.get(LoThuoc, lo_id)
-        the = (
-            await s.execute(select(BienDongKho).where(BienDongKho.lo_id == lo_id).order_by(BienDongKho.id))
-        ).scalars()
-        the = list(the)
+        the = list(
+            (await s.execute(select(BienDongKho).where(BienDongKho.lo_id == lo_id).order_by(BienDongKho.id))).scalars()
+        )
     assert lo.so_luong_ton == 50
     assert [(t.so_luong, t.ton_sau) for t in the] == [(30, 30), (20, 50)]

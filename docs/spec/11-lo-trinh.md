@@ -125,13 +125,23 @@ _Dựng khung dự án, CSDL đúng ERD, seed, hạ tầng test. Chưa có chứ
   - **Cảnh báo an toàn:** tài khoản mẫu dùng chung mật khẩu công khai `MAT_KHAU_MAU`; CLI in cảnh báo "chỉ dùng cục bộ". Không chạy `--mau` trên môi trường thật.
   - Thêm phụ thuộc `argon2-cffi`, `pyyaml`; `ruff` (cấu hình đã làm ở T0.4).
 
-### [ ] T0.6 · Hạ tầng test và CI
+### [x] T0.6 · Hạ tầng test và CI
 - **Phụ thuộc:** T0.5
 - **Tiêu chí chấp nhận:**
-  - [ ] `tests/conftest.py`: database test riêng (tạo từ migration một lần mỗi phiên test, mỗi test chạy trong transaction rollback), `AsyncClient` gọi app, fixture đăng nhập sẵn cho từng vai trò (khách, dược sĩ, kho, admin), factories tạo dữ liệu.
-  - [ ] Cấu hình `pytest` + `pytest-asyncio`, `ruff` (lint + format).
-  - [ ] `.github/workflows/ci.yml`: backend (ruff, pytest với service `pgvector/pgvector:pg16`), frontend (lint, `tsc --noEmit`, vitest, build).
-- **Ghi chú triển khai:** _(trống)_
+  - [x] `tests/conftest.py`: database test riêng (tạo từ migration một lần mỗi phiên test, mỗi test chạy trong transaction rollback), `AsyncClient` gọi app, fixture đăng nhập sẵn cho từng vai trò (khách, dược sĩ, kho, admin), factories tạo dữ liệu.
+  - [x] Cấu hình `pytest` + `pytest-asyncio`, `ruff` (lint + format).
+  - [x] `.github/workflows/ci.yml`: backend (ruff, pytest với service `pgvector/pgvector:pg16`), frontend (lint, `tsc --noEmit`, vitest, build).
+- **Ghi chú triển khai:**
+  - **Một event loop cho cả phiên** (`asyncio_default_fixture_loop_scope` và `asyncio_default_test_loop_scope = "session"`): bỏ cách tạm của T0.4/T0.5 (fixture phạm vi module + `loop_scope="module"` ở từng file test). Fixture `engine_test`, `engine_migration` giờ phạm vi phiên.
+  - **Database test:** `engine_test` xóa và tạo lại `DATABASE_URL_TEST`, chạy `alembic upgrade head` và `seed_co_ban` một lần mỗi phiên (không seed mẫu). `tao_lai_database` chỉ chấp nhận tên có chữ `test` (và chỉ gồm chữ/số/gạch dưới) để biến môi trường trỏ nhầm vào DB dev không xóa được dữ liệu; có test cho các tên nguy hiểm, kể cả chuỗi chèn SQL.
+  - **Cô lập từng test:** `ket_noi` mở transaction ngoài, `db` là session `create_savepoint` trên đó, rollback cuối test. `app` ghi đè `get_db` bằng một `PhienRequest` trên cùng connection và vẫn bọc `begin()` nên giữ ngữ nghĩa production: request thành công thì "commit" (giải phóng savepoint), request lỗi chỉ hoàn tác phần của chính nó, `commit()` tay vẫn bị chặn. Có test cho cả ba.
+  - **`db_that`** (spec 10 gọi là fixture commit thật): trả `async_sessionmaker`, dọn bằng `TRUNCATE ... RESTART IDENTITY` mọi bảng trừ `vai_tro`, `quyen`, `vai_tro_quyen` rồi seed lại cấu hình (`cau_hinh` có khóa ngoại tới `nhan_vien` nên phải truncate cùng). Test tranh chấp của T0.5 chuyển sang dùng nó.
+  - **Fixture đăng nhập:** `dang_nhap_khach`, `dang_nhap_duoc_si`, `dang_nhap_kho`, `dang_nhap_admin` tạo tài khoản bằng factory và gắn access token thật. Để làm được, **access token JWT được làm ở đây thay vì T1.2**: `core/bao_mat.py::tao_access_token`, `giai_ma_access_token` (HS256, claim `sub/aud/exp/iat/jti` theo spec 06 mục 3, `aud` chỉ `khach` hoặc `noi_bo`, từ chối `alg=none`, từ chối khi `JWT_SECRET` thiếu hoặc ngắn hơn 32 ký tự; không có giá trị mặc định). Chưa có endpoint đăng nhập, refresh token, cookie, dependency `khach_hien_tai`/`nhan_vien_hien_tai`: vẫn ở T1.x. Thêm phụ thuộc `pyjwt`, cấu hình `JWT_SECRET`, `JWT_ACCESS_PHUT`, `DATABASE_URL_TEST`.
+  - **Factories** (`tests/factories.py`): `tao_khach`, `tao_nhan_vien(vai_tro)`, `tao_san_pham(loai, don_vi=[...])`, `tao_lo(san_pham, so_luong, han_su_dung, trang_thai)` (nhập qua `nhap_kho`, trạng thái mặc định suy từ hạn sử dụng), `tao_don(khach, trang_thai, dong=[...])` (tổng tiền khớp CHECK, không giữ hàng). `tao_don` là chỗ duy nhất ngoài `chuyen_trang_thai()` tạo đơn ở trạng thái tùy ý, chỉ dành cho test; bộ test quét mã nguồn ở T4.x chỉ quét `app/`.
+  - **Chưa làm** (thuộc task sau): `kiem_tra_bat_bien(db)` autouse cho module kho/ban_hang (T3.1, vì cần dữ liệu phân bổ), `tests/phan_quyen/registry.py` (T1.3).
+  - **CI** (`.github/workflows/ci.yml`): job backend với service `pgvector/pgvector:pg16` chạy `uv sync --locked`, `ruff check`, `ruff format --check`, migration lên-xuống-lên + `alembic check`, `scripts/so_sanh_schema.py`, pytest; job frontend chạy `npm ci`, lint, `tsc --noEmit`, `npm test --if-present -- --run` (sẽ tự chạy khi T0.7 thêm script `test`), build. Đã kiểm file YAML hợp lệ và chạy thử từng bước trên máy (migration trên DB trắng, các lệnh frontend); **chưa chạy thật trên GitHub Actions** vì chưa có lần push nào kích hoạt: cần xem kết quả lần chạy đầu và báo lại nếu có bước hỏng (phiên bản action `setup-uv@v6`, `setup-node@v4`, `checkout@v4`).
+  - **Kiểm chứng hạ tầng bằng phá thử:** để transaction ngoài commit thay vì rollback thì 5 test fail; `db_that` không dọn thì test dọn fail; request không bọc transaction thì test commit fail.
+  - Tổng 337 test xanh; `ruff check` và `ruff format --check` sạch.
 
 ### [ ] T0.7 · Khung frontend 3 khu
 - **Phụ thuộc:** T0.1
