@@ -1,0 +1,387 @@
+# SINH TỰ ĐỘNG - sửa ma trận ở docs/spec/03-phan-quyen.md rồi cập nhật file này cho khớp
+ghi_chu: Sinh tự động từ ma trận phân quyền (docs/spec/03-phan-quyen.md). day_du = được thao tác; chi_xem = chỉ GET, lưu vai_tro_quyen.gioi_han = "chi_xem".
+vai_tro:
+- ma: PHARMACIST
+  ten: Dược sĩ bán hàng
+- ma: WAREHOUSE
+  ten: Nhân viên kho
+- ma: ADMIN
+  ten: Quản trị
+quyen:
+- ma: profile.self
+  nhom: profile
+  mo_ta: Đăng nhập, đổi mật khẩu (NV01); Xem thông báo, cập nhật hồ sơ cá nhân (NV02)
+  chuc_nang:
+  - NV01
+  - NV02
+  vai_tro:
+    PHARMACIST: day_du
+    WAREHOUSE: day_du
+    ADMIN: day_du
+- ma: order.view
+  nhom: order
+  mo_ta: Xem, lọc danh sách đơn hàng (DS01); Xem đơn hàng, chứng từ kho, nội dung chuyên môn (AD16)
+  chuc_nang:
+  - DS01
+  - AD16
+  vai_tro:
+    PHARMACIST: day_du
+    WAREHOUSE: chi_xem
+    ADMIN: chi_xem
+- ma: order.confirm
+  nhom: order
+  mo_ta: Xác nhận đơn hàng (DS02)
+  chuc_nang:
+  - DS02
+  vai_tro:
+    PHARMACIST: day_du
+- ma: order.cancel
+  nhom: order
+  mo_ta: Hủy đơn hàng (DS03)
+  chuc_nang:
+  - DS03
+  vai_tro:
+    PHARMACIST: day_du
+- ma: rx_request.review
+  nhom: rx_request
+  mo_ta: Duyệt yêu cầu đơn thuốc (DS04)
+  chuc_nang:
+  - DS04
+  vai_tro:
+    PHARMACIST: day_du
+- ma: rx_order.create
+  nhom: rx_order
+  mo_ta: Tạo đơn hàng từ đơn thuốc (DS05)
+  chuc_nang:
+  - DS05
+  vai_tro:
+    PHARMACIST: day_du
+- ma: chat.handle
+  nhom: chat
+  mo_ta: Tư vấn trực tiếp (DS06)
+  chuc_nang:
+  - DS06
+  vai_tro:
+    PHARMACIST: day_du
+- ma: order.create_phone
+  nhom: order
+  mo_ta: Tạo đơn hộ khách (DS07)
+  chuc_nang:
+  - DS07
+  vai_tro:
+    PHARMACIST: day_du
+- ma: pos.sell
+  nhom: pos
+  mo_ta: Bán tại quầy – POS (DS08)
+  chuc_nang:
+  - DS08
+  vai_tro:
+    PHARMACIST: day_du
+- ma: return.review
+  nhom: return
+  mo_ta: Xử lý yêu cầu đổi trả (DS09)
+  chuc_nang:
+  - DS09
+  vai_tro:
+    PHARMACIST: day_du
+- ma: content.professional.edit
+  nhom: content
+  mo_ta: Biên soạn, duyệt nội dung chuyên môn (DS10)
+  chuc_nang:
+  - DS10
+  vai_tro:
+    PHARMACIST: day_du
+    ADMIN: chi_xem
+- ma: content.approve
+  nhom: content
+  mo_ta: Biên soạn, duyệt nội dung chuyên môn (DS10)
+  chuc_nang:
+  - DS10
+  vai_tro:
+    PHARMACIST: day_du
+    ADMIN: chi_xem
+- ma: review.moderate
+  nhom: review
+  mo_ta: Kiểm duyệt đánh giá, hỏi đáp (DS11)
+  chuc_nang:
+  - DS11
+  vai_tro:
+    PHARMACIST: day_du
+- ma: qa.answer
+  nhom: qa
+  mo_ta: Kiểm duyệt đánh giá, hỏi đáp (DS11)
+  chuc_nang:
+  - DS11
+  vai_tro:
+    PHARMACIST: day_du
+- ma: ai_answer.review
+  nhom: ai_answer
+  mo_ta: Đánh giá câu trả lời AI (DS12)
+  chuc_nang:
+  - DS12
+  vai_tro:
+    PHARMACIST: day_du
+    ADMIN: chi_xem
+- ma: recall.contact
+  nhom: recall
+  mo_ta: Liên hệ khách khi thu hồi lô (DS13)
+  chuc_nang:
+  - DS13
+  vai_tro:
+    PHARMACIST: day_du
+    ADMIN: chi_xem
+- ma: report.shift
+  nhom: report
+  mo_ta: Báo cáo bán hàng của ca (DS14)
+  chuc_nang:
+  - DS14
+  vai_tro:
+    PHARMACIST: day_du
+- ma: order.pickup_handover
+  nhom: order
+  mo_ta: Giao đơn nhận tại nhà thuốc (DS15)
+  chuc_nang:
+  - DS15
+  vai_tro:
+    PHARMACIST: day_du
+- ma: supplier.manage
+  nhom: supplier
+  mo_ta: Quản lý nhà cung cấp (KHO01)
+  chuc_nang:
+  - KHO01
+  vai_tro:
+    WAREHOUSE: day_du
+    ADMIN: chi_xem
+- ma: stock.import
+  nhom: stock
+  mo_ta: Lập phiếu nhập kho (KHO02)
+  chuc_nang:
+  - KHO02
+  vai_tro:
+    WAREHOUSE: day_du
+    ADMIN: chi_xem
+- ma: order.pick
+  nhom: order
+  mo_ta: Soạn hàng, xuất kho theo đơn (KHO03)
+  chuc_nang:
+  - KHO03
+  vai_tro:
+    WAREHOUSE: day_du
+- ma: shipment.create
+  nhom: shipment
+  mo_ta: Đóng gói, bàn giao vận chuyển (KHO04)
+  chuc_nang:
+  - KHO04
+  vai_tro:
+    WAREHOUSE: day_du
+- ma: stock.view
+  nhom: stock
+  mo_ta: Tra cứu tồn kho (KHO05)
+  chuc_nang:
+  - KHO05
+  vai_tro:
+    PHARMACIST: chi_xem
+    WAREHOUSE: day_du
+    ADMIN: chi_xem
+- ma: stock.alert.view
+  nhom: stock
+  mo_ta: Xem cảnh báo (KHO06)
+  chuc_nang:
+  - KHO06
+  vai_tro:
+    WAREHOUSE: day_du
+    ADMIN: chi_xem
+- ma: stocktake.manage
+  nhom: stocktake
+  mo_ta: Kiểm kê (KHO07)
+  chuc_nang:
+  - KHO07
+  vai_tro:
+    WAREHOUSE: day_du
+    ADMIN: chi_xem
+- ma: stock_adjust.create
+  nhom: stock_adjust
+  mo_ta: Lập phiếu điều chỉnh tồn (KHO08)
+  chuc_nang:
+  - KHO08
+  vai_tro:
+    WAREHOUSE: day_du
+- ma: disposal.create
+  nhom: disposal
+  mo_ta: Lập phiếu hủy hàng (KHO09)
+  chuc_nang:
+  - KHO09
+  vai_tro:
+    WAREHOUSE: day_du
+- ma: return.receive
+  nhom: return
+  mo_ta: Nhận hàng trả về, hàng hoàn (KHO10)
+  chuc_nang:
+  - KHO10
+  vai_tro:
+    WAREHOUSE: day_du
+- ma: supplier_return.create
+  nhom: supplier_return
+  mo_ta: Xuất trả nhà cung cấp (KHO11)
+  chuc_nang:
+  - KHO11
+  vai_tro:
+    WAREHOUSE: day_du
+- ma: recall.execute
+  nhom: recall
+  mo_ta: Thực hiện thu hồi lô (KHO12)
+  chuc_nang:
+  - KHO12
+  vai_tro:
+    WAREHOUSE: day_du
+    ADMIN: chi_xem
+- ma: report.inventory
+  nhom: report
+  mo_ta: Báo cáo nhập, xuất, tồn (KHO13)
+  chuc_nang:
+  - KHO13
+  vai_tro:
+    WAREHOUSE: day_du
+    ADMIN: chi_xem
+- ma: forecast.view
+  nhom: forecast
+  mo_ta: Xem đề xuất nhập hàng từ AI (KHO14)
+  chuc_nang:
+  - KHO14
+  vai_tro:
+    WAREHOUSE: day_du
+    ADMIN: chi_xem
+- ma: staff.manage
+  nhom: staff
+  mo_ta: Quản lý tài khoản nhân viên (AD01)
+  chuc_nang:
+  - AD01
+  vai_tro:
+    ADMIN: day_du
+- ma: customer.manage
+  nhom: customer
+  mo_ta: Quản lý khách hàng (AD02)
+  chuc_nang:
+  - AD02
+  vai_tro:
+    ADMIN: day_du
+- ma: category.manage
+  nhom: category
+  mo_ta: Quản lý danh mục (AD03)
+  chuc_nang:
+  - AD03
+  vai_tro:
+    ADMIN: day_du
+- ma: product.commercial.manage
+  nhom: product
+  mo_ta: Quản lý sản phẩm – thông tin thương mại (AD04)
+  chuc_nang:
+  - AD04
+  vai_tro:
+    ADMIN: day_du
+- ma: master_data.manage
+  nhom: master_data
+  mo_ta: Quản lý hoạt chất, thương hiệu, nhà sản xuất (AD05)
+  chuc_nang:
+  - AD05
+  vai_tro:
+    PHARMACIST: chi_xem
+    ADMIN: day_du
+- ma: promotion.manage
+  nhom: promotion
+  mo_ta: Quản lý khuyến mãi, mã giảm giá (AD06)
+  chuc_nang:
+  - AD06
+  vai_tro:
+    ADMIN: day_du
+- ma: cms.manage
+  nhom: cms
+  mo_ta: Quản lý banner, bài viết, chính sách, FAQ (AD07)
+  chuc_nang:
+  - AD07
+  vai_tro:
+    ADMIN: day_du
+- ma: config.manage
+  nhom: config
+  mo_ta: Cấu hình hệ thống (AD08)
+  chuc_nang:
+  - AD08
+  vai_tro:
+    ADMIN: day_du
+- ma: ai.config
+  nhom: ai
+  mo_ta: Cấu hình AI (AD09)
+  chuc_nang:
+  - AD09
+  vai_tro:
+    ADMIN: day_du
+- ma: ai.knowledge.sync
+  nhom: ai
+  mo_ta: Đồng bộ kho tri thức AI (AD10)
+  chuc_nang:
+  - AD10
+  vai_tro:
+    ADMIN: day_du
+- ma: ai.monitor
+  nhom: ai
+  mo_ta: Giám sát hội thoại AI (AD11)
+  chuc_nang:
+  - AD11
+  vai_tro:
+    ADMIN: day_du
+- ma: stock_doc.approve
+  nhom: stock_doc
+  mo_ta: Duyệt phiếu hủy, điều chỉnh tồn, xuất trả NCC (AD12)
+  chuc_nang:
+  - AD12
+  vai_tro:
+    ADMIN: day_du
+- ma: recall.create
+  nhom: recall
+  mo_ta: Khởi tạo lệnh thu hồi lô (AD13)
+  chuc_nang:
+  - AD13
+  vai_tro:
+    ADMIN: day_du
+- ma: stock_doc.view
+  nhom: stock_doc
+  mo_ta: Xem đơn hàng, chứng từ kho, nội dung chuyên môn (AD16)
+  chuc_nang:
+  - AD16
+  vai_tro:
+    ADMIN: chi_xem
+- ma: content.view
+  nhom: content
+  mo_ta: Xem đơn hàng, chứng từ kho, nội dung chuyên môn (AD16)
+  chuc_nang:
+  - AD16
+  vai_tro:
+    ADMIN: chi_xem
+- ma: report.all
+  nhom: report
+  mo_ta: Báo cáo thống kê tổng hợp (AD14)
+  chuc_nang:
+  - AD14
+  vai_tro:
+    ADMIN: day_du
+- ma: audit.view
+  nhom: audit
+  mo_ta: Xem nhật ký hệ thống (AD15)
+  chuc_nang:
+  - AD15
+  vai_tro:
+    ADMIN: day_du
+- ma: refund.confirm
+  nhom: refund
+  mo_ta: Xác nhận hoàn tiền (AD17)
+  chuc_nang:
+  - AD17
+  vai_tro:
+    ADMIN: day_du
+- ma: role.manage
+  nhom: role
+  mo_ta: Quản lý vai trò & phân quyền (AD18)
+  chuc_nang:
+  - AD18
+  vai_tro:
+    ADMIN: day_du
