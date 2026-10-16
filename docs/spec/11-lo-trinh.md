@@ -730,17 +730,17 @@ _Hồ sơ sức khỏe, gửi và duyệt đơn thuốc, tạo đơn từ đơn 
 
 _Đổi trả, biệt trữ, hoàn tiền, đánh giá, hỏi đáp, thông báo, thu hồi lô._
 
-### [ ] T6.1 · Yêu cầu đổi trả và duyệt
+### [x] T6.1 · Yêu cầu đổi trả và duyệt
 - **Chức năng:** KTV09 (Yêu cầu đổi trả), DS09 (Xử lý yêu cầu đổi trả)
 - **Phụ thuộc:** T4.9
 - **Bảng:** `yeu_cau_doi_tra`, `ct_yeu_cau_doi_tra`, `van_don`, `thanh_toan`, `don_hang`
 - **Tiêu chí chấp nhận:**
-  - [ ] Khách tạo yêu cầu trong thời hạn, chọn dòng + số lượng (tổng đã trả không vượt đã mua), lý do, ảnh/video; COD/tiền mặt nhập tài khoản nhận hoàn.
-  - [ ] Dược sĩ duyệt/từ chối; duyệt → tạo vận đơn `tra_hang` (adapter vận chuyển) gửi mã cho khách.
-  - [ ] Sau khi kho nhận: chọn hoàn tiền (tạo giao dịch hoàn, số tiền theo spec 04 mục 5) hoặc gửi hàng thay thế (đơn 0đ `don_hang_goc_id`, trạng thái `da_xac_nhan`).
+  - [x] Khách tạo yêu cầu trong thời hạn, chọn dòng + số lượng (tổng đã trả không vượt đã mua), lý do, ảnh/video; COD/tiền mặt nhập tài khoản nhận hoàn.
+  - [x] Dược sĩ duyệt/từ chối; duyệt → tạo vận đơn `tra_hang` (adapter vận chuyển) gửi mã cho khách.
+  - [x] Sau khi kho nhận: chọn hoàn tiền (tạo giao dịch hoàn, số tiền theo spec 04 mục 5) hoặc gửi hàng thay thế (đơn 0đ `don_hang_goc_id`, trạng thái `da_xac_nhan`).
 - **Giao diện:**
-  - [ ] Form đổi trả trong chi tiết đơn; màn xử lý đổi trả cho dược sĩ.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Form đổi trả trong chi tiết đơn; màn xử lý đổi trả cho dược sĩ.
+- **Ghi chú triển khai:** `modules/doi_tra/` (`dich_vu`, `xu_ly`, `router`, `schemas`); API ở spec 06 mục 3.32; quyết định QĐ-36 (không đổi schema, tài khoản nhận hoàn nhập sau khi có giao dịch hoàn, tính số tiền hoàn, dòng 30 cho đơn thay thế). Hàng đổi trả sau khi kho nhận (`ket_qua_kiem_hang`, `so_luong_nhan`) do T6.2. Test `tests/doi_tra/test_doi_tra.py` (16), `TrangXuLyDoiTra.test.tsx`, `doiTra.test.ts`; giao diện `DoiTraNut`, `TrangDoiTraCuaToi`, `TrangXuLyDoiTra`.
 
 ### [ ] T6.2 · Nhận hàng trả, hàng hoàn và biệt trữ
 - **Chức năng:** KHO10 (Nhận hàng trả về, hàng hoàn)

@@ -360,3 +360,11 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **Tiền thối chỉ có lúc bán:** DB không có cột "tiền khách đưa" nên không đổi schema; hóa đơn in lại không có hai số này. Tên nhà thuốc trên hóa đơn là hằng số `Nhà thuốc AI` (chưa có cấu hình thông tin cửa hàng).
 - **`da_su_dung`** của yêu cầu quầy bật ngay khi đơn hoàn tất (spec 04 mục 6).
 
+## QĐ-36: Yêu cầu đổi trả (2026-10-16, task T6.1)
+- **Không đổi schema.** Tài khoản nhận hoàn của khách được nhập SAU khi giao dịch hoàn (`hoan_tien`, `khoi_tao`) đã có và lưu ở `thanh_toan.thong_tin_nhan_hoan`; nới thời điểm "dòng 3" trong spec để khách không phải nhập khi chưa chắc được duyệt. Chỉ áp dụng khi cổng gốc là `cod`, `tien_mat`, `chuyen_khoan`; VNPay/MoMo hoàn qua adapter.
+- **Số tiền hoàn** tính lúc duyệt và kiểm lại lúc tạo giao dịch: tổng `lam_tron(thanh_tien × sl_trả / so_luong)` của các dòng, cộng phí vận chuyển nếu trả toàn bộ mọi dòng; tổng đã hoàn không vượt tổng đã thanh toán (`HOAN_VUOT_SO_DA_TRA`).
+- **Bằng chứng:** ảnh ≤ 5 MB, mp4 ≤ 30 MB, tối đa 8 tệp, lưu `rieng_tu`.
+- **Vận đơn trả** chỉ tạo cho đơn giao tận nơi; đơn nhận tại quầy không có.
+- **Từ chối sau khi kho nhận** cần `ket_qua_kiem_hang` do kho ghi (T6.2).
+- **Đơn thay thế (dòng 30):** tổng 0đ, `cod`, `da_thanh_toan`, `don_hang_goc_id`, giữ hàng FEFO; thêm dòng 30 vào bảng chuyển trạng thái để phân biệt với dòng 4.
+

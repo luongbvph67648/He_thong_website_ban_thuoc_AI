@@ -1,6 +1,7 @@
 """DS01, DS02, DS03, KTV06: danh sách/chi tiết đơn nội bộ, xác nhận, hủy đơn, hoàn tiền khi hủy đơn đã thanh toán."""
 
 from decimal import Decimal
+from zoneinfo import ZoneInfo
 
 from sqlalchemy import func, select
 
@@ -228,8 +229,9 @@ async def test_danh_sach_loc_theo_trang_thai_ngay_phuong_thuc_kenh(dang_nhap_kha
     assert (await ps.get(NB, params={"kenh_ban": "tai_quay"})).json()["tong"] == 0
     assert (await ps.get(NB, params={"kenh_ban": "online"})).json()["tong"] == 2
     don_a = await don_cua(db, a["ma_don"])
-    hom_qua = (don_a.created_at - timedelta(days=2)).date().isoformat()
-    ngay = don_a.created_at.date().isoformat()
+    gio_vn = don_a.created_at.astimezone(ZoneInfo("Asia/Ho_Chi_Minh"))  # API lọc theo ngày giờ VN
+    hom_qua = (gio_vn - timedelta(days=2)).date().isoformat()
+    ngay = gio_vn.date().isoformat()
     assert (await ps.get(NB, params={"tu_ngay": ngay, "den_ngay": ngay})).json()["tong"] == 2
     assert (await ps.get(NB, params={"den_ngay": hom_qua})).json()["tong"] == 0
     tim = (await ps.get(NB, params={"q": a["ma_don"]})).json()

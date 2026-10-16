@@ -167,8 +167,8 @@ describe('khu nhân viên', () => {
   })
 
   it('trang có quyền hiện nội dung (đang xây dựng) kèm mã chức năng', async () => {
-    renderTai('/nhan-vien/pos', duocSi)
-    expect(await screen.findByText(/DS08/)).toBeInTheDocument()
+    renderTai('/nhan-vien/thu-hoi', { ...duocSi, quyen: { ...duocSi.quyen, 'recall.contact': 'day_du' } })
+    expect(await screen.findByText(/DS13/)).toBeInTheDocument()
   })
 
   it('trang không có quyền hiện 403 nhưng vẫn giữ layout và địa chỉ', async () => {

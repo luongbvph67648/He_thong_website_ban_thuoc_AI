@@ -441,6 +441,19 @@ Mã quyền `pos.sell` (chỉ dược sĩ; service chốt thêm vai trò `PHARMA
   - Một transaction: đơn `kenh_ban = tai_quay` vào thẳng `hoan_tat` (dòng 6), giữ hàng FEFO có lô cận hạn rồi xuất kho (thẻ kho `xuat_ban`), giao dịch `thanh_toan` `thanh_cong` do dược sĩ thu, yêu cầu đơn thuốc `da_su_dung = true`. Thiếu hàng là `409 HET_HANG` và không để lại gì.
 - `GET /noi-bo/pos/don/{id}/hoa-don`: dữ liệu hóa đơn để in lại (không có `tien_khach_dua` và `tien_thua`, chỉ có ngay lúc bán). Đơn không thuộc kênh quầy là `404`. Giao diện dựng HTML in được (khổ 80 mm).
 
+### 3.32 Đổi trả (KTV09, DS09, T6.1)
+Khách (token, tài nguyên người khác trả `404`):
+- `POST /toi/don-hang/{ma_don}/doi-tra` (`multipart`: `dong` là chuỗi JSON `[{ct_don_hang_id, so_luong}]`, `ly_do`, `mo_ta?`, `tep` 1-8 tệp: ảnh JPEG/PNG/WebP ≤ 5 MB, video MP4 ≤ 30 MB) -> 201. Chỉ đơn `da_giao` còn trong thời hạn đổi trả; tổng đã yêu cầu trả của một dòng không vượt số đã mua (`409`). Bằng chứng lưu ở vùng `rieng_tu`.
+- `GET /toi/doi-tra`, `GET /toi/doi-tra/{ma_yeu_cau}` (URL tệp ký 10 phút).
+- `PUT /toi/doi-tra/{ma_yeu_cau}/tai-khoan-nhan-hoan {ngan_hang, so_tai_khoan, chu_tai_khoan}`: chỉ khi đã có giao dịch hoàn `khoi_tao` và cổng gốc là `cod`, `tien_mat` hoặc `chuyen_khoan`; lưu ở `thanh_toan.thong_tin_nhan_hoan` (QĐ-36).
+
+Nhân viên (mã quyền `return.review`, dược sĩ):
+- `GET /noi-bo/doi-tra?trang_thai=` (mặc định các yêu cầu đang cần xử lý), `GET /noi-bo/doi-tra/{yc_id}`.
+- `POST /noi-bo/doi-tra/{yc_id}/duyet {huong_xu_ly: hoan_tien | gui_hang_thay_the}`: `cho_duyet -> da_duyet`, tạo vận đơn `tra_hang` (chỉ đơn giao tận nơi), tính `so_tien_hoan`.
+- `POST /noi-bo/doi-tra/{yc_id}/tu-choi {ly_do}`: từ chối khi `cho_duyet`; sau khi kho đã nhận chỉ từ chối khi có `ket_qua_kiem_hang` (T6.2).
+- `POST /noi-bo/doi-tra/{yc_id}/hoan-tien`: sau khi kho nhận, tạo giao dịch `thanh_toan` `hoan_tien` `khoi_tao` (dòng 6); Admin xác nhận ở T6.3.
+- `POST /noi-bo/doi-tra/{yc_id}/thay-the`: tạo đơn thay thế 0đ có `don_hang_goc_id`, giữ hàng FEFO, dòng 8 rồi dòng 30 (spec 04).
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:
