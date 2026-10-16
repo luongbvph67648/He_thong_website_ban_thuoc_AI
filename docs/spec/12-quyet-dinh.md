@@ -267,3 +267,10 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
   - **Tác động qua hook đăng ký** (`dang_ky_hook`) để task sau thêm thanh toán, hoàn tiền, mã giảm giá, vận đơn, thông báo mà không sửa máy trạng thái. Dòng 27 (kiểm hàng hoàn: hoàn nhập hay biệt trữ) chưa có hook, thuộc KHO10.
 - **Hệ quả:** spec 04 mục 1.1 (phần Cài đặt); `modules/ban_hang/trang_thai.py`; `tests/ban_hang/`; `backend/CLAUDE.md`.
 
+
+## QĐ-25: Khuyến mãi và mã giảm giá (2026-10-16, task T4.3)
+- **Quyết định:**
+  - Kiểm tra mã (`kiem_tra_ma`) chỉ đọc, không giữ lượt; lượt chỉ tăng khi đặt đơn qua `dung_ma` (khóa khuyến mãi FOR UPDATE), trả lại bằng hook khi đơn hủy/hết hạn (các dòng 9, 12, 14, 15, 19, 21, 27).
+  - Lý do không áp dụng trả bằng `ma_ly_do` ổn định để UI hiện đúng thông điệp; kiểm tra mã bị giới hạn tần suất để chống dò mã.
+  - Thuốc kê đơn không bao giờ nằm trong cơ sở giảm.
+- **Hệ quả:** spec 06 mục 3.21; `modules/khuyen_mai/`; `frontend/src/khu/quan-tri/khuyen-mai`, `khu/cua-hang/gio-hang/OMaGiamGia`.

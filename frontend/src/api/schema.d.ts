@@ -1735,6 +1735,94 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/noi-bo/khuyen-mai": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Danh sách khuyến mãi (AD06) */
+        get: operations["ds_api_v1_noi_bo_khuyen_mai_get"];
+        put?: never;
+        /** Tạo khuyến mãi (AD06) */
+        post: operations["tao_api_v1_noi_bo_khuyen_mai_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/khuyen-mai/{km_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chi tiết khuyến mãi (AD06) */
+        get: operations["chi_tiet_api_v1_noi_bo_khuyen_mai__km_id__get"];
+        /** Sửa khuyến mãi (AD06) */
+        put: operations["sua_api_v1_noi_bo_khuyen_mai__km_id__put"];
+        post?: never;
+        /** Xóa khuyến mãi chưa có đơn dùng (AD06) */
+        delete: operations["xoa_api_v1_noi_bo_khuyen_mai__km_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/khuyen-mai/{km_id}/ma": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sinh hoặc thêm mã giảm giá (AD06) */
+        post: operations["sinh_ma_api_v1_noi_bo_khuyen_mai__km_id__ma_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/khuyen-mai/{km_id}/ma/{ma_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Xóa mã chưa dùng (AD06) */
+        delete: operations["xoa_ma_api_v1_noi_bo_khuyen_mai__km_id__ma__ma_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/toi/ma-giam-gia/kiem-tra": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Kiểm tra mã giảm giá theo giỏ của tôi (KTV04) */
+        post: operations["kiem_tra_api_v1_toi_ma_giam_gia_kiem_tra_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/toi/dia-chi": {
         parameters: {
             query?: never;
@@ -3254,6 +3342,21 @@ export interface components {
             /** Bo Qua */
             bo_qua: components["schemas"]["DongBoQua"][];
         };
+        /** KetQuaKiemTraMa */
+        KetQuaKiemTraMa: {
+            /** Hop Le */
+            hop_le: boolean;
+            /** Ma */
+            ma: string;
+            khuyen_mai: components["schemas"]["KhuyenMaiCongKhai"] | null;
+            /** Co So Giam */
+            co_so_giam: string;
+            /** Giam */
+            giam: string;
+            ma_ly_do: components["schemas"]["MaLyDo"] | null;
+            /** Ly Do */
+            ly_do: string | null;
+        };
         /** KhachHangChiTiet */
         KhachHangChiTiet: {
             /** Id */
@@ -3330,6 +3433,206 @@ export interface components {
          * @enum {string}
          */
         KhuTon: "kho_ban" | "biet_tru";
+        /** KhuyenMaiChiTiet */
+        KhuyenMaiChiTiet: {
+            /** Id */
+            id: number;
+            /** Ten */
+            ten: string;
+            loai_giam: components["schemas"]["LoaiGiamGia"];
+            /** Gia Tri */
+            gia_tri: string;
+            /** Giam Toi Da */
+            giam_toi_da: string | null;
+            /** Don Toi Thieu */
+            don_toi_thieu: string;
+            /**
+             * Bat Dau
+             * Format: date-time
+             */
+            bat_dau: string;
+            /**
+             * Ket Thuc
+             * Format: date-time
+             */
+            ket_thuc: string;
+            /** Tong Luot */
+            tong_luot: number | null;
+            /** Luot Moi Khach */
+            luot_moi_khach: number;
+            pham_vi: components["schemas"]["PhamViKhuyenMai"];
+            /** Dang Hoat Dong */
+            dang_hoat_dong: boolean;
+            /**
+             * Trang Thai
+             * @enum {string}
+             */
+            trang_thai: "da_tat" | "sap_dien_ra" | "dang_hieu_luc" | "het_han";
+            /** So Ma */
+            so_ma: number;
+            /** Da Dung */
+            da_dung: number;
+            /** Phien Ban */
+            phien_ban: string;
+            /** Danh Muc */
+            danh_muc: components["schemas"]["PhamViRa"][];
+            /** San Pham */
+            san_pham: components["schemas"]["PhamViRa"][];
+            /** Ma Giam Gia */
+            ma_giam_gia: components["schemas"]["MaRa"][];
+        };
+        /** KhuyenMaiCongKhai */
+        KhuyenMaiCongKhai: {
+            /** Ten */
+            ten: string;
+            loai_giam: components["schemas"]["LoaiGiamGia"];
+            /** Gia Tri */
+            gia_tri: string;
+            /** Giam Toi Da */
+            giam_toi_da: string | null;
+            /** Don Toi Thieu */
+            don_toi_thieu: string;
+        };
+        /** KhuyenMaiSua */
+        KhuyenMaiSua: {
+            /** Ten */
+            ten: string;
+            loai_giam: components["schemas"]["LoaiGiamGia"];
+            /** Gia Tri */
+            gia_tri: number | string;
+            /** Giam Toi Da */
+            giam_toi_da?: number | string | null;
+            /**
+             * Don Toi Thieu
+             * @default 0
+             */
+            don_toi_thieu: number | string;
+            /**
+             * Bat Dau
+             * Format: date-time
+             */
+            bat_dau: string;
+            /**
+             * Ket Thuc
+             * Format: date-time
+             */
+            ket_thuc: string;
+            /** Tong Luot */
+            tong_luot?: number | null;
+            /**
+             * Luot Moi Khach
+             * @default 1
+             */
+            luot_moi_khach: number;
+            /** @default toan_bo */
+            pham_vi: components["schemas"]["PhamViKhuyenMai"];
+            /**
+             * Danh Muc Ids
+             * @default []
+             */
+            danh_muc_ids: number[];
+            /**
+             * San Pham Ids
+             * @default []
+             */
+            san_pham_ids: number[];
+            /**
+             * Dang Hoat Dong
+             * @default true
+             */
+            dang_hoat_dong: boolean;
+            /** Phien Ban */
+            phien_ban: string;
+        };
+        /** KhuyenMaiTomTat */
+        KhuyenMaiTomTat: {
+            /** Id */
+            id: number;
+            /** Ten */
+            ten: string;
+            loai_giam: components["schemas"]["LoaiGiamGia"];
+            /** Gia Tri */
+            gia_tri: string;
+            /** Giam Toi Da */
+            giam_toi_da: string | null;
+            /** Don Toi Thieu */
+            don_toi_thieu: string;
+            /**
+             * Bat Dau
+             * Format: date-time
+             */
+            bat_dau: string;
+            /**
+             * Ket Thuc
+             * Format: date-time
+             */
+            ket_thuc: string;
+            /** Tong Luot */
+            tong_luot: number | null;
+            /** Luot Moi Khach */
+            luot_moi_khach: number;
+            pham_vi: components["schemas"]["PhamViKhuyenMai"];
+            /** Dang Hoat Dong */
+            dang_hoat_dong: boolean;
+            /**
+             * Trang Thai
+             * @enum {string}
+             */
+            trang_thai: "da_tat" | "sap_dien_ra" | "dang_hieu_luc" | "het_han";
+            /** So Ma */
+            so_ma: number;
+            /** Da Dung */
+            da_dung: number;
+        };
+        /** KhuyenMaiVao */
+        KhuyenMaiVao: {
+            /** Ten */
+            ten: string;
+            loai_giam: components["schemas"]["LoaiGiamGia"];
+            /** Gia Tri */
+            gia_tri: number | string;
+            /** Giam Toi Da */
+            giam_toi_da?: number | string | null;
+            /**
+             * Don Toi Thieu
+             * @default 0
+             */
+            don_toi_thieu: number | string;
+            /**
+             * Bat Dau
+             * Format: date-time
+             */
+            bat_dau: string;
+            /**
+             * Ket Thuc
+             * Format: date-time
+             */
+            ket_thuc: string;
+            /** Tong Luot */
+            tong_luot?: number | null;
+            /**
+             * Luot Moi Khach
+             * @default 1
+             */
+            luot_moi_khach: number;
+            /** @default toan_bo */
+            pham_vi: components["schemas"]["PhamViKhuyenMai"];
+            /**
+             * Danh Muc Ids
+             * @default []
+             */
+            danh_muc_ids: number[];
+            /**
+             * San Pham Ids
+             * @default []
+             */
+            san_pham_ids: number[];
+            /**
+             * Dang Hoat Dong
+             * @default true
+             */
+            dang_hoat_dong: boolean;
+        };
         /** KiemKeChiTiet */
         KiemKeChiTiet: {
             /** Id */
@@ -3379,6 +3682,11 @@ export interface components {
             /** So Dong Lech */
             so_dong_lech: number;
         };
+        /** KiemTraMaVao */
+        KiemTraMaVao: {
+            /** Ma */
+            ma: string;
+        };
         /** LoCanhBao */
         LoCanhBao: {
             /** Lo Id */
@@ -3408,6 +3716,11 @@ export interface components {
          */
         LoaiBaiViet: "bai_viet" | "chinh_sach" | "faq";
         /**
+         * LoaiGiamGia
+         * @enum {string}
+         */
+        LoaiGiamGia: "phan_tram" | "so_tien";
+        /**
          * LoaiSanPham
          * @enum {string}
          */
@@ -3417,6 +3730,20 @@ export interface components {
          * @enum {string}
          */
         LyDoHuyHang: "het_han" | "hu_hong" | "hang_tra_ve" | "thu_hoi" | "khac";
+        /**
+         * MaLyDo
+         * @enum {string}
+         */
+        MaLyDo: "khong_ton_tai" | "da_tat" | "chua_bat_dau" | "het_han" | "het_luot" | "het_luot_khach" | "khong_co_san_pham" | "duoi_don_toi_thieu";
+        /** MaRa */
+        MaRa: {
+            /** Id */
+            id: number;
+            /** Ma */
+            ma: string;
+            /** So Luot Da Dung */
+            so_luot_da_dung: number;
+        };
         /** MuaKem */
         MuaKem: {
             /** Id */
@@ -3831,6 +4158,18 @@ export interface components {
              * @enum {string}
              */
             kenh: "sms" | "email";
+        };
+        /**
+         * PhamViKhuyenMai
+         * @enum {string}
+         */
+        PhamViKhuyenMai: "toan_bo" | "danh_muc" | "san_pham";
+        /** PhamViRa */
+        PhamViRa: {
+            /** Id */
+            id: number;
+            /** Ten */
+            ten: string;
         };
         /** PhienBanNoiDung */
         PhienBanNoiDung: {
@@ -4396,6 +4735,16 @@ export interface components {
             /** Can Tu Van */
             can_tu_van: boolean;
         };
+        /** SinhMa */
+        SinhMa: {
+            /** Ma */
+            ma?: string | null;
+            /**
+             * So Luong
+             * @default 1
+             */
+            so_luong: number;
+        };
         /** SoChuaDoc */
         SoChuaDoc: {
             /** So Chua Doc */
@@ -4728,6 +5077,17 @@ export interface components {
         Trang_KhachHangTomTat_: {
             /** Du Lieu */
             du_lieu: components["schemas"]["KhachHangTomTat"][];
+            /** Tong */
+            tong: number;
+            /** Trang */
+            trang: number;
+            /** Kich Thuoc */
+            kich_thuoc: number;
+        };
+        /** Trang[KhuyenMaiTomTat] */
+        Trang_KhuyenMaiTomTat_: {
+            /** Du Lieu */
+            du_lieu: components["schemas"]["KhuyenMaiTomTat"][];
             /** Tong */
             tong: number;
             /** Trang */
@@ -9164,6 +9524,268 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MuaKem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ds_api_v1_noi_bo_khuyen_mai_get: {
+        parameters: {
+            query?: {
+                trang_thai?: ("da_tat" | "sap_dien_ra" | "dang_hieu_luc" | "het_han") | null;
+                q?: string | null;
+                /** @description Số trang, bắt đầu từ 1 */
+                trang?: number;
+                /** @description Số dòng mỗi trang */
+                kich_thuoc?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Trang_KhuyenMaiTomTat_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tao_api_v1_noi_bo_khuyen_mai_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KhuyenMaiVao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KhuyenMaiChiTiet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chi_tiet_api_v1_noi_bo_khuyen_mai__km_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                km_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KhuyenMaiChiTiet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sua_api_v1_noi_bo_khuyen_mai__km_id__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                km_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KhuyenMaiSua"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KhuyenMaiChiTiet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    xoa_api_v1_noi_bo_khuyen_mai__km_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                km_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sinh_ma_api_v1_noi_bo_khuyen_mai__km_id__ma_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                km_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SinhMa"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MaRa"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    xoa_ma_api_v1_noi_bo_khuyen_mai__km_id__ma__ma_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                km_id: number;
+                ma_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    kiem_tra_api_v1_toi_ma_giam_gia_kiem_tra_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["KiemTraMaVao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KetQuaKiemTraMa"];
                 };
             };
             /** @description Validation Error */

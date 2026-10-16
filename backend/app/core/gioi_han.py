@@ -51,6 +51,7 @@ _bo_dang_nhap_toan_cuc = GioiHanCuaSoTruot()
 _bo_lich_su_xem_toan_cuc = GioiHanCuaSoTruot()
 _bo_tim_kiem_toan_cuc = GioiHanCuaSoTruot()
 _bo_goi_y_toan_cuc = GioiHanCuaSoTruot()
+_bo_ma_giam_gia_toan_cuc = GioiHanCuaSoTruot()
 
 
 def lay_bo_gioi_han_otp() -> GioiHanCuaSoTruot:
@@ -76,3 +77,8 @@ def lay_bo_gioi_han_tim_kiem() -> GioiHanCuaSoTruot:
 def lay_bo_gioi_han_goi_y() -> GioiHanCuaSoTruot:
     """Bộ đếm theo IP cho gợi ý khi gõ: route công khai và mỗi lượt là một truy vấn tìm kiếm."""
     return _bo_goi_y_toan_cuc
+
+
+def lay_bo_gioi_han_ma_giam_gia() -> GioiHanCuaSoTruot:
+    """Bộ đếm theo khách cho việc thử mã giảm giá (chống dò mã hàng loạt)."""
+    return _bo_ma_giam_gia_toan_cuc

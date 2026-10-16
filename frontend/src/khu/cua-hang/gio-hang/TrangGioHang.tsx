@@ -2,11 +2,13 @@ import { DeleteOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { Alert, App, Button, Empty, InputNumber, Select, Space, Table, Tag, Typography } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
+import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../../api/client'
 import { dinhDangTien } from '../../../lib/dinhDang'
 import { lienKetAnToan } from '../../../lib/lienKet'
 import { type DongGio, useGioHang } from './gioHang'
+import { OMaGiamGia, type KetQuaMa } from './OMaGiamGia'
 
 const NHAN_LY_DO: Record<string, string> = {
   thuoc_ke_don: 'Thuốc kê đơn: không mua online',
@@ -44,6 +46,7 @@ function MuaCung({ ids, them }: { ids: number[]; them: (spId: number, dvId: numb
 export default function TrangGioHang() {
   const { message } = App.useApp()
   const g = useGioHang()
+  const [maDangDung, datMaDangDung] = useState<KetQuaMa | null>(null)
   const bao = async (viec: Promise<string | null>) => {
     const loi = await viec
     if (loi) void message.error(loi)
@@ -117,7 +120,9 @@ export default function TrangGioHang() {
       />
       {g.gio.dong.length > 0 && (
         <Space orientation="vertical" align="end" style={{ width: '100%' }}>
+          {g.thanhVien && <OMaGiamGia khiDoi={datMaDangDung} />}
           <Typography.Title level={4} style={{ margin: 0 }}>Tạm tính: {dinhDangTien(g.gio.tam_tinh)}</Typography.Title>
+          {maDangDung && <Typography.Text type="success">Mã {maDangDung.ma}: giảm {dinhDangTien(maDangDung.giam)}</Typography.Text>}
           <Typography.Text type="secondary">Phí vận chuyển và giảm giá được tính ở bước thanh toán.</Typography.Text>
           {g.thanhVien ? (
             <Link to="/thanh-toan"><Button type="primary" size="large" disabled={co_dong_hong || g.gio.tong_so_luong === 0}>Tiến hành thanh toán</Button></Link>

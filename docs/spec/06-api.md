@@ -308,6 +308,20 @@ Quyền `report.inventory` (`xem`: kho và Admin). Tính hoàn toàn từ `bien_
 - Luôn đúng một địa chỉ mặc định khi khách có ít nhất một địa chỉ: địa chỉ đầu tiên tự là mặc định; đặt mặc định mới thì bỏ mặc định cũ; xóa địa chỉ mặc định thì địa chỉ cũ nhất còn lại thành mặc định.
 **Địa giới** (công khai, spec 08 mục 8): `GET /dia-gioi/tinh` -> `[{ma, ten}]`; `GET /dia-gioi/tinh/{ma}/xa` -> `[{ma, ten}]`, mã tỉnh lạ là `404`. Nguồn là danh mục của đơn vị vận chuyển (`tich_hop/van_chuyen`); T4.1 chỉ có bản giả (file JSON), bản GHN master data cache 24 giờ làm cùng adapter vận chuyển (T4.7).
 
+### 3.21 Khuyến mãi và mã giảm giá (AD06, KTV04, T4.3)
+**Admin** (`/noi-bo/khuyen-mai`, `promotion.manage`; xem ở mức `chi_xem`, ghi cần mức đầy đủ VÀ người thực hiện là ADMIN):
+- `GET ?trang_thai=da_tat|sap_dien_ra|dang_hieu_luc|het_han&q=&trang=&kich_thuoc=` -> `[{id, ten, loai_giam, gia_tri, giam_toi_da, don_toi_thieu, bat_dau, ket_thuc, tong_luot, luot_moi_khach, pham_vi, dang_hoat_dong, trang_thai, so_ma, da_dung}]`. `trang_thai` suy ra từ `dang_hoat_dong` và thời gian; `da_dung` là tổng `so_luot_da_dung` của mọi mã.
+- `POST` `{ten, loai_giam: phan_tram|so_tien, gia_tri, giam_toi_da?, don_toi_thieu = 0, bat_dau, ket_thuc, tong_luot?, luot_moi_khach = 1, pham_vi: toan_bo|danh_muc|san_pham, danh_muc_ids, san_pham_ids, dang_hoat_dong = true}` -> 201 chi tiết. Kiểm tra (`400 DU_LIEU_KHONG_HOP_LE`): `ket_thuc` sau `bat_dau`; phần trăm trong (0, 100]; số tiền là đồng nguyên dương; `giam_toi_da` chỉ với phần trăm; phạm vi `toan_bo` không kèm id, `danh_muc` cần ít nhất một danh mục (không kèm sản phẩm), `san_pham` ngược lại; id phải tồn tại và chưa xóa; **thuốc kê đơn không được đưa vào phạm vi sản phẩm**.
+- `GET /{id}` -> chi tiết kèm `phien_ban`, `danh_muc: [{id, ten}]`, `san_pham: [{id, ten}]`, `ma_giam_gia: [{id, ma, so_luot_da_dung}]`. `PUT /{id}` cùng thân của POST kèm `phien_ban` (lệch là `409 DU_LIEU_DA_THAY_DOI`); sửa có hiệu lực từ lần dùng mã kế tiếp, đơn đã đặt không đổi.
+- `DELETE /{id}`: xóa hẳn khi chưa mã nào được dùng; ngược lại `409 DU_LIEU_DANG_DUOC_SU_DUNG` (hãy tắt `dang_hoat_dong`). Có nhật ký.
+- `POST /{id}/ma` `{ma?, so_luong = 1}` -> 201 `[{id, ma, so_luot_da_dung}]`: có `ma` (4 đến 30 ký tự `A-Z 0-9 _ -`, lưu chữ hoa) thì thêm đúng mã đó (trùng là `409 TRUNG_DU_LIEU`), không có thì sinh ngẫu nhiên `so_luong` mã (1 đến 100) dài 8 ký tự, bỏ ký tự dễ nhầm. `DELETE /{id}/ma/{ma_id}` chỉ khi mã chưa dùng.
+**Khách** (`khach_hien_tai`):
+- `POST /toi/ma-giam-gia/kiem-tra` `{ma}` -> 200 `{hop_le, ma, khuyen_mai: {ten, loai_giam, gia_tri, giam_toi_da, don_toi_thieu} | null, co_so_giam, giam, ma_ly_do, ly_do}` tính trên GIỎ HIỆN TẠI của khách (các dòng mua được), KHÔNG dùng lượt. Không áp dụng được vẫn là 200 với `hop_le = false` và `ma_ly_do` (`khong_ton_tai`, `da_tat`, `chua_bat_dau`, `het_han`, `het_luot`, `het_luot_khach`, `khong_co_san_pham`, `duoi_don_toi_thieu`) cùng `ly_do` tiếng Việt. Chống dò mã: tối đa 30 lần mỗi khách trong 10 phút, vượt là `429 QUA_GIOI_HAN`. Chuẩn hóa mã bằng cắt khoảng trắng và chữ hoa.
+**Quy tắc tính** (spec 04 mục 4, cài ở `modules/khuyen_mai/`):
+- Dòng được giảm = KHÔNG phải thuốc kê đơn VÀ thuộc phạm vi (danh mục tính cả danh mục con). `co_so_giam` là tổng thành tiền các dòng đó; phần trăm làm tròn half-up về đồng rồi cắt ở `giam_toi_da`; số tiền thì `min(gia_tri, co_so_giam)`; phân bổ vào dòng theo tỷ lệ, làm tròn xuống, phần dư dồn vào dòng được giảm cuối.
+- Thứ tự kiểm tra: mã tồn tại, khuyến mãi bật, đã đến giờ, chưa hết hạn, `tong_luot` (so với tổng `so_luot_da_dung` của mọi mã thuộc khuyến mãi), lượt mỗi khách (số đơn chưa hủy của khách dùng mã thuộc khuyến mãi), có dòng được giảm, `co_so_giam >= don_toi_thieu`.
+- **Dùng mã khi tạo đơn** (T4.4): `ap_dung.dung_ma` khóa khuyến mãi `FOR UPDATE`, kiểm tra lại, `so_luot_da_dung += 1`; không hợp lệ là `422 MA_GIAM_GIA_KHONG_HOP_LE` kèm `chi_tiet.ma_ly_do`. Đơn chuyển sang `da_huy` (mọi dòng 9, 12, 14, 15, 19, 21, 27 của bảng chuyển) tự trả lượt qua hook của máy trạng thái.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

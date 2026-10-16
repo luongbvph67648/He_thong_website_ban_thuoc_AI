@@ -11,6 +11,13 @@ TIEN_TO_NOI_BO = "/api/v1/noi-bo"
 REGISTRY: dict[tuple[str, str], tuple[str, str]] = {
     # KHO05, KHO06: kho đầy đủ, Admin xem; dược sĩ xem tồn (không xem cảnh báo).
     ("GET", f"{TIEN_TO_NOI_BO}/ton-kho"): ("stock.view", "xem"),
+    ("GET", f"{TIEN_TO_NOI_BO}/khuyen-mai"): ("promotion.manage", "xem"),
+    ("POST", f"{TIEN_TO_NOI_BO}/khuyen-mai"): ("promotion.manage", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/khuyen-mai/{{km_id}}"): ("promotion.manage", "xem"),
+    ("PUT", f"{TIEN_TO_NOI_BO}/khuyen-mai/{{km_id}}"): ("promotion.manage", "day_du"),
+    ("DELETE", f"{TIEN_TO_NOI_BO}/khuyen-mai/{{km_id}}"): ("promotion.manage", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/khuyen-mai/{{km_id}}/ma"): ("promotion.manage", "day_du"),
+    ("DELETE", f"{TIEN_TO_NOI_BO}/khuyen-mai/{{km_id}}/ma/{{ma_id}}"): ("promotion.manage", "day_du"),
     ("GET", f"{TIEN_TO_NOI_BO}/bao-cao/nhap-xuat-ton"): ("report.inventory", "xem"),
     ("GET", f"{TIEN_TO_NOI_BO}/bao-cao/nhap-xuat-ton/excel"): ("report.inventory", "xem"),
     ("GET", f"{TIEN_TO_NOI_BO}/ton-kho/{{san_pham_id}}/lo"): ("stock.view", "xem"),

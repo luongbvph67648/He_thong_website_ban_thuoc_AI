@@ -552,17 +552,21 @@ _Giỏ hàng, máy trạng thái, đặt hàng giữ hàng FEFO, thanh toán, x�
   - Chưa làm: hook cho dòng 27 (KHO10), thanh toán/hoàn tiền/mã giảm giá/vận đơn/thông báo (T4.3, T4.5–T4.7).
 
 
-### [ ] T4.3 · Khuyến mãi và mã giảm giá
+### [x] T4.3 · Khuyến mãi và mã giảm giá
 - **Chức năng:** AD06 (Quản lý khuyến mãi, mã giảm giá), KTV04 (Áp dụng mã giảm giá)
 - **Phụ thuộc:** T2.2
 - **Bảng:** `khuyen_mai`, `khuyen_mai_pham_vi`, `ma_giam_gia`
 - **Tiêu chí chấp nhận:**
-  - [ ] CRUD khuyến mãi (%/số tiền, trần giảm, đơn tối thiểu, thời gian, tổng lượt, lượt/khách, phạm vi toàn bộ/danh mục/sản phẩm) và sinh mã.
-  - [ ] `POST /api/v1/toi/ma-giam-gia/kiem-tra`: trả số tiền giảm dự kiến theo giỏ (thuật toán spec 04 mục 4), lý do nếu không áp dụng được.
-  - [ ] Thuốc kê đơn luôn bị loại khỏi phần được giảm.
+  - [x] CRUD khuyến mãi (%/số tiền, trần giảm, đơn tối thiểu, thời gian, tổng lượt, lượt/khách, phạm vi toàn bộ/danh mục/sản phẩm) và sinh mã.
+  - [x] `POST /api/v1/toi/ma-giam-gia/kiem-tra`: trả số tiền giảm dự kiến theo giỏ (thuật toán spec 04 mục 4), lý do nếu không áp dụng được.
+  - [x] Thuốc kê đơn luôn bị loại khỏi phần được giảm.
 - **Giao diện:**
-  - [ ] Quản trị khuyến mãi; ô nhập mã ở trang thanh toán.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Quản trị khuyến mãi; ô nhập mã ở trang thanh toán.
+- **Ghi chú triển khai:**
+  - Spec 06 mục 3.21, QĐ-25. `khuyen_mai/tinh.py` (thuật toán spec 04 mục 4: % làm tròn nửa lên, trần, số tiền cố định, chia theo sàn dồn phần dư vào dòng hợp lệ cuối), `ap_dung.py` (`kiem_tra_ma` chỉ đọc, `dung_ma` khóa `khuyen_mai` FOR UPDATE rồi tăng lượt, `tra_luot_khi_huy` gắn hook các dòng 9, 12, 14, 15, 19, 21, 27), `quan_tri.py` (CRUD, sinh mã, khóa lạc quan `phien_ban`).
+  - Kiểm tra mã giới hạn tần suất theo khách (cửa sổ trượt); thuốc kê đơn bị loại khỏi cơ sở giảm ở tầng tính.
+  - Test: 49 backend (tính giảm, phạm vi, lượt, hạn, kê đơn, phân quyền, hook trả lượt); frontend 6 (trang quản trị, ô nhập mã). Ô nhập mã `OMaGiamGia` đã có ở giỏ hàng; gắn vào trang thanh toán ở T4.4 (`dung_ma` gọi lúc đặt đơn).
+
 
 ### [ ] T4.4 · Đặt hàng và giữ hàng theo FEFO
 - **Chức năng:** KTV02 (Đặt hàng)
@@ -964,3 +968,4 @@ Lỗi hoặc việc phát hiện trong lúc làm nhưng nằm ngoài phạm vi t
 - [ ] (T3.2) Job dọn ảnh mồ côi (banner, ảnh bìa bài viết, ảnh sản phẩm tải lên nhưng bản ghi không lưu): quét `storage/cong-khai`, xóa file không được bản ghi nào tham chiếu và cũ hơn 24 giờ.
 - [ ] (T4.1) Khách thành viên chưa sửa được hồ sơ cá nhân (họ tên, email) và đổi mật khẩu trong trang tài khoản (KTV01): spec 06 chưa có `PATCH /toi` và `POST /toi/doi-mat-khau`; cần bổ sung spec rồi làm.
 - [ ] (T4.1) Giỏ hàng dùng số tồn khả dụng chỉ để cảnh báo; chưa có test tranh chấp nhiều session cho `them_dong`/`gop_gio` cùng một giỏ (đã tuần tự hóa bằng khóa dòng `gio_hang`).
+- **T4.3:** chưa có test đồng thời cho `dung_ma` (hai đơn cùng dùng lượt cuối); mới dựa vào khóa FOR UPDATE.

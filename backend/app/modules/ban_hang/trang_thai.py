@@ -29,6 +29,7 @@ from app.models.enums import (
 from app.models.he_thong import NhanVien
 from app.models.san_pham import SanPham
 from app.modules.kho import ton_kho
+from app.modules.khuyen_mai.ap_dung import tra_luot_khi_huy
 
 TT = TrangThaiDon
 
@@ -302,6 +303,8 @@ async def _xuat_kho(db: AsyncSession, don: DonHang, tac_nhan: TacNhan) -> None:
 for _so in (9, 12, 14, 15):
     dang_ky_hook(_so, _nha_hang_giu)
 dang_ky_hook(16, _xuat_kho)
+for _so in (9, 12, 14, 15, 19, 21, 27):
+    dang_ky_hook(_so, tra_luot_khi_huy)
 for _so in (19, 21):
     dang_ky_hook(_so, _nha_hang_giu)
     dang_ky_hook(_so, _hoan_nhap_hang_da_xuat)
