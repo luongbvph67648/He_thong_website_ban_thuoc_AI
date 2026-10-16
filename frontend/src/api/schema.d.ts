@@ -1892,6 +1892,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/toi/don-hang/{ma_don}/mua-lai": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mua lại: đưa đơn cũ vào giỏ (KTV08) */
+        post: operations["mua_lai_api_v1_toi_don_hang__ma_don__mua_lai_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/noi-bo/don-hang": {
         parameters: {
             query?: never;
@@ -10852,6 +10869,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DonHangRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    mua_lai_api_v1_toi_don_hang__ma_don__mua_lai_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ma_don: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KetQuaGop"];
                 };
             };
             /** @description Validation Error */

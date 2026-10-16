@@ -33,6 +33,9 @@ from app.modules.ban_hang.trang_thai import (
     chuyen_trang_thai,
     tac_nhan_tu_nhan_vien,
 )
+from app.modules.gio_hang import dich_vu as gio_hang
+from app.modules.gio_hang.dich_vu import SO_LUONG_DONG_TOI_DA
+from app.modules.gio_hang.schemas import DongVao, KetQuaGop
 
 TT = TrangThaiDon
 TU_DA_XAC_NHAN = (
@@ -91,6 +94,21 @@ async def huy_cua_khach(db: AsyncSession, khach: KhachHang, ma_don: str, ly_do: 
         raise _khong_tim_thay()
     await chuyen_trang_thai(db, don, TT.da_huy, TacNhan.khach(khach.id), NGUON_NGUOI_DUNG, ly_do)
     return await dat_hang.don_cua_khach(db, khach, ma_don)
+
+
+async def mua_lai(db: AsyncSession, khach: KhachHang, ma_don: str) -> KetQuaGop:
+    """KTV08: đưa các dòng của đơn cũ (của chính khách) vào giỏ theo quy tắc `gop_gio`: cộng dồn, giá và hạn mức lấy
+    lại theo hiện tại, dòng không còn mua được (thuốc kê đơn, ngừng bán, đơn vị không còn bán online) bị bỏ qua
+    kèm lý do. Đơn của người khác hoặc không có là 404."""
+    don = await db.scalar(select(DonHang.id).where(DonHang.ma_don == ma_don, DonHang.khach_hang_id == khach.id))
+    if don is None:
+        raise _khong_tim_thay()
+    dong = (await db.execute(select(CtDonHang).where(CtDonHang.don_hang_id == don).order_by(CtDonHang.id))).scalars()
+    dong_vao = [
+        DongVao(san_pham_id=d.san_pham_id, don_vi_id=d.don_vi_id, so_luong=min(d.so_luong, SO_LUONG_DONG_TOI_DA))
+        for d in dong
+    ]
+    return await gio_hang.gop_gio(db, khach, dong_vao)
 
 
 # --- Nội bộ (DS01, DS02, DS03) ---

@@ -326,3 +326,9 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
   - Thu tiền tại quầy: đơn chưa thanh toán phải chọn tiền mặt/chuyển khoản, ghi giao dịch cùng transaction với dòng 20. Hết hạn nhận tại quầy (dòng 21) là HT08 ở T4.9.
 - **Hệ quả:** spec 06 mục 3.26; `modules/ban_hang/{dat_ho,giao_tai_quay,router_dat_ho,schemas_dat_ho}.py`; `/don-hang/tao` và `/giao-tai-quay` ở spec 09 đã có sẵn.
 
+## QĐ-31: HT08 tự hoàn tất đơn và hủy đơn nhận tại quầy quá hạn (2026-10-16, task T4.9)
+- **Mốc thời gian** lấy từ lịch sử trạng thái: lần chuyển gần nhất vào `da_giao` (dòng 29, hạn `thoi_han_doi_tra_ngay`) hoặc `cho_lay_hang` (dòng 21, hạn `thoi_han_nhan_tai_quay_ngay`); thiếu lịch sử thì dùng `created_at` của đơn. Đọc cấu hình mỗi lần chạy nên Admin đổi là có hiệu lực ngay.
+- **Yêu cầu đổi trả mở** là mọi yêu cầu chưa `tu_choi` hoặc `hoan_tat`; còn yêu cầu mở thì đơn không tự hoàn tất.
+- **Chạy mỗi 15 phút**, mỗi đơn đi qua `chuyen_trang_thai` trong savepoint riêng (hook hoàn nhập, hoàn tiền, trả lượt mã chạy như hủy thủ công). Phần nhả khóa đơn thuốc và đóng chat của HT08 làm ở T5.3, T7.4.
+- **Mua lại (KTV08)** dùng lại `gop_gio` của giỏ hàng: một bộ quy tắc duy nhất cho thuốc kê đơn, ngừng bán, đơn vị, hạn mức.
+

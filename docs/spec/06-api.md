@@ -390,6 +390,10 @@ Quyền `report.inventory` (`xem`: kho và Admin). Tính hoàn toàn từ `bien_
   - `GET /noi-bo/giao-tai-quay?q=` (bắt buộc, tối đa 40 ký tự): đơn nhận tại nhà thuốc đang "Chờ lấy hàng" có mã đơn đúng `q` hoặc SĐT người nhận/chủ tài khoản đúng `q`; tối đa 20 đơn, mới nhất trước. Mỗi đơn: `{id, ma_don, ten_nguoi_nhan, sdt_nguoi_nhan, tong_tien, phuong_thuc_tt, trang_thai_tt, dong: [{ten_san_pham, ten_don_vi, so_luong}]}`.
   - `POST /noi-bo/giao-tai-quay/{don_id}` `{phuong_thuc_thu?: tien_mat|chuyen_khoan}`: dòng 20 sang "Đã giao". Đơn chưa thanh toán bắt buộc `phuong_thuc_thu` (`400`), ghi một `thanh_toan` loại `thanh_toan`, cổng là hình thức thu, `thanh_cong`, `nhan_vien_xu_ly_id`, và `trang_thai_tt = da_thanh_toan`; đơn đã thanh toán thì không thu thêm. Đơn giao tận nơi hoặc không có là `404`; sai trạng thái (kể cả giao lần hai) là `409 CHUYEN_TRANG_THAI_KHONG_HOP_LE`. Đổi trạng thái và thu tiền cùng transaction.
 
+### 3.27 Mua lại đơn cũ (KTV08, T4.9)
+- Lịch sử mua là `GET /toi/don-hang` (mục 3.24, đã phân trang).
+- `POST /toi/don-hang/{ma_don}/mua-lai` (khách đăng nhập, đơn của chính mình; đơn người khác hoặc không có là `404`): đưa từng dòng đơn cũ vào giỏ theo đúng quy tắc gộp giỏ (`PUT /toi/gio-hang/gop`, mục 3.20): cộng dồn với dòng đã có, cắt theo giới hạn mỗi đơn, giá lấy lại theo hiện tại. Phản hồi `{gio_hang, bo_qua: [{san_pham_id, don_vi_id, ly_do}]}`; dòng không mua lại được bị bỏ qua kèm `ly_do` (`thuoc_ke_don`, `khong_hien_thi`, `don_vi_khong_hop_le`, `vuot_toi_da`), không làm hỏng cả lần mua lại. Thuốc kê đơn không bao giờ vào giỏ.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

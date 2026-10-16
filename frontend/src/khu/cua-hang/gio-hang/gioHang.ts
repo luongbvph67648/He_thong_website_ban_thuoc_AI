@@ -19,6 +19,14 @@ export interface DongCucBo {
 const KHOA = 'gio_hang_khach'
 export const SO_LUONG_TOI_DA = 9999
 
+/** Lý do một dòng không mua được / không thêm vào giỏ được. */
+export const NHAN_LY_DO: Record<string, string> = {
+  thuoc_ke_don: 'Thuốc kê đơn: không mua online',
+  khong_hien_thi: 'Sản phẩm ngừng bán',
+  don_vi_khong_hop_le: 'Đơn vị tính không còn bán online',
+  vuot_toi_da: 'Vượt số lượng tối đa mỗi đơn',
+}
+
 export function docGioCucBo(): DongCucBo[] {
   try {
     const goc: unknown = JSON.parse(globalThis.localStorage.getItem(KHOA) ?? '[]')

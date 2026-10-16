@@ -658,16 +658,20 @@ _Giỏ hàng, máy trạng thái, đặt hàng giữ hàng FEFO, thanh toán, x�
   - Giao diện: `/don-hang/tao` (tìm khách, tìm sản phẩm qua `/tim-kiem`, chọn đơn vị, địa chỉ tỉnh/xã) và `/giao-tai-quay`.
   - Chưa làm: đọc sổ địa chỉ của khách để điền sẵn (API đã trả `dia_chi`, giao diện chưa dùng).
 
-### [ ] T4.9 · Tự hoàn tất đơn và lịch sử mua
+### [x] T4.9 · Tự hoàn tất đơn và lịch sử mua
 - **Chức năng:** HT08 (Tự hoàn tất đơn, nhả khóa), KTV08 (Lịch sử mua, mua lại)
 - **Phụ thuộc:** T4.7
 - **Bảng:** `don_hang`, `yeu_cau_don_thuoc`, `yeu_cau_doi_tra`, `hoi_thoai`, `ct_don_hang`, `gio_hang`, `ct_gio_hang`
 - **Tiêu chí chấp nhận:**
-  - [ ] HT08 (mỗi 15 phút): `da_giao` quá `thoi_han_doi_tra_ngay` và không có yêu cầu đổi trả mở → `hoan_tat`; đơn nhận tại quầy quá `thoi_han_nhan_tai_quay_ngay` → hủy + hoàn nhập. (Các phần nhả khóa đơn thuốc, đóng chat bổ sung ở T5.3, T7.4.)
-  - [ ] Lịch sử mua có phân trang; "Mua lại" đưa các dòng còn bán vào giỏ, bỏ qua thuốc kê đơn và báo lý do.
+  - [x] HT08 (mỗi 15 phút): `da_giao` quá `thoi_han_doi_tra_ngay` và không có yêu cầu đổi trả mở → `hoan_tat`; đơn nhận tại quầy quá `thoi_han_nhan_tai_quay_ngay` → hủy + hoàn nhập. (Các phần nhả khóa đơn thuốc, đóng chat bổ sung ở T5.3, T7.4.)
+  - [x] Lịch sử mua có phân trang; "Mua lại" đưa các dòng còn bán vào giỏ, bỏ qua thuốc kê đơn và báo lý do.
 - **Giao diện:**
-  - [ ] Trang lịch sử mua có nút "Mua lại".
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Trang lịch sử mua có nút "Mua lại".
+- **Ghi chú triển khai:**
+  - HT08 (`ban_hang/tu_hoan_tat.py`, QĐ-31): job `ht08_tu_hoan_tat` mỗi 15 phút; dòng 29 và dòng 21 đi qua `chuyen_trang_thai` trong savepoint riêng. Mốc hạn lấy từ lịch sử trạng thái; yêu cầu đổi trả chưa `tu_choi`/`hoan_tat` chặn tự hoàn tất.
+  - Chưa làm (đã ghi trong tiêu chí): nhả khóa đơn thuốc quá hạn (T5.3) và đóng chat không hoạt động (T7.4).
+  - Lịch sử mua dùng lại `GET /toi/don-hang` (KTV06, đã phân trang). Thêm `POST /toi/don-hang/{ma_don}/mua-lai` (spec 06 mục 3.27) dựa trên `gop_gio`; dòng bỏ qua trả kèm lý do.
+  - Giao diện: nút "Mua lại" ở danh sách và chi tiết đơn; hộp thoại liệt kê dòng không thêm được (có tên sản phẩm ở trang chi tiết). `NHAN_LY_DO` chuyển sang `gio-hang/gioHang.ts` dùng chung.
 
 ## P5 · Đơn thuốc & bán tại quầy
 

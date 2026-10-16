@@ -7,15 +7,8 @@ import { Link } from 'react-router-dom'
 import { api } from '../../../api/client'
 import { dinhDangTien } from '../../../lib/dinhDang'
 import { lienKetAnToan } from '../../../lib/lienKet'
-import { type DongGio, useGioHang } from './gioHang'
+import { type DongGio, NHAN_LY_DO, useGioHang } from './gioHang'
 import { OMaGiamGia, type KetQuaMa } from './OMaGiamGia'
-
-const NHAN_LY_DO: Record<string, string> = {
-  thuoc_ke_don: 'Thuốc kê đơn: không mua online',
-  khong_hien_thi: 'Sản phẩm ngừng bán',
-  don_vi_khong_hop_le: 'Đơn vị tính không còn bán online',
-  vuot_toi_da: 'Vượt số lượng tối đa mỗi đơn',
-}
 
 /** "Thường được mua cùng" (luật mua kèm AI08); không có luật thì ẩn cả mục. Không bao giờ có thuốc kê đơn. */
 function MuaCung({ ids, them }: { ids: number[]; them: (spId: number, dvId: number) => Promise<void> }) {

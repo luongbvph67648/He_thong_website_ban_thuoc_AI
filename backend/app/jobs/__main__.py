@@ -11,7 +11,13 @@ from app.core.db import engine
 from app.core.log import cau_hinh_log
 from app.core.thoi_gian import VN_TZ
 from app.jobs.chay import HamJob, chay_job
-from app.jobs.cong_viec import don_lich_su, ht01_cap_nhat_lo, ht02_canh_bao_kho, ht03_huy_qua_han
+from app.jobs.cong_viec import (
+    don_lich_su,
+    ht01_cap_nhat_lo,
+    ht02_canh_bao_kho,
+    ht03_huy_qua_han,
+    ht08_tu_hoan_tat,
+)
 
 # (tên, hàm, giờ, phút): HT01 00:05 hằng ngày; HT02 sau HT01 để cảnh báo thấy trạng thái lô mới.
 LICH: tuple[tuple[str, HamJob, int, int], ...] = (
@@ -19,8 +25,11 @@ LICH: tuple[tuple[str, HamJob, int, int], ...] = (
     ("ht02_canh_bao_kho", ht02_canh_bao_kho, 7, 0),
     ("don_lich_su", don_lich_su, 3, 30),
 )
-# Job chạy theo chu kỳ phút: (tên, hàm, số phút giữa hai lần). HT03 hủy đơn quá hạn thanh toán/xác nhận.
-LICH_PHUT: tuple[tuple[str, HamJob, int], ...] = (("ht03_huy_qua_han", ht03_huy_qua_han, 1),)
+# Job chạy theo chu kỳ phút: (tên, hàm, số phút giữa hai lần). HT03 hủy đơn quá hạn; HT08 tự hoàn tất đơn.
+LICH_PHUT: tuple[tuple[str, HamJob, int], ...] = (
+    ("ht03_huy_qua_han", ht03_huy_qua_han, 1),
+    ("ht08_tu_hoan_tat", ht08_tu_hoan_tat, 15),
+)
 
 
 def tao_scheduler() -> AsyncIOScheduler:

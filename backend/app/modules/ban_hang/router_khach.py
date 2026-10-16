@@ -12,6 +12,7 @@ from app.models.enums import TrangThaiDon
 from app.models.khach_hang import KhachHang
 from app.modules.ban_hang import dat_hang, dich_vu_don
 from app.modules.ban_hang.schemas import DatHangVao, DonHangRa, DonTomTat, HuyVao, XemTruocRa
+from app.modules.gio_hang.schemas import KetQuaGop
 
 router = APIRouter(tags=["Đơn hàng"])
 Khach = Annotated[KhachHang, Depends(khach_hien_tai)]
@@ -45,3 +46,8 @@ async def danh_sach(db: Db, khach: Khach, tp: PhanTrang, trang_thai: TrangThaiDo
 @router.post("/toi/don-hang/{ma_don}/huy", response_model=DonHangRa, summary="Khách hủy đơn (KTV06)")
 async def huy(ma_don: str, vao: HuyVao, db: Db, khach: Khach):
     return await dich_vu_don.huy_cua_khach(db, khach, ma_don, vao.ly_do)
+
+
+@router.post("/toi/don-hang/{ma_don}/mua-lai", response_model=KetQuaGop, summary="Mua lại: đưa đơn cũ vào giỏ (KTV08)")
+async def mua_lai(ma_don: str, db: Db, khach: Khach):
+    return await dich_vu_don.mua_lai(db, khach, ma_don)

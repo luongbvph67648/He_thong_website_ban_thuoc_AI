@@ -86,4 +86,26 @@ describe('đơn hàng của tôi (KTV06)', () => {
     renderTai('/tai-khoan/don-hang/DHXXXX', { loai: 'khach' })
     expect(await screen.findByText('Không tìm thấy đơn hàng')).toBeInTheDocument()
   })
+
+  it('KTV08: "Mua lại" ở danh sách thêm đơn vào giỏ rồi chuyển sang giỏ hàng', async () => {
+    giaLap(DON())
+    POST.mockResolvedValue(ok({ gio_hang: { dong: [], tam_tinh: '0.00', tong_so_luong: 0 }, bo_qua: [] }))
+    const { router } = renderTai('/tai-khoan/don-hang', { loai: 'khach' })
+    const u = userEvent.setup()
+    await u.click(await screen.findByRole('button', { name: 'Mua lại' }))
+    await waitFor(() => expect(router.state.location.pathname).toBe('/gio-hang'))
+    expect(POST.mock.calls[0][0]).toBe('/api/v1/toi/don-hang/{ma_don}/mua-lai')
+    expect(POST.mock.calls[0][1]).toMatchObject({ params: { path: { ma_don: 'DHABCD2345' } } })
+  })
+
+  it('KTV08: dòng bỏ qua (thuốc kê đơn) được báo kèm tên sản phẩm và lý do', async () => {
+    giaLap(DON())
+    POST.mockResolvedValue(ok({ gio_hang: { dong: [], tam_tinh: '0.00', tong_so_luong: 0 }, bo_qua: [{ san_pham_id: 1, don_vi_id: 1, ly_do: 'thuoc_ke_don' }] }))
+    const { router } = renderTai('/tai-khoan/don-hang/DHABCD2345', { loai: 'khach' })
+    const u = userEvent.setup()
+    await u.click(await screen.findByRole('button', { name: 'Mua lại' }))
+    const hop = await screen.findByRole('dialog')
+    expect(within(hop).getByText(/Paracetamol: Thuốc kê đơn/)).toBeInTheDocument()
+    expect(router.state.location.pathname).toBe('/tai-khoan/don-hang/DHABCD2345')
+  })
 })

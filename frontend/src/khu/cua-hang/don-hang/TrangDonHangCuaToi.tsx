@@ -7,6 +7,7 @@ import type { components } from '../../../api/schema'
 import { dinhDangNgay, dinhDangTien } from '../../../lib/dinhDang'
 import { TRANG_THAI, nhanTrangThai } from '../../../lib/trangThai'
 import { usePhien } from '../../../stores/phien'
+import MuaLaiNut from './MuaLaiNut'
 
 type Don = components['schemas']['DonTomTat']
 type TrangThai = components['schemas']['TrangThaiDon']
@@ -59,6 +60,7 @@ export default function TrangDonHangCuaToi() {
               return <Tag color={n.mau}>{n.nhan}</Tag>
             },
           },
+          { title: '', key: 'mua-lai', render: (_, d) => <MuaLaiNut maDon={d.ma_don} /> },
         ]}
       />
     </Space>
