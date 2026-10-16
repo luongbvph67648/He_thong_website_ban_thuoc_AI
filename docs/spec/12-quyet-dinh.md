@@ -274,3 +274,13 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
   - Lý do không áp dụng trả bằng `ma_ly_do` ổn định để UI hiện đúng thông điệp; kiểm tra mã bị giới hạn tần suất để chống dò mã.
   - Thuốc kê đơn không bao giờ nằm trong cơ sở giảm.
 - **Hệ quả:** spec 06 mục 3.21; `modules/khuyen_mai/`; `frontend/src/khu/quan-tri/khuyen-mai`, `khu/cua-hang/gio-hang/OMaGiamGia`.
+
+## QĐ-26: Đặt hàng online và Idempotency-Key (2026-10-16, task T4.4)
+- **Quyết định:**
+  - Đơn luôn dựng từ giỏ đã lưu của khách (khóa dòng giỏ đầu tiên, nên hai lần đặt của một khách nối đuôi nhau); mọi dòng phải mua được, có dòng không hợp lệ thì trả đúng lỗi của dòng đó thay vì lặng lẽ bỏ dòng.
+  - Lỗi ở bước nào cũng hoàn tác cả transaction (mã giảm giá, giữ hàng, đơn); giỏ chỉ bị xóa sau khi giữ hàng thành công.
+  - `tong_tien_ky_vong` là tùy chọn; có thì khác tổng tính lại là `GIA_DA_THAY_DOI` kèm bản tính lại. Frontend luôn gửi.
+  - Idempotency-Key lưu trong bộ nhớ tiến trình 24 giờ, theo từng khách, kèm dấu vân tay nội dung (khác nội dung là `TRUNG_DU_LIEU`); khóa được tra SAU khi khóa giỏ và chỉ trả kết quả cũ nếu đơn đó còn tồn tại.
+  - Phí ship: nhận tại nhà thuốc 0; giao tận nơi miễn phí khi `tạm tính - giảm >= mien_phi_ship_tu`, còn lại hỏi adapter, lỗi adapter dùng `phi_ship_mac_dinh`. Schema chưa có khối lượng sản phẩm nên ước lượng 20 g mỗi đơn vị cơ sở.
+  - Đơn COD không có `han_xac_nhan` (spec 04 dòng 1 không quy định); đơn VNPay/MoMo có `han_thanh_toan = now + thoi_han_thanh_toan_phut`.
+- **Hệ quả:** spec 06 mục 3.22; `modules/ban_hang/{dat_hang,schemas,router_khach}.py`; `core/idempotency.py`; `tests/ban_hang/test_dat_hang.py`; `frontend/src/khu/cua-hang/gio-hang/{TrangThanhToan,TrangKetQuaDatHang,thanhToan}`.

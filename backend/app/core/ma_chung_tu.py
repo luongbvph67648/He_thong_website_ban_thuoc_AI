@@ -4,7 +4,9 @@ Mã của khách (đơn hàng `DH...`, yêu cầu `YC...`/`DT...`) dùng ký t�
 chỗ dùng (T4.x). Số trong sequence không rollback theo transaction nên mã có thể bị bỏ trống số, không bao giờ trùng.
 """
 
-from sqlalchemy import text
+import secrets
+
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.thoi_gian import hom_nay_vn
@@ -41,3 +43,17 @@ async def ma_phieu(db: AsyncSession, loai: str) -> str:
 async def ma_lenh_thu_hoi(db: AsyncSession) -> str:
     """`TH` + YY + 4 số, ví dụ TH260003."""
     return f"TH{_yy()}{await _so_tiep(db, 'seq_lenh_thu_hoi'):04d}"
+
+
+_BANG_KY_TU_MA_DON = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"  # bỏ O, I (và 0, 1) cho dễ đọc
+
+
+async def ma_don_hang(db: AsyncSession) -> str:
+    """`DH` + 8 ký tự ngẫu nhiên (A-Z, 2-9, bỏ O/I): khách không đoán được thứ tự đơn; kiểm tra trùng rồi mới dùng."""
+    from app.models.ban_hang import DonHang  # tránh vòng nhập: models không phụ thuộc core
+
+    for _ in range(10):
+        ma = "DH" + "".join(secrets.choice(_BANG_KY_TU_MA_DON) for _ in range(8))
+        if await db.scalar(select(DonHang.id).where(DonHang.ma_don == ma)) is None:
+            return ma
+    raise RuntimeError("Không sinh được mã đơn hàng không trùng")

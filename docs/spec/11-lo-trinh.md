@@ -568,17 +568,23 @@ _Giỏ hàng, máy trạng thái, đặt hàng giữ hàng FEFO, thanh toán, x�
   - Test: 49 backend (tính giảm, phạm vi, lượt, hạn, kê đơn, phân quyền, hook trả lượt); frontend 6 (trang quản trị, ô nhập mã). Ô nhập mã `OMaGiamGia` đã có ở giỏ hàng; gắn vào trang thanh toán ở T4.4 (`dung_ma` gọi lúc đặt đơn).
 
 
-### [ ] T4.4 · Đặt hàng và giữ hàng theo FEFO
+### [x] T4.4 · Đặt hàng và giữ hàng theo FEFO
 - **Chức năng:** KTV02 (Đặt hàng)
 - **Phụ thuộc:** T4.1, T4.2, T4.3
 - **Bảng:** `gio_hang`, `ct_gio_hang`, `don_hang`, `ct_don_hang`, `phan_bo_lo`, `lo_thuoc`, `dia_chi`, `khuyen_mai`, `khuyen_mai_pham_vi`, `ma_giam_gia`, `lich_su_trang_thai`
 - **Tiêu chí chấp nhận:**
-  - [ ] `POST /api/v1/toi/don-hang` với header `Idempotency-Key`: kiểm tra lại giá, tồn khả dụng (chỉ lô `dang_ban`), giới hạn số lượng, mã giảm giá (khóa `FOR UPDATE`), tính phí ship (adapter vận chuyển, miễn phí từ `mien_phi_ship_tu`), tạo đơn + chi tiết (bản chụp tên/giá/đơn vị, `giam_gia_phan_bo`) + phân bổ lô giữ hàng.
-  - [ ] COD → `cho_xac_nhan`; VNPay/MoMo → `cho_thanh_toan` + `han_thanh_toan`.
-  - [ ] Test tranh chấp: 2 khách cùng đặt đơn vị cuối cùng → đúng 1 đơn thành công, đơn kia nhận `ma_loi = "HET_HANG"`, tồn không âm.
+  - [x] `POST /api/v1/toi/don-hang` với header `Idempotency-Key`: kiểm tra lại giá, tồn khả dụng (chỉ lô `dang_ban`), giới hạn số lượng, mã giảm giá (khóa `FOR UPDATE`), tính phí ship (adapter vận chuyển, miễn phí từ `mien_phi_ship_tu`), tạo đơn + chi tiết (bản chụp tên/giá/đơn vị, `giam_gia_phan_bo`) + phân bổ lô giữ hàng.
+  - [x] COD → `cho_xac_nhan`; VNPay/MoMo → `cho_thanh_toan` + `han_thanh_toan`.
+  - [x] Test tranh chấp: 2 khách cùng đặt đơn vị cuối cùng → đúng 1 đơn thành công, đơn kia nhận `ma_loi = "HET_HANG"`, tồn không âm.
 - **Giao diện:**
-  - [ ] Trang thanh toán (địa chỉ, hình thức nhận, phương thức thanh toán, mã giảm giá, tổng tiền), trang đặt hàng thành công.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Trang thanh toán (địa chỉ, hình thức nhận, phương thức thanh toán, mã giảm giá, tổng tiền), trang đặt hàng thành công.
+- **Ghi chú triển khai:**
+  - Spec 06 mục 3.22, QĐ-26. `modules/ban_hang/dat_hang.py` (`_tinh_don` dùng chung cho `xem_truoc` và `dat_hang`), `core/idempotency.py`, `core/ma_chung_tu.ma_don_hang`, `tich_hop/van_chuyen` (`DonViVanChuyen.tinh_phi`, bản giả `VanChuyenGia`), `gio_hang/dich_vu.lay_dong_de_dat`. Đơn dựng từ giỏ đã lưu của khách, không nhận dòng hàng từ client.
+  - Thêm ngoài tiêu chí: `POST /toi/don-hang/xem-truoc` (trang thanh toán cần phí ship và tổng trước khi đặt) và `GET /toi/don-hang/{ma_don}` (trang kết quả đọc lại từ máy chủ). Trang kết quả dùng `/thanh-toan/ket-qua?ma=...` (route đã có trong spec 09), T4.5 mở rộng cho kết quả cổng thanh toán.
+  - Bất biến 4 và 5 đã thêm vào `tests/bat_bien/kiem_tra.py` (`co_don_hang=False` cho test kho dựng đơn bằng factory).
+  - Test: 23 backend mới (đặt COD/VNPay/MoMo, FEFO tách lô và bỏ qua lô cận hạn/hết hạn, giữ hàng và mã giảm giá hoàn tác khi `HET_HANG`, `GIA_DA_THAY_DOI`, idempotency, kê đơn lọt giỏ, vượt giới hạn, địa chỉ người khác, hai khách tranh đơn vị cuối, hai lần đặt đồng thời của một khách); 15 frontend.
+  - Chưa làm: phí ship thật qua GHN (T4.7); khối lượng sản phẩm chưa có trong schema nên gửi adapter ước lượng 20 g mỗi đơn vị cơ sở; thanh toán online thật và `han_thanh_toan` hết hạn (T4.5); khách vãng lai không đặt được (chỉ qua đơn thuốc, T5.x).
+
 
 ### [ ] T4.5 · Thanh toán online và hủy quá hạn
 - **Chức năng:** KTV03 (Thanh toán online), HT04 (Xử lý IPN thanh toán), HT03 (Hủy đơn quá hạn)
@@ -969,3 +975,4 @@ Lỗi hoặc việc phát hiện trong lúc làm nhưng nằm ngoài phạm vi t
 - [ ] (T4.1) Khách thành viên chưa sửa được hồ sơ cá nhân (họ tên, email) và đổi mật khẩu trong trang tài khoản (KTV01): spec 06 chưa có `PATCH /toi` và `POST /toi/doi-mat-khau`; cần bổ sung spec rồi làm.
 - [ ] (T4.1) Giỏ hàng dùng số tồn khả dụng chỉ để cảnh báo; chưa có test tranh chấp nhiều session cho `them_dong`/`gop_gio` cùng một giỏ (đã tuần tự hóa bằng khóa dòng `gio_hang`).
 - **T4.3:** chưa có test đồng thời cho `dung_ma` (hai đơn cùng dùng lượt cuối); mới dựa vào khóa FOR UPDATE.
+- **T4.4:** khóa Idempotency-Key nằm trong bộ nhớ tiến trình (mất khi khởi động lại, không dùng chung giữa nhiều tiến trình); đủ cho đồ án một tiến trình, cần bảng hoặc Redis nếu chạy nhiều worker.

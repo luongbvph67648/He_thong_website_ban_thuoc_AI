@@ -11,4 +11,5 @@ async def db(db, request):
     `@pytest.mark.khong_kiem_bat_bien`."""
     yield db
     if request.node.get_closest_marker("khong_kiem_bat_bien") is None:
-        assert await kiem_tra_bat_bien(db) == []
+        # Bất biến 4 và 5 (đơn hàng) bỏ qua: nhiều test kho dựng đơn bằng factory rồi giữ hàng với số lượng riêng.
+        assert await kiem_tra_bat_bien(db, co_don_hang=False) == []

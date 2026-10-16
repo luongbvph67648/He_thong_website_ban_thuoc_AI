@@ -1823,6 +1823,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/toi/don-hang": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Đặt hàng từ giỏ (KTV02) */
+        post: operations["tao_api_v1_toi_don_hang_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/toi/don-hang/xem-truoc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tính thử đơn: phí ship, giảm giá (KTV02) */
+        post: operations["xem_truoc_api_v1_toi_don_hang_xem_truoc_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/toi/don-hang/{ma_don}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chi tiết đơn của tôi (KTV02) */
+        get: operations["chi_tiet_api_v1_toi_don_hang__ma_don__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/toi/dia-chi": {
         parameters: {
             query?: never;
@@ -2755,6 +2806,23 @@ export interface components {
             /** Phien Ban */
             phien_ban: string;
         };
+        /** DatHangVao */
+        DatHangVao: {
+            hinh_thuc_nhan: components["schemas"]["HinhThucNhan"];
+            /**
+             * Phuong Thuc Tt
+             * @enum {string}
+             */
+            phuong_thuc_tt: "cod" | "vnpay" | "momo";
+            /** Dia Chi Id */
+            dia_chi_id?: number | null;
+            /** Ma Giam Gia */
+            ma_giam_gia?: string | null;
+            /** Tong Tien Ky Vong */
+            tong_tien_ky_vong?: number | string | null;
+            /** Ghi Chu */
+            ghi_chu?: string | null;
+        };
         /** DatLaiMatKhauPhanHoi */
         DatLaiMatKhauPhanHoi: {
             /** Da Dat Lai */
@@ -2918,6 +2986,42 @@ export interface components {
              */
             created_at: string;
         };
+        /** DonHangRa */
+        DonHangRa: {
+            /** Ma Don */
+            ma_don: string;
+            trang_thai: components["schemas"]["TrangThaiDon"];
+            trang_thai_tt: components["schemas"]["TrangThaiThanhToan"];
+            phuong_thuc_tt: components["schemas"]["PhuongThucThanhToan"] | null;
+            hinh_thuc_nhan: components["schemas"]["HinhThucNhan"];
+            /** Tam Tinh */
+            tam_tinh: string;
+            /** Giam Gia */
+            giam_gia: string;
+            /** Phi Van Chuyen */
+            phi_van_chuyen: string;
+            /** Tong Tien */
+            tong_tien: string;
+            /** Han Thanh Toan */
+            han_thanh_toan: string | null;
+            /** Ma Giam Gia */
+            ma_giam_gia: string | null;
+            /** Ten Nguoi Nhan */
+            ten_nguoi_nhan: string | null;
+            /** Sdt Nguoi Nhan */
+            sdt_nguoi_nhan: string | null;
+            /** Dia Chi Giao */
+            dia_chi_giao: string | null;
+            /** Ghi Chu */
+            ghi_chu: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Dong */
+            dong: components["schemas"]["DongDonRa"][];
+        };
         /** DonViBan */
         DonViBan: {
             /** Id */
@@ -3041,6 +3145,23 @@ export interface components {
             lo_id: number;
             /** So Luong Thay Doi */
             so_luong_thay_doi: number;
+        };
+        /** DongDonRa */
+        DongDonRa: {
+            /** San Pham Id */
+            san_pham_id: number;
+            /** Ten San Pham */
+            ten_san_pham: string;
+            /** Ten Don Vi */
+            ten_don_vi: string;
+            /** So Luong */
+            so_luong: number;
+            /** Don Gia */
+            don_gia: string;
+            /** Giam Gia Phan Bo */
+            giam_gia_phan_bo: string;
+            /** Thanh Tien */
+            thanh_tien: string;
         };
         /** DongGio */
         DongGio: {
@@ -3295,6 +3416,11 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /**
+         * HinhThucNhan
+         * @enum {string}
+         */
+        HinhThucNhan: "giao_tan_noi" | "nhan_tai_nha_thuoc";
         /** HoatChatDoc */
         HoatChatDoc: {
             /** Id */
@@ -4430,6 +4556,11 @@ export interface components {
             nha_cung_cap: components["schemas"]["NccRut"];
         };
         /**
+         * PhuongThucThanhToan
+         * @enum {string}
+         */
+        PhuongThucThanhToan: "cod" | "vnpay" | "momo" | "tien_mat" | "chuyen_khoan";
+        /**
          * QuyenTrongVaiTro
          * @description Một mã quyền và mức mà vai trò đang có (`null` là không có).
          */
@@ -5389,6 +5520,19 @@ export interface components {
             danh_muc_cha_id: number | null;
             /** Vi Tri */
             vi_tri: number;
+        };
+        /** XemTruocRa */
+        XemTruocRa: {
+            /** Tam Tinh */
+            tam_tinh: string;
+            /** Giam Gia */
+            giam_gia: string;
+            /** Phi Van Chuyen */
+            phi_van_chuyen: string;
+            /** Tong Tien */
+            tong_tien: string;
+            /** Ma Giam Gia */
+            ma_giam_gia: string | null;
         };
         /** SanPhamRut */
         app__modules__chuyen_mon__schemas_noi_dung__SanPhamRut: {
@@ -9786,6 +9930,105 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KetQuaKiemTraMa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tao_api_v1_toi_don_hang_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DatHangVao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DonHangRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    xem_truoc_api_v1_toi_don_hang_xem_truoc_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DatHangVao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["XemTruocRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chi_tiet_api_v1_toi_don_hang__ma_don__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ma_don: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DonHangRa"];
                 };
             };
             /** @description Validation Error */

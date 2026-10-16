@@ -234,6 +234,51 @@ async def gop_gio(db: AsyncSession, khach: KhachHang, dong_vao: list[DongVao]) -
     return KetQuaGop(gio_hang=await xem_gio(db, khach), bo_qua=bo_qua)
 
 
+async def khoa_gio(db: AsyncSession, khach: KhachHang) -> GioHang:
+    """Khóa dòng giỏ của khách (tạo nếu chưa có) để tuần tự hóa các lần đặt hàng đồng thời."""
+    return await _gio_cua(db, khach)
+
+
+@dataclass
+class DongDat:
+    """Một dòng giỏ đã kiểm tra mua được, kèm sản phẩm và đơn vị để dựng dòng đơn hàng (T4.4)."""
+
+    dong_id: int
+    sp: SanPham
+    dv: DonViQuyDoi
+    so_luong: int
+
+
+async def lay_dong_de_dat(db: AsyncSession, khach: KhachHang) -> list[DongDat]:
+    """Khóa giỏ của khách rồi trả các dòng để đặt hàng. Mọi dòng phải mua được (cùng quy tắc giỏ): có dòng không hợp
+    lệ thì ném đúng lỗi của dòng đó (kê đơn, không còn bán, vượt giới hạn) thay vì lặng lẽ bỏ dòng."""
+    gio = await khoa_gio(db, khach)
+    dong = await _dong_cua_gio(db, gio)
+    naps = await _nap_san_pham(db, {c.san_pham_id for c in dong})
+    tong_co_so: dict[int, int] = defaultdict(int)
+    ra: list[DongDat] = []
+    for c in dong:
+        nap = naps.get(c.san_pham_id)
+        ly_do = _ly_do_khong_hop_le(nap, c.don_vi_id)
+        if ly_do is not None:
+            raise _nem_loi(ly_do, nap)
+        assert nap is not None
+        dv = next(d for d in nap.sp.don_vi_quy_doi if d.id == c.don_vi_id)
+        tong_co_so[nap.sp.id] += c.so_luong * dv.he_so
+        ra.append(DongDat(c.id, nap.sp, dv, c.so_luong))
+    for d in ra:
+        toi_da = d.sp.so_luong_toi_da_moi_don
+        if toi_da is not None and tong_co_so[d.sp.id] > toi_da:
+            raise _loi_vuot(d.sp)
+    return ra
+
+
+async def xoa_dong_da_dat(db: AsyncSession, dong_ids: list[int]) -> None:
+    """Bỏ các dòng giỏ vừa chuyển thành đơn (cùng transaction với việc tạo đơn)."""
+    if dong_ids:
+        await db.execute(delete(CtGioHang).where(CtGioHang.id.in_(dong_ids)))
+
+
 async def xem_gio(db: AsyncSession, khach: KhachHang) -> GioHangRa:
     gio = await _gio_cua(db, khach)
     dong = await _dong_cua_gio(db, gio)

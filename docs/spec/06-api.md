@@ -322,6 +322,22 @@ Quyền `report.inventory` (`xem`: kho và Admin). Tính hoàn toàn từ `bien_
 - Thứ tự kiểm tra: mã tồn tại, khuyến mãi bật, đã đến giờ, chưa hết hạn, `tong_luot` (so với tổng `so_luot_da_dung` của mọi mã thuộc khuyến mãi), lượt mỗi khách (số đơn chưa hủy của khách dùng mã thuộc khuyến mãi), có dòng được giảm, `co_so_giam >= don_toi_thieu`.
 - **Dùng mã khi tạo đơn** (T4.4): `ap_dung.dung_ma` khóa khuyến mãi `FOR UPDATE`, kiểm tra lại, `so_luot_da_dung += 1`; không hợp lệ là `422 MA_GIAM_GIA_KHONG_HOP_LE` kèm `chi_tiet.ma_ly_do`. Đơn chuyển sang `da_huy` (mọi dòng 9, 12, 14, 15, 19, 21, 27 của bảng chuyển) tự trả lượt qua hook của máy trạng thái.
 
+### 3.22 Đặt hàng (KTV02, T4.4)
+`POST /toi/don-hang` (`khach_hien_tai`, `khach_hang_id` luôn từ token). **Bắt buộc header `Idempotency-Key`** (UUID, thiếu hoặc sai dạng là `400 DU_LIEU_KHONG_HOP_LE`). Đơn được dựng từ giỏ đã lưu của khách (không nhận dòng hàng từ client).
+- **Thân:** `{hinh_thuc_nhan: giao_tan_noi|nhan_tai_nha_thuoc, phuong_thuc_tt: cod|vnpay|momo, dia_chi_id?, ma_giam_gia?, tong_tien_ky_vong?, ghi_chu?}`. `dia_chi_id` bắt buộc khi giao tận nơi và phải là địa chỉ của chính khách (khách khác là `404`); nhận tại nhà thuốc thì bỏ qua. `ghi_chu` tối đa 500 ký tự. `tong_tien_ky_vong` là tổng tiền khách đang thấy (số đồng, chuỗi hoặc số).
+- **Thứ tự xử lý** (một transaction, lỗi ở bước nào cũng hoàn tác toàn bộ):
+  - Khóa dòng giỏ của khách (tuần tự hóa hai lần đặt đồng thời của cùng khách); giỏ trống là `400`.
+  - Mọi dòng phải mua được: thuốc kê đơn `422 THUOC_KE_DON_KHONG_VAO_GIO`, vượt giới hạn `422 VUOT_SO_LUONG_TOI_DA`, sản phẩm không còn hiển thị `404 KHONG_TIM_THAY`, đơn vị không còn bán online `400 DU_LIEU_KHONG_HOP_LE` (cùng quy tắc giỏ, mục 3.20). Giá luôn lấy lại theo giá hiện tại.
+  - Mã giảm giá: `ap_dung.dung_ma` (khóa khuyến mãi, tăng lượt); không hợp lệ là `422 MA_GIAM_GIA_KHONG_HOP_LE`.
+  - Phí vận chuyển và tổng tiền theo spec 04 mục 4 bước 6 và 7. Nhận tại nhà thuốc: 0. Adapter vận chuyển lỗi thì dùng `phi_ship_mac_dinh`.
+  - Có `tong_tien_ky_vong` mà khác tổng vừa tính: `409 GIA_DA_THAY_DOI`, `chi_tiet` là bản tính lại `{tam_tinh, giam_gia, phi_van_chuyen, tong_tien, dong: [{san_pham_id, don_vi_id, so_luong, don_gia, thanh_tien}]}` để khách xác nhận lại.
+  - Tạo đơn qua `khoi_tao_trang_thai` (COD: dòng 1 `cho_xac_nhan`; VNPay/MoMo: dòng 2 `cho_thanh_toan`, `han_thanh_toan = now + thoi_han_thanh_toan_phut`), rồi `ton_kho.giu_hang_nhieu` theo FEFO (chỉ lô `dang_ban`, còn hạn). Thiếu hàng là `409 HET_HANG`, không đơn nào được tạo.
+  - Xóa các dòng giỏ đã đặt.
+- **`201`** trả `DonHangRa`: `{ma_don, trang_thai, trang_thai_tt, phuong_thuc_tt, hinh_thuc_nhan, tam_tinh, giam_gia, phi_van_chuyen, tong_tien, han_thanh_toan, ma_giam_gia, ten_nguoi_nhan, sdt_nguoi_nhan, dia_chi_giao, ghi_chu, created_at, dong: [{san_pham_id, ten_san_pham, ten_don_vi, so_luong, don_gia, giam_gia_phan_bo, thanh_tien}]}` (tiền dạng chuỗi). Tên, giá, đơn vị trong dòng là bản chụp lúc đặt; địa chỉ giao được chụp vào đơn (đổi sổ địa chỉ sau đó không ảnh hưởng).
+- **Idempotency:** cùng khóa và cùng nội dung thì trả lại đúng phản hồi cũ (cùng `ma_don`, không tạo đơn mới); cùng khóa nhưng nội dung khác là `409 TRUNG_DU_LIEU`. Khóa được nhớ 24 giờ trong bộ nhớ tiến trình, theo từng khách (QĐ-26).
+- `POST /toi/don-hang/xem-truoc` (cùng thân, không cần `Idempotency-Key`, không giữ hàng, không dùng lượt mã) -> `{tam_tinh, giam_gia, phi_van_chuyen, tong_tien, ma_giam_gia}` cho trang thanh toán; lỗi như đặt hàng trừ lỗi tồn kho.
+- `GET /toi/don-hang/{ma_don}` -> `DonHangRa` (đơn của khách khác hoặc không có là `404`).
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:
