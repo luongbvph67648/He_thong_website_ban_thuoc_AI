@@ -123,6 +123,7 @@ async def _doi_tra_ra(db: AsyncSession, yc: YeuCauDoiTra, ma_don: str) -> DoiTra
 
 
 async def chi_tiet_doi_tra(db: AsyncSession, nv: NhanVien, yc_id: int) -> DoiTraKhoRa:
+    """Kho chỉ thấy yêu cầu đã duyệt hoặc đã nhận (yêu cầu chờ duyệt/từ chối chứa mô tả tự do của khách)."""
     await _dam_bao_la_kho(db, nv)
     dong = (
         await db.execute(
@@ -131,7 +132,7 @@ async def chi_tiet_doi_tra(db: AsyncSession, nv: NhanVien, yc_id: int) -> DoiTra
             .where(YeuCauDoiTra.id == yc_id)
         )
     ).first()
-    if dong is None:
+    if dong is None or dong[0].trang_thai not in (TrangThaiDoiTra.da_duyet, TrangThaiDoiTra.kho_da_nhan):
         raise LoiNghiepVu("KHONG_TIM_THAY", "Không tìm thấy yêu cầu đổi trả")
     return await _doi_tra_ra(db, dong[0], dong[1])
 
@@ -177,6 +178,11 @@ async def nhan_doi_tra(db: AsyncSession, nv: NhanVien, yc_id: int, vao: NhanDoiT
     tong_theo_lo: dict[int, int] = defaultdict(int)
     for lo_id, sl in cong:
         tong_theo_lo[lo_id] += sl
+    for ct_id, d in gui.items():
+        if d.so_luong_nhan > 0 and d.lo_id is not None:
+            da_xuat = next(x.so_luong_da_xuat for x in lo_theo_ct[ct_id] if x.lo_id == d.lo_id)
+            if d.so_luong_nhan * theo_ct[ct_id][1].he_so > da_xuat:
+                raise dat_hang.khong_hop_le("dong", f"{theo_ct[ct_id][1].ten_san_pham}: lô này chỉ đã xuất {da_xuat}")
     chung_tu = ton_kho.ChungTu("yeu_cau_doi_tra", yc.id, nv.id)
     lo_khoa = {lo.id: lo for lo in await ton_kho.khoa_cac_lo(db, sorted(tong_theo_lo))}
     for lo_id in sorted(tong_theo_lo):

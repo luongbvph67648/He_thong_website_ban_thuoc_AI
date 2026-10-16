@@ -100,6 +100,10 @@ async def tao_yeu_cau(
         raise LoiNghiepVu("KHONG_TIM_THAY", "Không tìm thấy đơn hàng")
     if don.trang_thai != TrangThaiDon.da_giao:
         raise LoiNghiepVu("CHUYEN_TRANG_THAI_KHONG_HOP_LE", "Chỉ đổi trả được đơn đã giao")
+    if don.don_hang_goc_id is not None:
+        raise LoiNghiepVu(
+            "CHUYEN_TRANG_THAI_KHONG_HOP_LE", "Đơn hàng thay thế không đổi trả tiếp; hãy liên hệ nhà thuốc"
+        )
     ngay = int(await doc_cau_hinh(db, "thoi_han_doi_tra_ngay", 7))
     if bay_gio_utc() > await thoi_diem_giao(db, don) + timedelta(days=ngay):
         raise LoiNghiepVu("QUA_THOI_HAN_DOI_TRA", f"Đã quá thời hạn đổi trả ({ngay} ngày kể từ khi giao)")

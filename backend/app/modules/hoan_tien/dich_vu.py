@@ -144,6 +144,7 @@ async def xac_nhan(db: AsyncSession, nv: NhanVien, gd_id: int, chung_tu: tuple[b
             raise LoiNghiepVu("CHUYEN_TRANG_THAI_KHONG_HOP_LE", "Khách chưa cung cấp tài khoản nhận hoàn")
         noi_dung, kieu = chung_tu
         gd.chung_tu_url = await luu_tru.luu_tru().luu("hoan-tien", noi_dung, kieu, "rieng_tu")
+        luu_tru.xoa_neu_hoan_tac(db, gd.chung_tu_url, "rieng_tu")
     else:
         goc = await db.get(ThanhToan, gd.thanh_toan_goc_id) if gd.thanh_toan_goc_id else None
         if goc is None or not goc.ma_giao_dich_cong:

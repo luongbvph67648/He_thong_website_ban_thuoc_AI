@@ -103,3 +103,11 @@ async def test_nhac_mua_lai_khong_nhac_som_hoac_qua_tre_hoac_san_pham_khong_dinh
     await db.flush()
     assert (await nhac_mua_lai(db)).da_nhac == 0
     assert (await nhac_mua_lai(db, hom_nay_vn() + timedelta(days=13))).da_nhac == 1  # tới hạn nhắc của đơn thứ nhất
+
+
+async def test_nhac_mua_lai_bo_qua_thuoc_ke_don(db):
+    khach = await tao_khach(db)
+    _, _, sp = await _san_pham_dinh_ky(db, khach, 17)
+    sp.loai_san_pham = "thuoc_ke_don"
+    await db.flush()
+    assert (await nhac_mua_lai(db)).da_nhac == 0

@@ -189,3 +189,50 @@ async def test_kiem_hoan_ve_dau_vao_sai(dang_nhap_khach, dang_nhap_kho, dang_nha
     ).status_code == 404
     await db.refresh(don)
     assert don.trang_thai == "hoan_ve_kho"
+
+
+async def test_kho_khong_xem_yeu_cau_chua_duyet_va_khong_nhan_qua_so_da_xuat_cua_lo(
+    dang_nhap_khach, dang_nhap_duoc_si, dang_nhap_kho, db
+):
+    don, ct, sp = await _don_da_giao(db, dang_nhap_khach.tai_khoan, so_luong=3)
+    pb = await _xuat_hang(db, don, ct, sp)
+    ma = (await _gui(dang_nhap_khach, don.ma_don, ct, 2)).json()["ma_yeu_cau"]
+    yc = (await db.execute(select(YeuCauDoiTra).where(YeuCauDoiTra.ma_yeu_cau == ma))).scalars().one()
+    body = {"dong": [{"ct_don_hang_id": ct.id, "so_luong_nhan": 0}], "ket_qua_kiem_hang": "chưa duyệt"}
+    assert (await dang_nhap_kho.post(f"{KHO}/doi-tra/{yc.id}", json=body)).status_code == 409  # còn chờ duyệt
+    await dang_nhap_duoc_si.post(f"/api/v1/noi-bo/doi-tra/{yc.id}/duyet", json={"huong_xu_ly": "hoan_tien"})
+    # Đơn có hai lô: nhận nhiều hơn số đã xuất của lô được chọn là sai
+    ct.he_so = 1
+    pb[0].so_luong_co_so = 1
+    await db.flush()
+    r = await dang_nhap_kho.post(
+        f"{KHO}/doi-tra/{yc.id}",
+        json={"dong": [{"ct_don_hang_id": ct.id, "lo_id": pb[0].lo_id, "so_luong_nhan": 2}], "ket_qua_kiem_hang": "ok"},
+    )
+    assert r.status_code == 400
+
+
+async def test_doi_tra_don_thay_the_bi_chan_va_huy_don_thay_the_khong_loi(dang_nhap_khach, dang_nhap_duoc_si, db):
+    from app.models.ban_hang import DonHang
+    from app.modules.ban_hang.trang_thai import NGUON_NGUOI_DUNG, TacNhan, chuyen_trang_thai
+
+    don, ct, _ = await _don_da_giao(db, dang_nhap_khach.tai_khoan)
+    don.don_hang_goc_id = don.id  # giả lập đơn thay thế: trỏ về một đơn gốc, tổng 0
+    await db.flush()
+    r = await _gui(dang_nhap_khach, don.ma_don, ct, 1)
+    assert r.status_code == 409
+    # Hủy đơn 0đ đã "thanh toán" không tạo giao dịch hoàn bằng 0 (CHECK so_tien > 0)
+    don.tong_tien, don.trang_thai, don.trang_thai_tt, don.phuong_thuc_tt = 0, "da_xac_nhan", "da_thanh_toan", "cod"
+    don.tam_tinh = don.giam_gia = don.phi_van_chuyen = 0
+    await db.flush()
+    await chuyen_trang_thai(
+        db,
+        await db.get(DonHang, don.id),
+        "da_huy",
+        TacNhan.duoc_si(dang_nhap_duoc_si.tai_khoan.id),
+        NGUON_NGUOI_DUNG,
+        "Hủy thử",
+    )
+    assert (
+        await db.execute(select(ThanhToan).where(ThanhToan.don_hang_id == don.id, ThanhToan.loai == "hoan_tien"))
+    ).first() is None

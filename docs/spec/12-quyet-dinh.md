@@ -404,3 +404,8 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **Đơn vãng lai** nhận SMS tối giản (mã đơn) qua SĐT người nhận; đơn POS không có SĐT chỉ hiện trong danh sách để dược sĩ ghi "không liên lạc được".
 - **Quyền:** Admin xem lệnh, phía kho và phía liên hệ (kể cả danh sách khách, mức `chi_xem`), chỉ dược sĩ ghi kết quả liên hệ.
 
+## QĐ-42: Sửa sau rà soát nghiệp vụ P5-P6 (2026-10-16)
+- Hủy đơn 0đ (đơn thay thế, dòng 30) không tạo giao dịch hoàn (CHECK `so_tien > 0` làm hủy đơn lỗi 500).
+- HT07 không nhắc mua lại thuốc kê đơn (quy tắc 6); dữ liệu mẫu giữ `dung_dinh_ky` cho thuốc kê đơn nên lọc ở truy vấn.
+- Kho nhận hàng trả không vượt số đã xuất của lô được chọn; đơn thay thế không đổi trả tiếp; kiểm số tệp trước khi đọc vào bộ nhớ; chứng từ hoàn tiền dọn khi rollback.
+

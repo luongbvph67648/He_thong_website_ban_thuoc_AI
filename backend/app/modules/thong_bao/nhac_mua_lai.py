@@ -13,7 +13,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.thoi_gian import VN_TZ, hom_nay_vn
 from app.models.ban_hang import CtDonHang, DonHang, LichSuTrangThai
-from app.models.enums import TrangThaiDon
+from app.models.enums import LoaiSanPham, TrangThaiDon
 from app.models.khach_hang import ThongBao
 from app.models.san_pham import SanPham
 from app.modules.thong_bao.service import gui_cho_khach
@@ -48,6 +48,7 @@ async def nhac_mua_lai(db: AsyncSession, hom_nay: date | None = None) -> KetQuaH
             .join(ngay_giao, ngay_giao.c.don_hang_id == DonHang.id)
             .where(
                 SanPham.dung_dinh_ky.is_(True),
+                SanPham.loai_san_pham != LoaiSanPham.thuoc_ke_don,  # không nhắc/quảng bá thuốc kê đơn (quy tắc 6)
                 SanPham.so_ngay_dung_moi_don_vi.is_not(None),
                 SanPham.deleted_at.is_(None),
                 DonHang.khach_hang_id.is_not(None),

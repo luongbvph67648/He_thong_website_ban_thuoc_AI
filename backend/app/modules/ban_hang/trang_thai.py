@@ -318,6 +318,8 @@ async def _tao_hoan_tien_khi_huy(db: AsyncSession, don: DonHang, tac_nhan: TacNh
     dịch gốc, đơn sang `cho_hoan_tien`; Admin xác nhận hoàn ở AD17 (T6.3). Đơn chưa trả tiền thì không có gì để hoàn."""
     if don.trang_thai_tt != TrangThaiThanhToan.da_thanh_toan or don.phuong_thuc_tt is None:
         return
+    if don.tong_tien <= 0:  # đơn thay thế 0đ (dòng 30): không có tiền để hoàn
+        return
     goc = (
         await db.execute(
             select(ThanhToan)

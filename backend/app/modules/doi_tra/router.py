@@ -62,6 +62,10 @@ async def gui(
             "Dữ liệu không hợp lệ",
             chi_tiet=[{"truong": "dong", "loi": "Danh sách dòng trả sai định dạng"}],
         ) from e
+    if len(tep) > dich_vu.SO_TEP_TOI_DA:  # kiểm số tệp TRƯỚC khi đọc vào bộ nhớ
+        raise LoiNghiepVu(
+            "DU_LIEU_KHONG_HOP_LE", "Dữ liệu không hợp lệ", chi_tiet=[{"truong": "tep", "loi": "Tối đa 8 tệp"}]
+        )
     ds_tep = [await f.read(30 * 1024 * 1024 + 1) for f in tep]
     return await dich_vu.tao_yeu_cau(db, khach, ma_don[:20], ds_dong, ly_do, mo_ta, ds_tep)
 
