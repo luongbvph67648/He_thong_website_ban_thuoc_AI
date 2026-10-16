@@ -786,17 +786,17 @@ _Đổi trả, biệt trữ, hoàn tiền, đánh giá, hỏi đáp, thông báo
   - [x] Chuông thông báo và trang thông báo của khách.
 - **Ghi chú triển khai:** `thong_bao/service.gui_cho_khach` (+SMS/email theo loại), `router_khach.py`, `nhac_mua_lai.py`; hook báo khách đổi trạng thái đơn trong `trang_thai._ghi`; job `ht07_nhac_mua_lai` 08:00; API spec 06 mục 3.36; QĐ-40. Giao diện: chuông thông báo của khách ở header (dùng lại `ChuongThongBao`), trang `/tai-khoan/thong-bao`. Test `tests/thong_bao/test_thong_bao_khach.py` (6), `TrangThongBao.test.tsx`.
 
-### [ ] T6.6 · Thu hồi lô
+### [x] T6.6 · Thu hồi lô
 - **Chức năng:** AD13 (Khởi tạo lệnh thu hồi lô), KHO12 (Thực hiện thu hồi lô), DS13 (Liên hệ khách khi thu hồi lô)
 - **Phụ thuộc:** T6.2
 - **Bảng:** `lenh_thu_hoi`, `ct_lenh_thu_hoi`, `lo_thuoc`, `phan_bo_lo`, `thong_bao`, `phieu_xuat_tra`, `phieu_huy`
 - **Tiêu chí chấp nhận:**
-  - [ ] Admin tạo lệnh thu hồi (một lô hoặc mọi lô của sản phẩm): lô → `thu_hoi`, gỡ khỏi đơn chưa xuất (phân bổ lại hoặc báo hết hàng), sinh `ct_lenh_thu_hoi` từ `phan_bo_lo` đã xuất, gửi thông báo khách.
-  - [ ] Kho gom tồn + hàng khách trả, lập phiếu xuất trả/hủy (đi duyệt AD12); dược sĩ cập nhật kết quả liên hệ.
-  - [ ] Đóng lệnh khi mọi dòng đã xử lý.
+  - [x] Admin tạo lệnh thu hồi (một lô hoặc mọi lô của sản phẩm): lô → `thu_hoi`, gỡ khỏi đơn chưa xuất (phân bổ lại hoặc báo hết hàng), sinh `ct_lenh_thu_hoi` từ `phan_bo_lo` đã xuất, gửi thông báo khách.
+  - [x] Kho gom tồn + hàng khách trả, lập phiếu xuất trả/hủy (đi duyệt AD12); dược sĩ cập nhật kết quả liên hệ.
+  - [x] Đóng lệnh khi mọi dòng đã xử lý.
 - **Giao diện:**
-  - [ ] Màn lệnh thu hồi (Admin), danh sách khách cần liên hệ (dược sĩ).
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Màn lệnh thu hồi (Admin), danh sách khách cần liên hệ (dược sĩ).
+- **Ghi chú triển khai:** `modules/thu_hoi/` (`dich_vu`, `router`, `schemas`); `PhieuXuatTraTao.lenh_thu_hoi_id`; API spec 06 mục 3.37; QĐ-41. Giao diện: `/quan-tri/thu-hoi`, `/nhan-vien/thuc-hien-thu-hoi`, `/nhan-vien/thu-hoi`. Test `tests/thu_hoi/test_thu_hoi.py` (6), `ThuHoi.test.tsx`.
 
 ### [ ] T6.7 · Màn xem tổng hợp cho Admin
 - **Chức năng:** AD16 (Xem đơn hàng, chứng từ kho, nội dung chuyên môn)

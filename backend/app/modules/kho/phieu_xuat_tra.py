@@ -7,9 +7,9 @@ from app.core.loi import LoiNghiepVu
 from app.core.ma_chung_tu import ma_phieu
 from app.core.nhat_ky import ghi_nhat_ky
 from app.core.phan_trang import ThamSoPhanTrang, Trang, lay_trang, tao_trang
-from app.models.enums import TrangThaiDuyet
+from app.models.enums import TrangThaiDuyet, TrangThaiThuHoi
 from app.models.he_thong import NhanVien
-from app.models.kho import CtPhieuXuatTra, NhaCungCap, PhieuXuatTra
+from app.models.kho import CtPhieuXuatTra, LenhThuHoi, NhaCungCap, PhieuXuatTra
 from app.modules.kho.phieu_kho_chung import kiem_tra_dong, nv_rut, thong_tin_lo
 from app.modules.kho.schemas_phieu_kho import (
     DongXuatTraRa,
@@ -33,10 +33,26 @@ async def tao(db: AsyncSession, actor: NhanVien, du_lieu: PhieuXuatTraTao, *, ip
             chi_tiet=[{"truong": "nha_cung_cap_id", "loi": "Không tồn tại"}],
         )
     lo_thuoc = await kiem_tra_dong(db, du_lieu.dong)
+    if du_lieu.lenh_thu_hoi_id is not None:
+        lenh = await db.get(LenhThuHoi, du_lieu.lenh_thu_hoi_id)
+        if (
+            lenh is None
+            or lenh.trang_thai != TrangThaiThuHoi.dang_thu_hoi
+            or any(
+                lo.san_pham_id != lenh.san_pham_id or (lenh.lo_id is not None and lo.id != lenh.lo_id)
+                for lo in lo_thuoc.values()
+            )
+        ):
+            raise LoiNghiepVu(
+                "DU_LIEU_KHONG_HOP_LE",
+                "Dữ liệu không hợp lệ",
+                chi_tiet=[{"truong": "lenh_thu_hoi_id", "loi": "Lệnh không mở hoặc lô không thuộc lệnh"}],
+            )
     phieu = PhieuXuatTra(
         ma_phieu=await ma_phieu(db, BANG),
         nha_cung_cap_id=du_lieu.nha_cung_cap_id,
         ly_do=du_lieu.ly_do,
+        lenh_thu_hoi_id=du_lieu.lenh_thu_hoi_id,
         nhan_vien_id=actor.id,
     )
     db.add(phieu)

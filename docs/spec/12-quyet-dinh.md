@@ -397,3 +397,10 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **Ngày giao** lấy từ mốc `da_giao` mới nhất trong `lich_su_trang_thai`.
 - Tắt `gui_ngoai` trong test bằng kênh ghi nhớ (fixture autouse), test không chạm SMTP.
 
+## QĐ-41: Thu hồi lô (2026-10-16, task T6.6)
+- **Gỡ khỏi đơn chưa xuất** dùng lại `_phan_bo_lai` của HT01 (nhả phân bổ `dang_giu`, giữ lại FEFO từ lô khác, đơn thiếu hàng báo kho). Hàng đã xuất kho nhưng chưa giao tới khách vẫn vào danh sách truy vết, dược sĩ liên hệ như khách đã nhận.
+- **Đóng lệnh do Admin** và chỉ khi hết khách chưa liên hệ và hết hàng ở các lô (đối chiếu tồn thật, không cần liên kết từng phiếu). `khong_lien_lac_duoc` và `da_hen_tra_hang` tính là đã xử lý.
+- **Không đổi schema:** phiếu hủy không có cột liên kết lệnh (nhận biết qua lô và `ly_do = thu_hoi`); phiếu xuất trả dùng cột `lenh_thu_hoi_id` có sẵn.
+- **Đơn vãng lai** nhận SMS tối giản (mã đơn) qua SĐT người nhận; đơn POS không có SĐT chỉ hiện trong danh sách để dược sĩ ghi "không liên lạc được".
+- **Quyền:** Admin xem lệnh, phía kho và phía liên hệ (kể cả danh sách khách, mức `chi_xem`), chỉ dược sĩ ghi kết quả liên hệ.
+

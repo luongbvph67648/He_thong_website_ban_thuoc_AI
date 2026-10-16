@@ -180,3 +180,11 @@ async def danh_dau_tat_ca_da_doc_cua_khach(db: AsyncSession, khach_hang_id: int)
         update(ThongBao).where(ThongBao.khach_hang_id == khach_hang_id, ThongBao.da_doc.is_(False)).values(da_doc=True)
     )
     return ket_qua.rowcount
+
+
+async def gui_sms_khong_tai_khoan(so_dien_thoai: str, noi_dung: str) -> None:
+    """SMS cho người nhận không có tài khoản (đơn vãng lai); cố gắng hết sức, lỗi chỉ ghi log."""
+    try:
+        await lay_kenh_tin_nhan().gui_sms(so_dien_thoai, noi_dung[:160])
+    except Exception:  # noqa: BLE001
+        logger.warning("Không gửi được SMS thông báo", exc_info=True)

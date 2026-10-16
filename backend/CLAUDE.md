@@ -170,3 +170,4 @@ async def don_cua_toi(ma_don: str, kh: Annotated[KhachHang, Depends(khach_hien_t
 - **Xác nhận hoàn tiền** (`hoan_tien/`, T6.3, QĐ-38): chỉ Admin; online qua `CongThanhToan.hoan_tien`, thủ công kèm chứng từ `rieng_tu`; người xác nhận ≠ `yeu_cau_doi_tra.duoc_si_id`; ẩn danh hóa tài khoản sau khi xong.
 - **Đánh giá/hỏi đáp** (`danh_gia/`, T6.4, QĐ-39): đánh giá khóa dòng `ct_don_hang` rồi kiểm trùng; kiểm duyệt chỉ dược sĩ (`dam_bao_la_duoc_si`).
 - **Thông báo khách** (`thong_bao/`, T6.5, QĐ-40): luôn qua `gui_cho_khach` (tự gửi SMS/email theo `KENH_THEO_LOAI`); đổi trạng thái đơn tự báo khách trong `_ghi`; job HT07 `nhac_mua_lai`.
+- **Thu hồi lô** (`thu_hoi/`, T6.6, QĐ-41): tạo lệnh khóa lô theo id tăng + khóa advisory theo sản phẩm, gỡ đơn chưa xuất bằng `_phan_bo_lai` của HT01; chỉ dược sĩ xem danh sách khách; đóng lệnh khi hết khách chưa liên hệ và hết tồn.

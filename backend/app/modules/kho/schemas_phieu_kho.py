@@ -62,6 +62,8 @@ class PhieuXuatTraTao(BaseModel):
 
     nha_cung_cap_id: IdDb
     ly_do: LyDoBatBuoc
+    lenh_thu_hoi_id: IdDb | None = None
+    """Gắn phiếu vào lệnh thu hồi đang mở (KHO12); mọi lô của phiếu phải thuộc sản phẩm của lệnh."""
     dong: Annotated[list[DongXuatTraVao], Field(min_length=1, max_length=100)]
 
     @model_validator(mode="after")
