@@ -521,6 +521,12 @@ Công khai (`khach_tuy_chon`). Phiên chat là `ma_phien` (UUID do trình duyệ
 - Nội bộ `/noi-bo/tu-van` (`chat.handle`): `GET` hàng chờ (`cho_duoc_si`, `cho_goi_lai` và phiên của tôi), `GET /{id}` chi tiết (tin nhắn, tóm tắt; `ho_so_suc_khoe` CHỈ có khi tôi đang xử lý phiên và khách đồng ý, qua `duoc_doc_ho_so_suc_khoe` nên có nhật ký; không có bệnh nền), `POST /{id}/nhan` (khóa dòng; người sau nhận `409`), `POST /{id}/dong` (người đang xử lý, hoặc bất kỳ dược sĩ với phiên `cho_goi_lai`), `POST /{id}/tin-nhan {noi_dung}` -> `201` (dự phòng khi WebSocket hỏng). Phiên đang do dược sĩ khác xử lý là `403`.
 - HT08 (mỗi 15 phút, cùng job `tu_hoan_tat`): đóng `dang_mo` không có tin nào trong 30 phút và `duoc_si_dang_xu_ly` không có tin nào trong 120 phút.
 
+### 3.43 Tra cứu thuốc bằng ảnh (KVL06, AI05, T7.5)
+- `POST /tra-cuu-anh` (`multipart/form-data`, trường `anh`: jpeg/png/webp tối đa 5 MB; header tùy chọn `X-Ma-Phien`). Công khai. Ảnh sai định dạng/hỏng/quá lớn: `400` trường `anh` (không tốn lượt gọi AI). Giới hạn: 10 lượt/IP và 5 lượt/phiên mỗi 10 phút, 500 lượt/ngày toàn hệ thống (`429 QUA_GIOI_HAN` kèm `Retry-After`). Module `tra_anh` tắt hoặc AI lỗi/từ chối/trả sai schema: `502 LOI_DOI_TAC` với thông điệp đề nghị tìm theo tên.
+- Xử lý: Pillow thu nhỏ cạnh dài ≤ 1568 px, JPEG chất lượng 85, bỏ EXIF/ICC (xoay theo EXIF trước), chặn ảnh > 50 triệu điểm ảnh; `goi_json` (AI05) trích `{ten_san_pham, hoat_chat[{ten, ham_luong}], so_dang_ky, nha_san_xuat, dang_bao_che, do_tin_cay}`; chuỗi bị cắt 200 ký tự, `do_tin_cay` kẹp trong 0..1.
+- Khớp (chỉ sản phẩm đang hiển thị với khách): (1) SĐK đã chuẩn hóa (bỏ khoảng trắng và gạch, viết hoa; từ 5 ký tự); (2) tên theo `similarity ≥ 0.5` (`f_unaccent(lower(...))`). Phản hồi `{doc_duoc, khop: {cach: so_dang_ky | ten, san_pham: SanPhamThe, la_thuoc_ke_don, tom_tat: {chi_dinh, chong_chi_dinh, than_trong} | null} | null, da_xac_minh, canh_bao}`. Tóm tắt lấy từ nội dung chuyên môn `da_duyet` mới nhất (mỗi mục ≤ 300 ký tự), không gọi AI lần hai. Không khớp: `khop = null`, `da_xac_minh = false`, cảnh báo "Chưa xác minh". Không đọc được gì: cảnh báo chụp lại.
+- Thuốc kê đơn (QĐ-46): vẫn trả thẻ sản phẩm (khách đang cầm hộp thuốc) nhưng `tom_tat = null`, kèm cảnh báo hỏi dược sĩ; không có hành động mua.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

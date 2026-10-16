@@ -52,6 +52,7 @@ _bo_lich_su_xem_toan_cuc = GioiHanCuaSoTruot()
 _bo_tim_kiem_toan_cuc = GioiHanCuaSoTruot()
 _bo_chat_toan_cuc = GioiHanCuaSoTruot()
 _bo_goi_y_toan_cuc = GioiHanCuaSoTruot()
+_bo_tra_anh_toan_cuc = GioiHanCuaSoTruot()
 _bo_ma_giam_gia_toan_cuc = GioiHanCuaSoTruot()
 
 
@@ -88,3 +89,8 @@ def lay_bo_gioi_han_ma_giam_gia() -> GioiHanCuaSoTruot:
 def lay_bo_gioi_han_chat() -> GioiHanCuaSoTruot:
     """Bộ đếm lượt chat AI theo IP và theo phiên (mỗi lượt tốn tiền token). Là dependency để test thay bằng bộ riêng."""
     return _bo_chat_toan_cuc
+
+
+def lay_bo_gioi_han_tra_anh() -> GioiHanCuaSoTruot:
+    """Bộ đếm tra cứu thuốc bằng ảnh theo IP, theo phiên và toàn hệ thống (mỗi lượt là một lời gọi Claude có ảnh)."""
+    return _bo_tra_anh_toan_cuc

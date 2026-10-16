@@ -57,6 +57,7 @@ from app.modules.thanh_toan.router_webhook import router_gia as webhook_gia_rout
 from app.modules.thong_bao.router_khach import router as thong_bao_khach_router
 from app.modules.thong_bao.router_noi_bo import router as thong_bao_noi_bo_router
 from app.modules.thu_hoi.router import router as thu_hoi_router
+from app.modules.tra_cuu_anh.router import router as tra_cuu_anh_router
 from app.modules.tu_van.router import router as tu_van_router
 from app.modules.tu_van.router_noi_bo import router as tu_van_noi_bo_router
 from app.modules.vai_tro.router_noi_bo import router as vai_tro_noi_bo_router
@@ -76,6 +77,13 @@ QUY_TAC_THAN_REQUEST = (
     QuyTacThanRequest(
         "POST",
         re.compile(r"/api/v1/noi-bo/(banner|bai-viet)/anh"),
+        luu_tru.TOI_DA_ANH_BYTE + 64 * 1024,
+        "TEP_QUA_LON",
+        "Ảnh tối đa 5 MB",
+    ),
+    QuyTacThanRequest(
+        "POST",
+        re.compile(r"/api/v1/tra-cuu-anh"),
         luu_tru.TOI_DA_ANH_BYTE + 64 * 1024,
         "TEP_QUA_LON",
         "Ảnh tối đa 5 MB",
@@ -193,6 +201,7 @@ def create_app() -> FastAPI:
     app.include_router(pos_router, prefix="/api/v1")
     app.include_router(doi_tra_router, prefix="/api/v1")
     app.include_router(tu_van_router, prefix="/api/v1")
+    app.include_router(tra_cuu_anh_router, prefix="/api/v1")
     app.include_router(tu_van_noi_bo_router, prefix="/api/v1")
     app.include_router(ai_quan_tri_router, prefix="/api/v1")
     app.include_router(chung_tu_kho_router, prefix="/api/v1")

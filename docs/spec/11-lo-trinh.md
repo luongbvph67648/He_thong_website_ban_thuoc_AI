@@ -859,16 +859,16 @@ _Kho tri thức, tìm kiếm lai, chatbot RAG, chuyển dược sĩ, đọc ản
   - [x] Hàng chờ chat và cửa sổ chat cho dược sĩ; widget chat chuyển chế độ "đang chat với dược sĩ".
 - **Ghi chú triển khai:** `ai/tom_tat.py` (AI04, dự phòng theo luật), `modules/tu_van/{chuyen_duoc_si,hub,ws,router_noi_bo}.py`, `POST /tu-van/gap-duoc-si`, WebSocket `/tu-van/ws`, `/noi-bo/tu-van/*` (5 route vào registry phân quyền); HT08 đóng phiên không hoạt động nằm trong `tu_hoan_tat`. API spec 06 mục 3.42; QĐ-45. Giao diện: `lib/phongChat.ts` (hook WebSocket), `khu/nhan-vien/tu-van/TrangTuVan.tsx` (hàng chờ + chat), nút "Gặp dược sĩ" và chế độ chat trực tiếp trong `WidgetChat`; Vite proxy bật `ws`. Test `tests/ai/test_chuyen_duoc_si.py` (11), `phongChat.test.tsx`, `TrangTuVan.test.tsx`, `WidgetChat.test.tsx`. Hub một process (xem QĐ-45).
 
-### [ ] T7.5 · Tra cứu thuốc bằng ảnh
+### [x] T7.5 · Tra cứu thuốc bằng ảnh
 - **Chức năng:** KVL06 (Tra cứu thuốc bằng ảnh), AI05 (Nhận diện hộp thuốc từ ảnh)
 - **Phụ thuộc:** T7.1
 - **Bảng:** `san_pham`, `thong_tin_chuyen_mon`
 - **Tiêu chí chấp nhận:**
-  - [ ] `POST /api/v1/tra-cuu-anh`: ảnh base64 → `goi_json` trích tên, hoạt chất, hàm lượng, SĐK; khớp theo SĐK rồi tên (trigram); không khớp → trả thông tin đọc được + cảnh báo "chưa xác minh".
-  - [ ] Giới hạn kích thước ảnh (≤ 5 MB, tự thu nhỏ cạnh dài ≤ 1568 px), giới hạn lượt.
+  - [x] `POST /api/v1/tra-cuu-anh`: ảnh base64 → `goi_json` trích tên, hoạt chất, hàm lượng, SĐK; khớp theo SĐK rồi tên (trigram); không khớp → trả thông tin đọc được + cảnh báo "chưa xác minh".
+  - [x] Giới hạn kích thước ảnh (≤ 5 MB, tự thu nhỏ cạnh dài ≤ 1568 px), giới hạn lượt.
 - **Giao diện:**
-  - [ ] Nút chụp ảnh tra cứu trên thanh tìm kiếm (mobile).
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Nút chụp ảnh tra cứu trên thanh tìm kiếm (mobile).
+- **Ghi chú triển khai:** `ai/anh.py` (Pillow, dùng lại cho T7.6), `ai/doc_anh.py` + `ai/prompts/doc_anh_hop_thuoc.md` (AI05), `modules/tra_cuu_anh/{dich_vu,router,schemas}.py`, API spec 06 mục 3.43, QĐ-46. LỆCH spec: ảnh gửi bằng multipart thay vì base64 (QĐ-46); chi phí lượt tra ảnh chưa cộng vào ngân sách ngày của chat. Giao diện `/tra-cuu-anh` (chụp/chọn ảnh, xem trước, kết quả, cảnh báo) và nút máy ảnh cạnh ô tìm kiếm. Test `tests/ai/test_tra_cuu_anh.py` (20), `TrangTraCuuAnh.test.tsx`. CHƯA thử với ảnh hộp thuốc thật và Claude thật.
 
 ### [ ] T7.6 · Đọc ảnh đơn thuốc hỗ trợ dược sĩ
 - **Chức năng:** AI06 (Đọc ảnh đơn thuốc)

@@ -434,3 +434,9 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **Đóng phiên không hoạt động (HT08):** 30 phút với `dang_mo`, 120 phút với `duoc_si_dang_xu_ly`, tính từ tin nhắn cuối (hoặc lúc tạo nếu chưa có tin).
 - **Test WebSocket** dùng đối tượng WebSocket giả trong cùng event loop (DB test dùng chung một kết nối nên xác thực hai kết nối phải tuần tự).
 
+## QĐ-46 · Tra cứu thuốc bằng ảnh (T7.5)
+- **Tải ảnh bằng `multipart/form-data`** thay vì JSON base64 như tiêu chí lộ trình: nhỏ hơn khoảng 33%, dùng chung cơ chế giới hạn thân request và kiểm tra magic bytes của các route ảnh khác. Base64 chỉ dùng khi gửi sang Claude.
+- **Thuốc kê đơn khớp ảnh vẫn trả thẻ sản phẩm** (người dùng đang cầm hộp, ẩn đi chỉ gây hiểu nhầm là không có), nhưng không có tóm tắt công dụng/chống chỉ định và luôn cảnh báo hỏi dược sĩ. Đây là tra cứu thông tin sản phẩm chứ không phải gợi ý mua.
+- **Tóm tắt lấy từ nội dung chuyên môn đã duyệt**, không để Claude "giải thích" thêm: tránh thông tin y khoa do AI tự sinh.
+- **Chi phí lượt tra ảnh chưa vào ngân sách ngày của chat** (`AI_NGAN_SACH_NGAY_USD` cộng từ `hoi_thoai.chi_phi`; chưa có bảng ghi chi phí AI chung, đổi schema phải qua `/doi-schema`). Bù lại bằng giới hạn 500 lượt/ngày toàn hệ thống và ghi log token từng lượt; T7.8 xem xét gom chi phí.
+

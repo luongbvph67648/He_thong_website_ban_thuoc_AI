@@ -1,8 +1,8 @@
-import { SearchOutlined } from '@ant-design/icons'
+import { CameraOutlined, SearchOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import { AutoComplete, Input, Tag } from 'antd'
+import { AutoComplete, Button, Input, Tag } from 'antd'
 import { useEffect, useRef, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../../api/client'
 import { KHOA_QUERY_CUA_HANG } from './cuaHang'
 import { chuanHoaTuKhoa, duDieuKienTim, duongDanGoiY, duongDanTimKiem, TRE_GOI_Y_MS, type GoiY } from './timKiem'
@@ -47,8 +47,9 @@ export function OTimKiem() {
   }
 
   return (
+    <div style={{ display: 'flex', gap: 8, flex: '1 1 240px', maxWidth: 560 }}>
     <AutoComplete
-      style={{ flex: '1 1 240px', maxWidth: 560 }}
+      style={{ flex: 1, minWidth: 0 }}
       value={go}
       onChange={(v) => {
         // Chọn một gợi ý cũng phát `onChange` với giá trị của gợi ý đó (khóa nội bộ): bỏ qua, ô vẫn giữ chữ người dùng gõ.
@@ -83,5 +84,9 @@ export function OTimKiem() {
         onSearch={timDayDu}
       />
     </AutoComplete>
+    <Link to="/tra-cuu-anh" aria-label="Tra cứu thuốc bằng ảnh" title="Tra cứu thuốc bằng ảnh">
+      <Button icon={<CameraOutlined />} aria-hidden tabIndex={-1} />
+    </Link>
+    </div>
   )
 }

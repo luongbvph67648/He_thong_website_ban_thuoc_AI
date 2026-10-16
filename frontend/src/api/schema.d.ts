@@ -2795,6 +2795,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tra-cuu-anh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Tra cứu thuốc bằng ảnh hộp thuốc (KVL06, AI05)
+         * @description Kiểm tra và thu nhỏ ảnh TRƯỚC khi tính lượt và gọi Claude; hai pha DB riêng, không giữ kết nối khi chờ AI.
+         */
+        post: operations["tra_cuu_anh_api_v1_tra_cuu_anh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/noi-bo/tu-van": {
         parameters: {
             query?: never;
@@ -4291,6 +4311,14 @@ export interface components {
              * @description Ảnh jpeg, png hoặc webp, tối đa 5 MB
              */
             tep: string;
+        };
+        /** Body_tra_cuu_anh_api_v1_tra_cuu_anh_post */
+        Body_tra_cuu_anh_api_v1_tra_cuu_anh_post: {
+            /**
+             * Anh
+             * @description Ảnh jpeg/png/webp tối đa 5 MB
+             */
+            anh: string;
         };
         /** Body_xac_nhan_api_v1_noi_bo_hoan_tien__gd_id__xac_nhan_post */
         Body_xac_nhan_api_v1_noi_bo_hoan_tien__gd_id__xac_nhan_post: {
@@ -6215,24 +6243,6 @@ export interface components {
             /** Ten */
             ten: string;
         };
-        /** HoatChatDoc */
-        HoatChatDoc: {
-            /** Id */
-            id: number;
-            /**
-             * Created At
-             * Format: date-time
-             */
-            created_at: string;
-            /** So San Pham */
-            so_san_pham: number;
-            /** Ten */
-            ten: string;
-            /** Ten Khac */
-            ten_khac: string | null;
-            /** Mo Ta */
-            mo_ta: string | null;
-        };
         /** HoatChatSua */
         HoatChatSua: {
             /** Ten */
@@ -6319,6 +6329,21 @@ export interface components {
         HoiVao: {
             /** Cau Hoi */
             cau_hoi: string;
+        };
+        /** HopThuocDoc */
+        HopThuocDoc: {
+            /** Ten San Pham */
+            ten_san_pham?: string | null;
+            /** Hoat Chat */
+            hoat_chat?: components["schemas"]["app__ai__doc_anh__HoatChatDoc"][];
+            /** So Dang Ky */
+            so_dang_ky?: string | null;
+            /** Nha San Xuat */
+            nha_san_xuat?: string | null;
+            /** Dang Bao Che */
+            dang_bao_che?: string | null;
+            /** Do Tin Cay */
+            do_tin_cay: number;
         };
         /**
          * HuongXuLyDoiTra
@@ -6516,6 +6541,18 @@ export interface components {
         KhoaKhachYeuCau: {
             /** Ly Do */
             ly_do?: string | null;
+        };
+        /** KhopSanPham */
+        KhopSanPham: {
+            /**
+             * Cach
+             * @enum {string}
+             */
+            cach: "so_dang_ky" | "ten";
+            san_pham: components["schemas"]["SanPhamThe"];
+            /** La Thuoc Ke Don */
+            la_thuoc_ke_don: boolean;
+            tom_tat: components["schemas"]["TomTatSanPham"] | null;
         };
         /**
          * KhuTon
@@ -8341,6 +8378,15 @@ export interface components {
          * @enum {string}
          */
         TinhTrangHang: "nguyen_niem_phong" | "hu_hong";
+        /** TomTatSanPham */
+        TomTatSanPham: {
+            /** Chi Dinh */
+            chi_dinh: string | null;
+            /** Chong Chi Dinh */
+            chong_chi_dinh: string | null;
+            /** Than Trong */
+            than_trong: string | null;
+        };
         /** TonLo */
         TonLo: {
             /** Lo Id */
@@ -8401,6 +8447,15 @@ export interface components {
             phan_bo: number[];
             /** Moi Nhat */
             moi_nhat: components["schemas"]["DanhGiaCongKhai"][];
+        };
+        /** TraCuuAnhRa */
+        TraCuuAnhRa: {
+            doc_duoc: components["schemas"]["HopThuocDoc"];
+            khop: components["schemas"]["KhopSanPham"] | null;
+            /** Da Xac Minh */
+            da_xac_minh: boolean;
+            /** Canh Bao */
+            canh_bao: string | null;
         };
         /** TraLoiVao */
         TraLoiVao: {
@@ -8607,7 +8662,7 @@ export interface components {
         /** Trang[HoatChatDoc] */
         Trang_HoatChatDoc_: {
             /** Du Lieu */
-            du_lieu: components["schemas"]["HoatChatDoc"][];
+            du_lieu: components["schemas"]["app__modules__san_pham__schemas_du_lieu_chung__HoatChatDoc"][];
             /** Tong */
             tong: number;
             /** Trang */
@@ -9138,6 +9193,13 @@ export interface components {
             /** Trung Anh */
             trung_anh: string[];
         };
+        /** HoatChatDoc */
+        app__ai__doc_anh__HoatChatDoc: {
+            /** Ten */
+            ten: string;
+            /** Ham Luong */
+            ham_luong?: string | null;
+        };
         /** LoGoiY */
         app__modules__ban_hang__schemas_soan_hang__LoGoiY: {
             /** Lo Id */
@@ -9184,6 +9246,24 @@ export interface components {
             sku: string;
             /** Ten */
             ten: string;
+        };
+        /** HoatChatDoc */
+        app__modules__san_pham__schemas_du_lieu_chung__HoatChatDoc: {
+            /** Id */
+            id: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** So San Pham */
+            so_san_pham: number;
+            /** Ten */
+            ten: string;
+            /** Ten Khac */
+            ten_khac: string | null;
+            /** Mo Ta */
+            mo_ta: string | null;
         };
     };
     responses: never;
@@ -10903,7 +10983,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HoatChatDoc"];
+                    "application/json": components["schemas"]["app__modules__san_pham__schemas_du_lieu_chung__HoatChatDoc"];
                 };
             };
             /** @description Validation Error */
@@ -10934,7 +11014,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HoatChatDoc"];
+                    "application/json": components["schemas"]["app__modules__san_pham__schemas_du_lieu_chung__HoatChatDoc"];
                 };
             };
             /** @description Validation Error */
@@ -10969,7 +11049,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["HoatChatDoc"];
+                    "application/json": components["schemas"]["app__modules__san_pham__schemas_du_lieu_chung__HoatChatDoc"];
                 };
             };
             /** @description Validation Error */
@@ -15381,6 +15461,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["GapDuocSiRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tra_cuu_anh_api_v1_tra_cuu_anh_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Ma-Phien"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_tra_cuu_anh_api_v1_tra_cuu_anh_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TraCuuAnhRa"];
                 };
             };
             /** @description Validation Error */
