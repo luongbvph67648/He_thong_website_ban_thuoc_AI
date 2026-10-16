@@ -24,6 +24,8 @@ import TrangSoanNoiDung from './khu/nhan-vien/chuyen-mon/TrangSoanNoiDung'
 import TrangTuongTac from './khu/nhan-vien/chuyen-mon/TrangTuongTac'
 import TrangBaoCaoNxt from './khu/nhan-vien/kho/TrangBaoCaoNxt'
 import TrangGioHang from './khu/cua-hang/gio-hang/TrangGioHang'
+import TrangChiTietDonCuaToi from './khu/cua-hang/don-hang/TrangChiTietDonCuaToi'
+import TrangDonHangCuaToi from './khu/cua-hang/don-hang/TrangDonHangCuaToi'
 import TrangKetQuaDatHang from './khu/cua-hang/gio-hang/TrangKetQuaDatHang'
 import TrangCongGia from './khu/cua-hang/gio-hang/TrangCongGia'
 import TrangThanhToan from './khu/cua-hang/gio-hang/TrangThanhToan'
@@ -32,6 +34,8 @@ import TrangKhuyenMai from './khu/quan-tri/khuyen-mai/TrangKhuyenMai'
 import TrangCanhBao from './khu/nhan-vien/kho/TrangCanhBao'
 import TrangDieuChinh from './khu/nhan-vien/kho/TrangDieuChinh'
 import TrangKiemKe from './khu/nhan-vien/kho/TrangKiemKe'
+import TrangChiTietDon from './khu/nhan-vien/don-hang/TrangChiTietDon'
+import TrangQuanLyDon from './khu/nhan-vien/don-hang/TrangQuanLyDon'
 import TrangNhaCungCap from './khu/nhan-vien/kho/TrangNhaCungCap'
 import TrangPhieuKho from './khu/nhan-vien/kho/TrangPhieuKho'
 import TrangPhieuNhap from './khu/nhan-vien/kho/TrangPhieuNhap'
@@ -84,6 +88,8 @@ const TRANG_THAT: Record<string, ReactNode> = {
   '/thanh-toan/ket-qua': <TrangKetQuaDatHang />,
   '/thanh-toan-gia': <TrangCongGia />,
   '/tai-khoan': <TrangTaiKhoan />,
+  '/tai-khoan/don-hang': <TrangDonHangCuaToi />,
+  '/tai-khoan/don-hang/:ma': <TrangChiTietDonCuaToi />,
 }
 
 /** Trang khu nhân viên đã làm thật (khóa là đường dẫn trong `MUC_NHAN_VIEN`); còn lại là trang giữ chỗ. */
@@ -92,6 +98,8 @@ const TRANG_NHAN_VIEN_THAT: Record<string, ReactNode> = {
   '/noi-dung-chuyen-mon/:id': <TrangSoanNoiDung />,
   '/tuong-tac': <TrangTuongTac />,
   '/bai-viet-cho-duyet': <TrangBaiVietChoDuyet />,
+  '/don-hang': <TrangQuanLyDon />,
+  '/don-hang/:id': <TrangChiTietDon />,
   '/nha-cung-cap': <TrangNhaCungCap />,
   '/phieu-nhap': <TrangPhieuNhap />,
   '/phieu-nhap/tao': <TrangTaoPhieuNhap />,

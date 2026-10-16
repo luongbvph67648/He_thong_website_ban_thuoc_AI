@@ -605,18 +605,23 @@ _Giỏ hàng, máy trạng thái, đặt hàng giữ hàng FEFO, thanh toán, x�
   - Chưa làm: hoàn tiền thật qua VNPay/MoMo (`hoan_tien` ném `NotImplementedError`, làm ở T6.3); thông báo cho khách khi đơn bị hủy quá hạn (T4.7); dòng 9 "yêu cầu đơn thuốc quay lại Đang tư vấn" (T5.x).
 
 
-### [ ] T4.6 · Xử lý đơn của dược sĩ và khách hủy đơn
+### [x] T4.6 · Xử lý đơn của dược sĩ và khách hủy đơn
 - **Chức năng:** DS01 (Xem, lọc danh sách đơn hàng), DS02 (Xác nhận đơn hàng), DS03 (Hủy đơn hàng), KTV06 (Hủy đơn hàng)
 - **Phụ thuộc:** T4.4
 - **Bảng:** `don_hang`, `ct_don_hang`, `lich_su_trang_thai`, `phan_bo_lo`, `lo_thuoc`, `bien_dong_kho`, `thanh_toan`, `ma_giam_gia`
 - **Tiêu chí chấp nhận:**
-  - [ ] Danh sách đơn nội bộ: lọc trạng thái, ngày, phương thức thanh toán, kênh; chi tiết đơn có dòng thời gian trạng thái.
-  - [ ] Xác nhận đơn; hủy đơn có lý do (trước khi rời kho, hoàn nhập đúng lô nếu đã chốt lô); khách tự hủy theo spec 04.
-  - [ ] Hủy đơn đã thanh toán → tạo `thanh_toan` loại `hoan_tien` (`khoi_tao`), `trang_thai_tt = cho_hoan_tien` (Admin xác nhận ở T6.3).
-  - [ ] Khách chỉ xem/hủy đơn của chính mình (truy cập đơn người khác → 404).
+  - [x] Danh sách đơn nội bộ: lọc trạng thái, ngày, phương thức thanh toán, kênh; chi tiết đơn có dòng thời gian trạng thái.
+  - [x] Xác nhận đơn; hủy đơn có lý do (trước khi rời kho, hoàn nhập đúng lô nếu đã chốt lô); khách tự hủy theo spec 04.
+  - [x] Hủy đơn đã thanh toán → tạo `thanh_toan` loại `hoan_tien` (`khoi_tao`), `trang_thai_tt = cho_hoan_tien` (Admin xác nhận ở T6.3).
+  - [x] Khách chỉ xem/hủy đơn của chính mình (truy cập đơn người khác → 404).
 - **Giao diện:**
-  - [ ] Màn quản lý đơn cho dược sĩ; trang "Đơn hàng của tôi" có nút hủy.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Màn quản lý đơn cho dược sĩ; trang "Đơn hàng của tôi" có nút hủy.
+- **Ghi chú triển khai:**
+  - Spec 06 mục 3.24, QĐ-28. `modules/ban_hang/dich_vu_don.py` + `router_noi_bo.py`: `GET /noi-bo/don-hang` (lọc trạng thái, ngày giờ VN, phương thức, kênh, `q`), `GET /noi-bo/don-hang/{id}` (chi tiết, dòng thời gian có người thực hiện, giao dịch), `POST .../xac-nhan` (dòng 13), `POST .../huy` (lý do bắt buộc; dòng 15, 19). Khách: `GET /toi/don-hang` (danh sách), `POST /toi/don-hang/{ma}/huy`; chi tiết thêm `lich_su` và `ly_do_huy`.
+  - Hook mới `_tao_hoan_tien_khi_huy` cho dòng 14, 15, 19, 21, 27: đơn đã thanh toán thì tạo `hoan_tien` (`khoi_tao`, trỏ giao dịch gốc) + `cho_hoan_tien`. Nhả giữ, hoàn nhập đúng lô và trả lượt mã đã có từ T3.x/T4.3, ở đây chỉ kiểm chứng bằng test.
+  - Kho chỉ thấy đơn từ "Đã xác nhận" (SQL, 404 cho đơn khác) và không thấy giao dịch/`khach_hang_id`; Admin chỉ xem. Registry phân quyền thêm 4 route.
+  - Test: 12 backend (`tests/ban_hang/test_xu_ly_don.py`: hủy trả lượt mã và nhả giữ, đơn người khác 404, hủy khi đang soạn bị chặn, hoàn tiền khi hủy đơn đã thanh toán và không hoàn khi chưa trả, hoàn nhập đúng lô, lý do bắt buộc, phân quyền kho/Admin, lọc, kho giới hạn đơn); 11 frontend + `lib/donHang`.
+  - Chưa làm: thông báo cho khách khi dược sĩ hủy (T4.7 cùng hệ thống thông báo); trang Admin xem đơn (AD16); mua lại, đổi trả ở trang đơn của khách (KTV08, KTV09).
 
 ### [ ] T4.7 · Soạn hàng, đóng gói, vận chuyển, theo dõi đơn
 - **Chức năng:** KHO03 (Soạn hàng, xuất kho theo đơn), KHO04 (Đóng gói, bàn giao vận chuyển), HT05 (Nhận webhook vận chuyển), KTV05 (Theo dõi đơn hàng)

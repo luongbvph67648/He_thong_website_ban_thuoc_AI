@@ -5,6 +5,7 @@ giữ hàng FEFO. Lỗi ở bước nào cũng hoàn tác toàn bộ nên không
 """
 
 import logging
+from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import timedelta
 from decimal import Decimal
@@ -19,7 +20,7 @@ from app.core.loi import LoiNghiepVu
 from app.core.ma_chung_tu import ma_don_hang
 from app.core.thoi_gian import bay_gio_utc
 from app.core.tien import cong, lam_tron_vnd
-from app.models.ban_hang import CtDonHang, DonHang, MaGiamGia
+from app.models.ban_hang import CtDonHang, DonHang, LichSuTrangThai, MaGiamGia
 from app.models.enums import (
     HinhThucNhan,
     KenhBan,
@@ -28,7 +29,7 @@ from app.models.enums import (
     TrangThaiDon,
 )
 from app.models.khach_hang import DiaChi, KhachHang
-from app.modules.ban_hang.schemas import DatHangVao, DongDonRa, DonHangRa, XemTruocRa
+from app.modules.ban_hang.schemas import DatHangVao, DongDonRa, DonHangRa, MocTrangThai, XemTruocRa
 from app.modules.ban_hang.trang_thai import NGUON_NGUOI_DUNG, TacNhan, khoi_tao_trang_thai
 from app.modules.cua_hang.hien_thi import nap_cay_hien_thi
 from app.modules.gio_hang import dich_vu as dich_vu_gio
@@ -55,7 +56,7 @@ def _chuoi(tien: Decimal) -> str:
     return f"{lam_tron_vnd(tien):.2f}"
 
 
-def _ra(don: DonHang, ma_text: str | None) -> DonHangRa:
+def don_ra(don: DonHang, ma_text: str | None, lich_su: Sequence[LichSuTrangThai] = ()) -> DonHangRa:
     return DonHangRa(
         ma_don=don.ma_don,
         trang_thai=don.trang_thai,
@@ -72,7 +73,17 @@ def _ra(don: DonHang, ma_text: str | None) -> DonHangRa:
         sdt_nguoi_nhan=don.sdt_nguoi_nhan,
         dia_chi_giao=don.dia_chi_giao,
         ghi_chu=don.ghi_chu,
+        ly_do_huy=don.ly_do_huy,
         created_at=don.created_at,
+        lich_su=[
+            MocTrangThai(
+                tu_trang_thai=m.tu_trang_thai,
+                den_trang_thai=m.den_trang_thai,
+                thoi_diem=m.created_at,
+                ghi_chu=m.ghi_chu,
+            )
+            for m in lich_su
+        ],
         dong=[
             DongDonRa(
                 san_pham_id=c.san_pham_id,
@@ -262,16 +273,29 @@ async def dat_hang(db: AsyncSession, khach: KhachHang, vao: DatHangVao, khoa: st
         for i, d in enumerate(dong_dat)
     ]
     den = TrangThaiDon.cho_thanh_toan if truc_tuyen else TrangThaiDon.cho_xac_nhan
-    await khoi_tao_trang_thai(db, don, den, TacNhan.khach(khach.id), NGUON_NGUOI_DUNG)
+    ls = await khoi_tao_trang_thai(db, don, den, TacNhan.khach(khach.id), NGUON_NGUOI_DUNG)
 
     # Giữ hàng FEFO trên lô đang bán (không dùng lô cận hạn); thiếu ở bất kỳ dòng nào là HET_HANG, hoàn tác cả đơn.
     thu_tu = sorted(don.chi_tiet, key=lambda c: c.id)
     await ton_kho.giu_hang_nhieu(db, [YeuCauGiu(c.id, c.san_pham_id, c.so_luong * c.he_so) for c in thu_tu])
     await dich_vu_gio.xoa_dong_da_dat(db, [d.dong_id for d in dong_dat])
 
-    ra = _ra(don, vao.ma_giam_gia and ap_dung.chuan_hoa_ma(vao.ma_giam_gia))
+    await db.refresh(ls)  # created_at do CSDL đặt
+    ra = don_ra(don, vao.ma_giam_gia and ap_dung.chuan_hoa_ma(vao.ma_giam_gia), [ls])
     idempotency.ghi_nho(THAO_TAC, khach.id, khoa, dau_van_tay, ra.model_dump(mode="json"))
     return ra
+
+
+async def lich_su_don(db: AsyncSession, don_id: int) -> list[LichSuTrangThai]:
+    return list(
+        (
+            await db.execute(
+                select(LichSuTrangThai)
+                .where(LichSuTrangThai.don_hang_id == don_id)
+                .order_by(LichSuTrangThai.created_at, LichSuTrangThai.id)
+            )
+        ).scalars()
+    )
 
 
 async def don_cua_khach(db: AsyncSession, khach: KhachHang, ma_don: str) -> DonHangRa:
@@ -288,4 +312,4 @@ async def don_cua_khach(db: AsyncSession, khach: KhachHang, ma_don: str) -> DonH
     ma_text = None
     if don.ma_giam_gia_id is not None:
         ma_text = await db.scalar(select(MaGiamGia.ma).where(MaGiamGia.id == don.ma_giam_gia_id))
-    return _ra(don, ma_text)
+    return don_ra(don, ma_text, await lich_su_don(db, don.id))

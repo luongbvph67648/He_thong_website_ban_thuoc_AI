@@ -296,3 +296,12 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
   - Hoàn tiền thật qua cổng để T6.3 (AD17); `hoan_tien` của cổng thật chưa cài.
 - **Hệ quả:** spec 06 mục 3.23, 8; spec 09 (route `/thanh-toan-gia`); `tich_hop/thanh_toan/`, `modules/thanh_toan/`, `modules/ban_hang/het_han.py`, `jobs/`; `tests/thanh_toan/`; `frontend/src/khu/cua-hang/gio-hang/{TrangKetQuaDatHang,TrangCongGia,thanhToanOnline}`.
 
+## QĐ-28: Xử lý đơn, hủy đơn và hoàn tiền khi hủy (2026-10-16, task T4.6)
+- **Quyết định:**
+  - Hủy đơn đã thanh toán tạo giao dịch hoàn tiền bằng một hook chung của máy trạng thái cho các dòng hủy 14, 15, 19, 21, 27 (không viết riêng ở từng route): `hoan_tien` ở `khoi_tao`, `thanh_toan_goc_id` là giao dịch thành công gần nhất, số tiền là toàn bộ số đã trả (kể cả phí vận chuyển), `trang_thai_tt = cho_hoan_tien`. Dòng 9 và 12 không cần (chưa có tiền vào; tiền đến muộn đã được HT04 xử lý ở QĐ-27).
+  - Nhân viên kho chỉ thấy đơn từ "Đã xác nhận" trở đi (spec 05 DS01), cưỡng chế bằng SQL ở cả danh sách lẫn chi tiết (đơn khác là `404`, không phải `403`, để không lộ sự tồn tại). Đơn đã hủy chỉ hiện với kho nếu từng được xác nhận. Chi tiết của kho bỏ giao dịch thanh toán và `khach_hang_id`.
+  - Khách bấm hủy khi đơn đã sang "Đang soạn hàng" nhận `403 KHONG_CO_QUYEN` (dòng hủy này không dành cho khách), đơn đã hủy nhận `409`. Giữ nguyên hành vi của máy trạng thái, giao diện chỉ hiện nút khi hủy được.
+  - Dược sĩ không hủy được đơn `cho_thanh_toan` hoặc `cho_khach_xac_nhan` (bảng chuyển chỉ cho khách và hệ thống); muốn hủy phải đợi khách hủy hoặc hết hạn.
+  - Dòng thời gian phía khách không lộ nhân viên nào xử lý; phía nội bộ có `nguoi_thuc_hien` (tên nhân viên, khách, hoặc "Hệ thống").
+- **Hệ quả:** spec 06 mục 3.24; spec 04 mục 1.1; `modules/ban_hang/{dich_vu_don,router_noi_bo}.py`, hook `_tao_hoan_tien_khi_huy` ở `trang_thai.py`; `tests/ban_hang/test_xu_ly_don.py`; `frontend/src/khu/{cua-hang,nhan-vien}/don-hang/`.
+

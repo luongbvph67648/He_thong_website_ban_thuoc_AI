@@ -10,6 +10,7 @@ from app.core.loi import dang_ky_xu_ly_loi
 from app.core.middleware import HEADER_REQUEST_ID, GioiHanKichThuocThan, QuyTacThanRequest, RequestIdMiddleware
 from app.health import router as health_router
 from app.modules.ban_hang.router_khach import router as don_hang_khach_router
+from app.modules.ban_hang.router_noi_bo import router as don_hang_noi_bo_router
 from app.modules.chuyen_mon.router_bai_viet import router as bai_viet_duyet_router
 from app.modules.chuyen_mon.router_noi_dung import router as noi_dung_chuyen_mon_router
 from app.modules.chuyen_mon.router_tuong_tac import router as tuong_tac_router
@@ -124,6 +125,7 @@ def create_app() -> FastAPI:
     app.include_router(gio_hang_router, prefix="/api/v1")
     app.include_router(khuyen_mai_router, prefix="/api/v1")
     app.include_router(don_hang_khach_router, prefix="/api/v1")
+    app.include_router(don_hang_noi_bo_router, prefix="/api/v1")
     app.include_router(thanh_toan_khach_router, prefix="/api/v1")
     app.include_router(webhook_router, prefix="/api/v1")
     if settings.THANH_TOAN_CHE_DO == "gia":

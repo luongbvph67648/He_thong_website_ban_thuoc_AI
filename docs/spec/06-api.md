@@ -352,6 +352,18 @@ Quyền `report.inventory` (`xem`: kho và Admin). Tính hoàn toàn từ `bien_
 - **Định dạng phản hồi cổng:** VNPay `200` JSON `{"RspCode","Message"}` (`00` thành công, `01` không thấy đơn, `02` đã xác nhận, `04` sai số tiền, `97` sai chữ ký, `99` lỗi khác); MoMo `204` không thân (sai chữ ký hoặc sai số tiền `400`). Sai chữ ký thì không ghi gì vào CSDL.
 - **Cổng giả:** `POST /webhook/gia-ipn` thân `{giao_dich: "<ma_don>-<id>", thanh_cong: bool}` (không cần đăng nhập vì tiền là giả; route chỉ được gắn khi `THANH_TOAN_CHE_DO=gia`). Server tự dựng IPN, ký bằng khóa giả và gọi cùng hàm xử lý IPN; trả `{"RspCode","Message"}` như VNPay. Trang frontend `/thanh-toan-gia?giao_dich=...` gọi route này.
 
+### 3.24 Xử lý đơn: khách xem và hủy, dược sĩ xác nhận và hủy (KTV06, DS01–DS03, T4.6)
+- **Khách** (`khach_hien_tai`; `khach_hang_id` từ token, đơn của khách khác hoặc không có là `404`):
+  - `GET /toi/don-hang?trang_thai=&trang=&kich_thuoc=` -> `Trang[{ma_don, trang_thai, trang_thai_tt, phuong_thuc_tt, tong_tien, so_san_pham, created_at}]`, mới nhất trước.
+  - `GET /toi/don-hang/{ma_don}` (mục 3.22) thêm `ly_do_huy` và `lich_su: [{tu_trang_thai, den_trang_thai, thoi_diem, ghi_chu}]` (dòng thời gian, không lộ nhân viên nào xử lý).
+  - `POST /toi/don-hang/{ma_don}/huy` thân `{ly_do?}` (tối đa 500 ký tự) -> `DonHangRa`. Đi qua `chuyen_trang_thai` (dòng 9, 12, 14): chỉ khi đơn chưa sang "Đang soạn hàng", ngoài ra `403 KHONG_CO_QUYEN` (đã soạn hàng) hoặc `409 CHUYEN_TRANG_THAI_KHONG_HOP_LE` (đã hủy, đã hoàn tất...).
+- **Nội bộ** (`/noi-bo/don-hang`, registry phân quyền):
+  - `GET /noi-bo/don-hang?trang_thai=&tu_ngay=&den_ngay=&phuong_thuc_tt=&kenh_ban=&q=` (`order.view`, mức xem) -> `Trang[{id, ma_don, trang_thai, trang_thai_tt, phuong_thuc_tt, kenh_ban, ten_nguoi_nhan, sdt_nguoi_nhan, tong_tien, so_san_pham, created_at}]`, mới nhất trước. `tu_ngay`/`den_ngay` tính theo ngày giờ Việt Nam (gồm cả hai đầu); `q` khớp mã đơn, tên hoặc SĐT người nhận (không phân biệt hoa thường).
+  - `GET /noi-bo/don-hang/{id}` (`order.view`) -> `DonHangRa` + `{id, kenh_ban, khach_hang_id, lich_su: [{..., nguon, nguoi_thuc_hien}], giao_dich: [{id, loai, cong_thanh_toan, so_tien, trang_thai, created_at}]}`. **Nhân viên kho chỉ thấy đơn từ "Đã xác nhận" trở đi** (đơn hủy thì phải từng được xác nhận; đơn khác là `404` ở cả danh sách lẫn chi tiết), và chi tiết của kho không có `giao_dich` và `khach_hang_id` (chỉ tên, SĐT, địa chỉ giao). Dược sĩ và Admin thấy mọi đơn.
+  - `POST /noi-bo/don-hang/{id}/xac-nhan` (`order.confirm`, chỉ dược sĩ): dòng 13, `cho_xac_nhan` -> `da_xac_nhan`, ghi `nhan_vien_xac_nhan_id`.
+  - `POST /noi-bo/don-hang/{id}/huy` (`order.cancel`, chỉ dược sĩ) thân `{ly_do}` **bắt buộc**: dòng 15 (`cho_xac_nhan`, `da_xac_nhan`) và 19 (`dang_soan_hang`, `cho_lay_hang`: hàng đã xuất được hoàn nhập đúng lô). Cả hai trả `DonNoiBoChiTiet`.
+- **Hủy đơn đã thanh toán:** hook của các dòng hủy 14, 15, 19, 21, 27 tạo `thanh_toan` loại `hoan_tien`, `khoi_tao`, `thanh_toan_goc_id` = giao dịch thành công gần nhất, `so_tien` = số tiền đã trả, cổng như giao dịch gốc, và đặt `trang_thai_tt = cho_hoan_tien`. Admin xác nhận hoàn ở AD17 (T6.3). Đơn chưa thanh toán không tạo giao dịch hoàn.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

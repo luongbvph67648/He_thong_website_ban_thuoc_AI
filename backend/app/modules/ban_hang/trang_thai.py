@@ -16,13 +16,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.loi import LoiNghiepVu
 from app.core.thoi_gian import bay_gio_utc
-from app.models.ban_hang import CtDonHang, DonHang, LichSuTrangThai, PhanBoLo
+from app.models.ban_hang import CtDonHang, DonHang, LichSuTrangThai, PhanBoLo, ThanhToan
 from app.models.enums import (
     HinhThucNhan,
     KenhBan,
+    LoaiGiaoDich,
     LoaiSanPham,
     PhuongThucThanhToan,
     TrangThaiDon,
+    TrangThaiGiaoDich,
     TrangThaiPhanBo,
     TrangThaiThanhToan,
 )
@@ -305,6 +307,37 @@ async def _danh_dau_da_thanh_toan(db: AsyncSession, don: DonHang, tac_nhan: TacN
     don.trang_thai_tt = TrangThaiThanhToan.da_thanh_toan
 
 
+async def _tao_hoan_tien_khi_huy(db: AsyncSession, don: DonHang, tac_nhan: TacNhan) -> None:
+    """Hủy đơn đã thanh toán (dòng 14, 15, 19, 21, 27): tạo giao dịch `hoan_tien` ở trạng thái `khoi_tao` trỏ về giao
+    dịch gốc, đơn sang `cho_hoan_tien`; Admin xác nhận hoàn ở AD17 (T6.3). Đơn chưa trả tiền thì không có gì để hoàn."""
+    if don.trang_thai_tt != TrangThaiThanhToan.da_thanh_toan or don.phuong_thuc_tt is None:
+        return
+    goc = (
+        await db.execute(
+            select(ThanhToan)
+            .where(
+                ThanhToan.don_hang_id == don.id,
+                ThanhToan.loai == LoaiGiaoDich.thanh_toan,
+                ThanhToan.trang_thai == TrangThaiGiaoDich.thanh_cong,
+            )
+            .order_by(ThanhToan.id.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    db.add(
+        ThanhToan(
+            don_hang_id=don.id,
+            loai=LoaiGiaoDich.hoan_tien,
+            cong_thanh_toan=goc.cong_thanh_toan if goc else don.phuong_thuc_tt,
+            so_tien=goc.so_tien if goc else don.tong_tien,
+            trang_thai=TrangThaiGiaoDich.khoi_tao,
+            thanh_toan_goc_id=goc.id if goc else None,
+            ghi_chu=f"Hoàn tiền do hủy đơn {don.ma_don}",
+        )
+    )
+    don.trang_thai_tt = TrangThaiThanhToan.cho_hoan_tien
+
+
 for _so in (10, 11):
     dang_ky_hook(_so, _danh_dau_da_thanh_toan)
 for _so in (9, 12, 14, 15):
@@ -312,6 +345,8 @@ for _so in (9, 12, 14, 15):
 dang_ky_hook(16, _xuat_kho)
 for _so in (9, 12, 14, 15, 19, 21, 27):
     dang_ky_hook(_so, tra_luot_khi_huy)
+for _so in (14, 15, 19, 21, 27):
+    dang_ky_hook(_so, _tao_hoan_tien_khi_huy)
 for _so in (19, 21):
     dang_ky_hook(_so, _nha_hang_giu)
     dang_ky_hook(_so, _hoan_nhap_hang_da_xuat)
