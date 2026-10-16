@@ -96,6 +96,16 @@ async def test_lay_trang_tren_csdl_that(engine_tam):
         assert (list(dong), tong) == ([], 45)  # vượt trang cuối: rỗng nhưng vẫn báo đúng tổng
 
 
+async def test_lay_trang_nhieu_cot_tra_tung_dong_la_row(engine_tam):
+    async with AsyncSession(engine_tam) as db:
+        n = func.generate_series(1, 5).column_valued("n")
+        stmt = select(n, (n * 10).label("gap_muc")).order_by(n)
+        dong, tong = await lay_trang(db, stmt, ThamSoPhanTrang(trang=2, kich_thuoc=2), nhieu_cot=True)
+        assert ([tuple(d) for d in dong], tong) == ([(3, 30), (4, 40)], 5)
+        mot_cot, _ = await lay_trang(db, stmt, ThamSoPhanTrang(trang=2, kich_thuoc=2))  # mặc định: cột đầu
+        assert list(mot_cot) == [3, 4]
+
+
 def test_openapi_cho_trang_va_tien_dung_de_sinh_client_typescript():
     """T0.7 sinh client từ OpenAPI: Tien phải là string, Trang[...] phải thành schema riêng."""
     from pydantic import BaseModel

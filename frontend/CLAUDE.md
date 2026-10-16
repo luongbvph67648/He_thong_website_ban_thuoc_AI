@@ -43,6 +43,8 @@ src/
 - **Trạng thái đơn, thanh toán, kênh bán:** dùng `<NhanTrangThai loai=... giaTri=...>` (`lib/trangThai.ts`); thêm giá trị enum ở backend thì test `trangThai.test.ts` (đối chiếu `schema.d.ts`) báo thiếu nhãn.
 - **Ô số có khoảng giá trị** (AD08...): không đặt `min`/`max` cho `InputNumber` của antd (nó âm thầm ép giá trị về khoảng); kiểm tra bằng hàm riêng (`lib/cauHinh.ts`), báo lỗi và tắt nút Lưu. Lưu cấu hình/phân quyền gửi kèm `phien_ban`; gặp 409 thì tải lại bản mới nhưng giữ giá trị người dùng đang gõ.
 - **Giờ đến giây** (nhật ký): `dinhDangNgay(x, 'ngayGioGiay')`.
+- **Cây kéo thả** (AD03, `khu/quan-tri/danh-muc/`): phép tính (vị trí đích, cấp tối đa, chống vòng) nằm ở `cayDanhMuc.ts` thuần để test từng ca; trang chỉ nối antd `Tree` với chúng. Vị trí thả của antd: `huong = info.dropPosition - Number(info.node.pos.split('-').pop())` (`-1` trước, `0` trong, `1` sau; `!dropToGap` là trong); `allowDrop` nhận hướng tương đối. jsdom không có hình học nên kéo thả thật chỉ kiểm bằng Chromium.
+- **Ô nhập của Admin** (`lib/duLieuChung.ts`): `loiTen`, `loiDuongDan`, `loiVanBan` cùng quy tắc và bảng ca với backend (`core/kieu_du_lieu.py`); form gắn lỗi máy chủ vào ô qua `loiTheoTruong`. Bảng dùng chung nhiều nhóm (AD05) gọi API qua `goiApi.ts` (một `switch` theo nhóm, giữ kiểu từ `schema.d.ts`), không ghép chuỗi đường dẫn.
 - **Mật khẩu tạm** (AD01) chỉ nằm trong state của một Modal mount có điều kiện: đóng là biến khỏi DOM, không lưu ở store/cache/URL.
 - **Thông báo nội bộ:** `components/ChuongThongBao.tsx` (query key `['noi-bo', 'thong-bao', ...]`, làm mới mỗi phút). Chỉ điều hướng tới `lien_ket` khi là đường dẫn nội bộ. Không dùng antd `List` (deprecated từ 6.6): dùng phần tử tự dựng hoặc `<button>`.
 - **Hiển thị**

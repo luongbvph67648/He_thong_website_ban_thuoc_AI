@@ -489,7 +489,7 @@ Mỗi chức năng ghi: ai thực hiện, mô tả, mã quyền, phạm vi dữ 
 
 ### AD03 · Quản lý danh mục
 - **Thực hiện:** Admin
-- **Mô tả:** Thêm, sửa, ẩn (xóa mềm), sắp xếp cây danh mục tối đa 3 cấp; không xóa được danh mục đang có sản phẩm.
+- **Mô tả:** Thêm, sửa, sắp xếp (kéo thả) cây danh mục tối đa 3 cấp. Ẩn khỏi cửa hàng (tạm thời, hiện lại được, ẩn cả cây con) hoặc xóa mềm; không xóa được danh mục đang có sản phẩm hoặc còn danh mục con (QĐ-16).
 - **Mã quyền:** `category.manage`
 - **Bảng:** `danh_muc`
 - **Task:** T2.1

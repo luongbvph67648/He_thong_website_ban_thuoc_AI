@@ -52,6 +52,19 @@ async def tao_khach(db: AsyncSession, **truong) -> KhachHang:
     return khach
 
 
+async def tao_danh_muc(db: AsyncSession, ten: str | None = None, cha: DanhMuc | None = None, **truong) -> DanhMuc:
+    """Danh mục chèn thẳng (không qua service AD03): `cha` là danh mục cha, `thu_tu` mặc định theo thứ tự tạo."""
+    n = next(_dem)
+    danh_muc = DanhMuc(
+        ten=ten or f"Danh mục {n}",
+        danh_muc_cha_id=None if cha is None else cha.id,
+        **{"slug": f"dm-{n}-{secrets.token_hex(3)}", "thu_tu": n, **truong},
+    )
+    db.add(danh_muc)
+    await db.flush()
+    return danh_muc
+
+
 async def tao_nhan_vien(db: AsyncSession, vai_tro: str = "PHARMACIST", **truong) -> NhanVien:
     """`vai_tro` là mã vai trò (`PHARMACIST`, `WAREHOUSE`, `ADMIN`); database test đã seed sẵn."""
     vai_tro_id = (await db.execute(select(VaiTro.id).where(VaiTro.ma == vai_tro))).scalar_one_or_none()

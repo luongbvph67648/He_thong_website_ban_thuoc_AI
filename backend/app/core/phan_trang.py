@@ -106,8 +106,13 @@ async def dem_tong(db: AsyncSession, stmt: Select[Any]) -> int:
     return await db.scalar(select(func.count()).select_from(stmt.order_by(None).subquery())) or 0
 
 
-async def lay_trang(db: AsyncSession, stmt: Select[Any], tham_so: ThamSoPhanTrang) -> tuple[Sequence[Any], int]:
-    """Lấy một trang của truy vấn đã có ORDER BY. Trả (các dòng, tổng). Truy vấn chọn một thực thể/cột (scalars)."""
+async def lay_trang(
+    db: AsyncSession, stmt: Select[Any], tham_so: ThamSoPhanTrang, *, nhieu_cot: bool = False
+) -> tuple[Sequence[Any], int]:
+    """Lấy một trang của truy vấn đã có ORDER BY. Trả (các dòng, tổng).
+
+    Mặc định truy vấn chọn một thực thể/cột và trả giá trị đó (scalars); truy vấn chọn nhiều cột (thực thể kèm số
+    đếm...) đặt `nhieu_cot=True` để nhận từng dòng là một `Row`."""
     tong = await dem_tong(db, stmt)
-    ket_qua = await db.scalars(stmt.limit(tham_so.limit).offset(tham_so.offset))
-    return ket_qua.all(), tong
+    ket_qua = await db.execute(stmt.limit(tham_so.limit).offset(tham_so.offset))
+    return (ket_qua.all() if nhieu_cot else ket_qua.scalars().all()), tong

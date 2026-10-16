@@ -130,6 +130,33 @@ Chỉ đọc; mọi route dưới `/api/v1/noi-bo/nhat-ky`, mức `xem`.
 - **Dữ liệu sức khỏe không bao giờ ra khỏi nhật ký (spec 03 mục 5.1, CLAUDE.md quy tắc 7):** với bảng `ho_so_suc_khoe`, `di_ung` chỉ có `bang`, `ban_ghi_id`, hành động, người và thời gian; `gia_tri_cu`, `gia_tri_moi` luôn `null` (bị bỏ ngay lúc ghi, và che lại lần nữa lúc đọc nếu dữ liệu cũ có sót). Mọi giá trị còn lại cũng được che theo tên khóa nhạy cảm lúc đọc (mật khẩu, OTP, token, hash, bệnh nền, thai kỳ, năm sinh, thông tin nhận hoàn tiền...).
 - Nhật ký chỉ INSERT: không có route sửa hay xóa.
 
+### 3.9 Quản lý danh mục (AD03, `category.manage`)
+Mọi route dưới `/api/v1/noi-bo/danh-muc`; đọc cần mức `xem`, ghi cần `day_du` VÀ người thực hiện thuộc vai trò ADMIN (`dam_bao_la_admin`, như mục 3.4). `{id}` là số nguyên 1..2147483647. Danh mục đã xóa mềm không xuất hiện và là `404`.
+- **Nút cây** `DanhMucNut`: `{id, ten, slug, danh_muc_cha_id, anh_url, thu_tu, dang_hien_thi, cap, so_san_pham, con: [DanhMucNut]}`. `cap` là 1 đến 3; `so_san_pham` đếm sản phẩm chưa xóa nằm TRỰC TIẾP trong danh mục đó; `con` đã xếp theo `thu_tu` rồi `id`.
+- `GET /noi-bo/danh-muc` -> `[DanhMucNut]`: các danh mục gốc kèm cây con (có cả danh mục đang ẩn `dang_hien_thi = false`, không có danh mục đã xóa).
+- `POST /noi-bo/danh-muc` `{ten, danh_muc_cha_id?, anh_url?, dang_hien_thi?}` -> 201 `DanhMucNut`. `slug` tự sinh từ tên (không dấu, gạch ngang); trùng với bất kỳ danh mục nào, kể cả đã xóa mềm, thì thêm hậu tố `-2`, `-3`... Danh mục mới xếp cuối các danh mục cùng cha.
+  - `400 DU_LIEU_KHONG_HOP_LE` (`truong = danh_muc_cha_id`) khi danh mục cha không tồn tại hoặc đã ở cấp 3 (từ chối cấp 4).
+  - `409 TRUNG_DU_LIEU` (`chi_tiet.truong = "ten"`) khi tên trùng một danh mục cùng cha (không phân biệt hoa thường và dấu).
+- `PATCH /noi-bo/danh-muc/{id}` `{ten?, anh_url?, dang_hien_thi?}` (trường lạ là `400`) -> `DanhMucNut`. **Đổi tên không đổi `slug`** (đường dẫn công khai ổn định). `dang_hien_thi = false` ẩn danh mục và cả cây con khỏi menu và trang danh mục của khách (áp dụng ở T2.4), KHÔNG xóa gì và có thể bật lại.
+- `PUT /noi-bo/danh-muc/{id}/vi-tri` `{danh_muc_cha_id, vi_tri}` -> `[DanhMucNut]` (cả cây mới). Đặt danh mục vào dưới `danh_muc_cha_id` (`null` là gốc) tại chỉ số `vi_tri` (từ 0; lớn hơn số anh em thì đặt cuối). Dùng cho cả sắp xếp lại trong cùng cha lẫn chuyển sang cha khác (kéo thả); `thu_tu` của anh em ở cha cũ và cha mới được đánh lại liên tục từ 0.
+  - `400 DU_LIEU_KHONG_HOP_LE` (`truong = danh_muc_cha_id`) khi chuyển vào chính nó hoặc danh mục con cháu của nó (vòng), hoặc khiến bất kỳ nhánh nào vượt 3 cấp (tính cả cây con đang mang theo).
+  - `409 TRUNG_DU_LIEU` khi tên trùng một danh mục cùng cha mới.
+- `DELETE /noi-bo/danh-muc/{id}` -> 204. Xóa mềm (`deleted_at`), `slug` vẫn được giữ chỗ.
+  - `409 DANH_MUC_CON_SAN_PHAM` khi còn sản phẩm chưa xóa nằm trong danh mục.
+  - `409 DANH_MUC_CON_DANH_MUC` khi còn danh mục con chưa xóa (xóa từng nhánh từ lá lên; muốn tạm ẩn cả nhánh thì dùng `dang_hien_thi`).
+- Mọi thao tác ghi thay đổi cây được tuần tự hóa bằng một khóa tư vấn PostgreSQL (kiểm tra cấp và vòng cần thấy cây nhất quán), xóa khóa dòng danh mục `FOR UPDATE` trước khi đếm sản phẩm; nhật ký `tao`, `sua`, `xoa` (bảng `danh_muc`) kèm giá trị cũ/mới của các trường đã đổi.
+
+### 3.10 Dữ liệu dùng chung: thương hiệu, nhà sản xuất, hoạt chất (AD05, `master_data.manage`)
+Ba nhóm route cùng một khuôn: `/api/v1/noi-bo/thuong-hieu`, `/api/v1/noi-bo/nha-san-xuat`, `/api/v1/noi-bo/hoat-chat`. Đọc cần mức `xem` (dược sĩ có mức `chi_xem` nên đọc được); ghi cần `day_du` (mặc định chỉ Admin; quyền này không thuộc nhóm chỉ-ADMIN nên AD18 có thể ủy quyền, vì vậy không có chốt thêm theo vai trò).
+- `GET /noi-bo/<nhóm>?q=&sap_xep=&trang=&kich_thuoc=` -> trang. `q` tìm tên (hoạt chất: cả `ten_khac`) không phân biệt dấu/hoa thường; `%` và `_` là chữ thường. `sap_xep`: `ten` (mặc định), `created_at`, `so_san_pham`; `-` đảo chiều. `GET /noi-bo/<nhóm>/{id}` -> một phần tử.
+- Phần tử: thương hiệu `{id, ten, logo_url, created_at, so_san_pham}`; nhà sản xuất `{id, ten, quoc_gia, created_at, so_san_pham}`; hoạt chất `{id, ten, ten_khac, mo_ta, created_at, so_san_pham}`. `so_san_pham` đếm sản phẩm gắn với bản ghi (với hoạt chất: số dòng `thanh_phan`), tính cả sản phẩm đã xóa mềm vì khóa ngoại vẫn tham chiếu. Không có số liệu nào về hồ sơ dị ứng của khách.
+- `POST /noi-bo/<nhóm>` (201), `PATCH /noi-bo/<nhóm>/{id}` (chỉ trường gửi lên; trường lạ là `400`), `DELETE /noi-bo/<nhóm>/{id}` (204).
+  - Tên: bỏ khoảng trắng đầu cuối và gộp khoảng trắng liên tiếp; không rỗng; tối đa 150 (thương hiệu), 200 (nhà sản xuất, hoạt chất) ký tự.
+  - `409 TRUNG_DU_LIEU` (`chi_tiet.truong = "ten"`) khi trùng không phân biệt hoa thường và dấu: thương hiệu và hoạt chất theo tên; nhà sản xuất theo cặp (tên, quốc gia) và `quoc_gia` trống được coi là một giá trị (ràng buộc unique của DB bỏ qua NULL nên việc này do service kiểm tra, có xử lý đua nhau).
+  - `logo_url`: để trống hoặc là đường dẫn bắt đầu bằng `/` hoặc `https://` hoặc `http://`, tối đa 500 ký tự (không nhận `javascript:` và các scheme khác). `ten_khac` tối đa 1000 ký tự, `mo_ta` tối đa 2000, `quoc_gia` tối đa 100.
+  - `DELETE` xóa cứng bản ghi chưa được tham chiếu; đang được tham chiếu (sản phẩm, thành phần, tương tác, dị ứng...) thì `409 DU_LIEU_DANG_DUOC_SU_DUNG` với thông điệp chung, không nói bản ghi nào đang dùng nó (hoạt chất có thể nằm trong dị ứng của khách, là dữ liệu Admin không được thấy).
+  - Nhật ký `tao`, `sua`, `xoa` với bảng tương ứng.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:
@@ -146,7 +173,7 @@ Chỉ đọc; mọi route dưới `/api/v1/noi-bo/nhat-ky`, mức `xem`.
 | 403 | `KHONG_CO_QUYEN`, `TAI_KHOAN_BI_KHOA`, `PHAI_DOI_MAT_KHAU`, `TU_DUYET_KHONG_DUOC`, `TU_THAY_DOI_KHONG_DUOC` (Admin tự khóa, tự xóa, tự đổi vai trò, tự đặt lại mật khẩu) | |
 | 404 | `KHONG_TIM_THAY` | Kể cả khi tài nguyên tồn tại nhưng thuộc khách khác |
 | 405 | `PHUONG_THUC_KHONG_DUOC_PHEP` | Gọi sai phương thức HTTP; giữ header `Allow` |
-| 409 | `HET_HANG`, `CHUYEN_TRANG_THAI_KHONG_HOP_LE`, `DA_CO_NGUOI_XU_LY`, `GIA_DA_THAY_DOI`, `TRUNG_DU_LIEU`, `PHAI_CON_ADMIN`, `DU_LIEU_DA_THAY_DOI` (khóa lạc quan: bản sửa dựa trên dữ liệu đã bị người khác đổi), `DANH_MUC_CON_SAN_PHAM` | |
+| 409 | `HET_HANG`, `CHUYEN_TRANG_THAI_KHONG_HOP_LE`, `DA_CO_NGUOI_XU_LY`, `GIA_DA_THAY_DOI`, `TRUNG_DU_LIEU`, `PHAI_CON_ADMIN`, `DU_LIEU_DA_THAY_DOI` (khóa lạc quan: bản sửa dựa trên dữ liệu đã bị người khác đổi), `DANH_MUC_CON_SAN_PHAM`, `DANH_MUC_CON_DANH_MUC` (xóa danh mục còn danh mục con), `DU_LIEU_DANG_DUOC_SU_DUNG` (xóa thương hiệu, nhà sản xuất, hoạt chất đang được tham chiếu) | |
 | 422 | `THUOC_KE_DON_KHONG_VAO_GIO`, `VUOT_SO_LUONG_TOI_DA`, `MA_GIAM_GIA_KHONG_HOP_LE`, `QUA_THOI_HAN_DOI_TRA`, `HOAN_VUOT_SO_DA_TRA`, `OTP_SAI`, `OTP_HET_HAN`, `MAT_KHAU_CU_SAI` | Vi phạm quy tắc nghiệp vụ |
 | 429 | `QUA_GIOI_HAN` | Giới hạn tần suất; kèm header `Retry-After` |
 | 502 | `LOI_DOI_TAC` | Cổng thanh toán hoặc vận chuyển lỗi |
