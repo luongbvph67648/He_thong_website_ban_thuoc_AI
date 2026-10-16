@@ -714,17 +714,17 @@ _Hồ sơ sức khỏe, gửi và duyệt đơn thuốc, tạo đơn từ đơn 
   - [x] Màn hàng chờ và màn duyệt đơn thuốc cho dược sĩ; trang xác nhận đơn cho khách (cả link không cần đăng nhập).
 - **Ghi chú triển khai:** Module `modules/don_thuoc` thêm `duyet.py` (DS04, DS05), `xac_nhan.py` (KTV07), hai router; hook `trang_thai.py` cho `da_su_dung` (dòng 16) và trả yêu cầu về `dang_tu_van` (dòng 9, 12, 14, 15, 19, 21, 27); HT08 nhả khóa. API ở spec 06 mục 3.30, quyết định ở QĐ-34 (thuốc kê đơn chỉ vào đơn qua DS05, phí ship tính khi khách xác nhận, link mã truy cập, thanh toán online của khách vãng lai). Giao diện: hàng chờ `/don-thuoc`, màn duyệt `/don-thuoc/:id`, `/xac-nhan-don/:token`, panel xác nhận trong chi tiết đơn của thành viên. Test `tests/don_thuoc` (`test_duyet_don_thuoc`, `test_xac_nhan_don_thuoc`) và 3 file vitest mới. Chưa có: nhập tay thuốc trên đơn, gợi ý thuốc thay thế.
 
-### [ ] T5.4 · Bán tại quầy (POS)
+### [x] T5.4 · Bán tại quầy (POS)
 - **Chức năng:** DS08 (Bán tại quầy – POS)
 - **Phụ thuộc:** T5.3
 - **Bảng:** `don_hang`, `ct_don_hang`, `phan_bo_lo`, `lo_thuoc`, `bien_dong_kho`, `thanh_toan`, `yeu_cau_don_thuoc`, `tuong_tac_hoat_chat`
 - **Tiêu chí chấp nhận:**
-  - [ ] Quét mã vạch/tìm sản phẩm, chọn đơn vị (bán lẻ theo viên); dùng được lô cận hạn; xuất kho FEFO ngay, ghi thẻ kho; đơn `tai_quay` → `hoan_tat`.
-  - [ ] Thuốc kê đơn: bắt buộc tạo yêu cầu đơn thuốc kênh `tai_quay` (ảnh + người bệnh) trước khi thanh toán; hiện cảnh báo tương tác.
-  - [ ] Thanh toán tiền mặt (tính tiền thừa)/chuyển khoản; gắn khách theo SĐT nếu có tài khoản; in hóa đơn (HTML in được).
+  - [x] Quét mã vạch/tìm sản phẩm, chọn đơn vị (bán lẻ theo viên); dùng được lô cận hạn; xuất kho FEFO ngay, ghi thẻ kho; đơn `tai_quay` → `hoan_tat`.
+  - [x] Thuốc kê đơn: bắt buộc tạo yêu cầu đơn thuốc kênh `tai_quay` (ảnh + người bệnh) trước khi thanh toán; hiện cảnh báo tương tác.
+  - [x] Thanh toán tiền mặt (tính tiền thừa)/chuyển khoản; gắn khách theo SĐT nếu có tài khoản; in hóa đơn (HTML in được).
 - **Giao diện:**
-  - [ ] Màn POS tối ưu bàn phím/máy quét.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Màn POS tối ưu bàn phím/máy quét.
+- **Ghi chú triển khai:** `ban_hang/pos.py`, `router_pos.py`, `schemas_pos.py`; API ở spec 06 mục 3.31, quyết định QĐ-35 (không giỏ hàng, không mã giảm giá, đơn vào `hoan_tat` rồi giữ và xuất kho có lô cận hạn trong một transaction, thuốc kê đơn cần yêu cầu `tai_quay` của chính dược sĩ, tiền thối chỉ có lúc bán). Giao diện `/pos` (ô quét mã vạch tự thêm đúng đơn vị, cảnh báo, lập yêu cầu đơn thuốc, hóa đơn 80 mm in bằng `window.print`). Test `tests/ban_hang/test_pos.py` (15), `TrangPos.test.tsx` (4), `pos.test.ts` (3).
 
 ## P6 · Sau bán & thu hồi
 
