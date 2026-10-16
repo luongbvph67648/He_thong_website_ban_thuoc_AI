@@ -16,6 +16,7 @@ dependencies = [
     "pyyaml>=6.0.3",
     "pyjwt>=2.15.1",
     "python-multipart>=0.0.32",
+    "apscheduler>=3.11.3",
 ]
 
 [dependency-groups]

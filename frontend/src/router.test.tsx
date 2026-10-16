@@ -185,8 +185,8 @@ describe('khu nhân viên', () => {
 
   it('/nhan-vien tự chuyển tới trang đầu tiên được phép', async () => {
     const { router } = renderTai('/nhan-vien', { loai: 'noi_bo', vaiTro: 'WAREHOUSE', quyen: { 'stock.view': 'day_du' } })
-    expect(await screen.findByText(/KHO05/)).toBeInTheDocument()
-    expect(router.state.location.pathname).toBe('/nhan-vien/ton-kho')
+    await waitFor(() => expect(router.state.location.pathname).toBe('/nhan-vien/ton-kho'))
+    expect(await screen.findByPlaceholderText('Tên hoặc SKU')).toBeInTheDocument()
   })
 
   it('tài khoản chưa được cấp quyền nào thì báo rõ thay vì trang trống', async () => {

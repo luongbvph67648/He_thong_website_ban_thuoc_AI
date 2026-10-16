@@ -435,18 +435,24 @@ _Nhập kho theo lô, thẻ kho, cảnh báo, kiểm kê, hủy, xuất trả, b
   - Chưa làm: gửi phiếu nhập trùng do bấm hai lần (chưa có `Idempotency-Key`, nút lưu có trạng thái loading); rà soát nghiệp vụ gộp sau T3.5.
 
 
-### [ ] T3.2 · Tra cứu tồn, cảnh báo và job lô
+### [x] T3.2 · Tra cứu tồn, cảnh báo và job lô
 - **Chức năng:** KHO05 (Tra cứu tồn kho), KHO06 (Xem cảnh báo), HT01 (Cập nhật trạng thái lô hằng ngày), HT02 (Cảnh báo tồn thấp, cận hạn)
 - **Phụ thuộc:** T3.1
 - **Bảng:** `lo_thuoc`, `san_pham`, `thong_bao`, `phan_bo_lo`
 - **Tiêu chí chấp nhận:**
-  - [ ] Worker `uv run python -m app.jobs` (APScheduler, mỗi job giữ `pg_try_advisory_lock` để không chạy chồng).
-  - [ ] HT01 hằng ngày 00:05 (giờ VN): lô `dang_ban` có HSD < hôm nay + `nguong_can_han_ngay` → `can_han`; HSD ≤ hôm nay → `het_han` (gỡ khỏi đơn chưa xuất, phân bổ lại FEFO khi có module bán hàng).
-  - [ ] HT02: gửi `thong_bao` cho nhân viên kho khi tồn khả dụng < `ton_toi_thieu`, có lô cận hạn/hết hạn (không gửi trùng trong ngày).
-  - [ ] Tra cứu tồn theo sản phẩm và theo lô (tồn, giữ, biệt trữ, trạng thái). Dược sĩ chỉ thấy tồn khả dụng, không thấy giá nhập.
+  - [x] Worker `uv run python -m app.jobs` (APScheduler, mỗi job giữ `pg_try_advisory_lock` để không chạy chồng).
+  - [x] HT01 hằng ngày 00:05 (giờ VN): lô `dang_ban` có HSD < hôm nay + `nguong_can_han_ngay` → `can_han`; HSD ≤ hôm nay → `het_han` (gỡ khỏi đơn chưa xuất, phân bổ lại FEFO khi có module bán hàng).
+  - [x] HT02: gửi `thong_bao` cho nhân viên kho khi tồn khả dụng < `ton_toi_thieu`, có lô cận hạn/hết hạn (không gửi trùng trong ngày).
+  - [x] Tra cứu tồn theo sản phẩm và theo lô (tồn, giữ, biệt trữ, trạng thái). Dược sĩ chỉ thấy tồn khả dụng, không thấy giá nhập.
 - **Giao diện:**
-  - [ ] Màn tồn kho (bảng sản phẩm mở rộng ra lô), màn cảnh báo.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Màn tồn kho (bảng sản phẩm mở rộng ra lô), màn cảnh báo.
+- **Ghi chú triển khai:**
+  - Spec 06 mục 3.16. Worker `app/jobs/` (`__main__.py` lịch giờ VN, `chay.py` khóa `pg_try_advisory_lock` trên kết nối riêng, `cong_viec.py`): `ht01_lo` 00:05, `ht02_canh_bao_kho` 07:00 (sau HT01), `don_lich_su` 03:30 (xóa `lich_su_xem`, `lich_su_tim_kiem` quá 90 ngày; làm xong mục phát sinh T2.4/T2.5).
+  - HT01 chuyển cả hai chiều giữa `dang_ban` và `can_han` theo ngưỡng hiện hành, không đụng lô `khoa`/`thu_hoi`; lô hết hạn: nhả phân bổ `dang_giu` rồi giữ lại FEFO (đơn tại quầy được dùng lô cận hạn), đơn thiếu hàng thì báo nhân viên kho kèm mã đơn. Chưa có đơn thật nên test dựng bằng `tao_don` + `giu_hang`.
+  - Dược sĩ xem tồn nhưng `gia_nhap`, tồn, đang giữ, biệt trữ là `null` (quyết định theo quyền `stock.import`, không theo tên vai trò).
+  - Giao diện: `/nhan-vien/ton-kho` (mở rộng ra lô), `/nhan-vien/canh-bao`.
+  - Chưa làm: dọn ảnh mồ côi của banner, bài viết (ghi lại ở "Việc phát sinh"); worker chưa có gói chạy (T8.3).
+
 
 ### [ ] T3.3 · Kiểm kê và phiếu điều chỉnh
 - **Chức năng:** KHO07 (Kiểm kê), KHO08 (Lập phiếu điều chỉnh tồn)
@@ -919,3 +925,4 @@ Lỗi hoặc việc phát hiện trong lúc làm nhưng nằm ngoài phạm vi t
 - [ ] (T1.3-rv) `POST /auth/otp` với `kenh=email`: gửi email (chậm hơn) chỉ xảy ra với tài khoản có thật nên độ trễ phản hồi có thể lộ tài khoản; cân bằng thời gian hoặc đưa gửi tin nhắn vào tác vụ nền (T3.2/T6.x).
 - [ ] (T1.3-rv) Mặc định thiên về dev: `TIN_NHAN_CHE_DO=gia` (OTP ghi vào log nếu quên đặt `that`), `.env.example` đặt `COOKIE_SECURE=false`; thêm chốt khi khởi động ở môi trường production và đưa vào checklist deploy (T8.2/T8.3).
 - [ ] (T1.3-rv) Registry/ma trận phân quyền: `tests/phan_quyen/ma_tran.py` bỏ qua route không có `methods` (WebSocket `/tu-van/ws`, T6.x); các guard hiện nhận `Request` nên chưa dùng được cho WebSocket. Route thật chưa có ca bị chặn nào vì chỉ có `profile.self`: từ T3.1 trở đi mỗi route nội bộ mới tự đưa ca bị chặn vào ma trận.
+- [ ] (T3.2) Job dọn ảnh mồ côi (banner, ảnh bìa bài viết, ảnh sản phẩm tải lên nhưng bản ghi không lưu): quét `storage/cong-khai`, xóa file không được bản ghi nào tham chiếu và cũ hơn 24 giờ.

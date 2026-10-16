@@ -9,6 +9,10 @@ TIEN_TO_NOI_BO = "/api/v1/noi-bo"
 
 # {(PHƯƠNG THỨC, đường dẫn mẫu): (mã quyền, mức)}
 REGISTRY: dict[tuple[str, str], tuple[str, str]] = {
+    # KHO05, KHO06: kho đầy đủ, Admin xem; dược sĩ xem tồn (không xem cảnh báo).
+    ("GET", f"{TIEN_TO_NOI_BO}/ton-kho"): ("stock.view", "xem"),
+    ("GET", f"{TIEN_TO_NOI_BO}/ton-kho/{{san_pham_id}}/lo"): ("stock.view", "xem"),
+    ("GET", f"{TIEN_TO_NOI_BO}/canh-bao-kho"): ("stock.alert.view", "xem"),
     # KHO01, KHO02: kho ghi, Admin xem.
     ("GET", f"{TIEN_TO_NOI_BO}/nha-cung-cap"): ("supplier.manage", "xem"),
     ("POST", f"{TIEN_TO_NOI_BO}/nha-cung-cap"): ("supplier.manage", "day_du"),

@@ -251,6 +251,12 @@ Mọi route dưới `/api/v1/noi-bo`. Nhân viên kho `day_du`, Admin `chi_xem` 
     - Mỗi dòng gọi `ton_kho.nhap_kho` (khóa mọi lô của phiếu theo id tăng dần trước) và ghi thẻ kho `nhap_kho` (`chung_tu_loai = "phieu_nhap"`).
     - Nhật ký `tao` với bảng `phieu_nhap` (mã phiếu, nhà cung cấp, tổng tiền, số dòng).
 
+### 3.16 Tồn kho, cảnh báo kho và job nền (KHO05, KHO06, HT01, HT02, T3.2)
+- `GET /noi-bo/ton-kho?q=&chi_thap=&trang=&kich_thuoc=` (`stock.view` mức `xem`: kho, Admin, dược sĩ) -> trang theo tên sản phẩm chưa xóa: `{san_pham_id, sku, ten, don_vi_co_so, ton_kha_dung, ton_toi_thieu, thap, tong_ton, tong_giu, tong_biet_tru, so_lo}`. `ton_kha_dung` = tổng (tồn - giữ) của lô `dang_ban` còn hạn (như trang khách). `chi_thap = true` chỉ sản phẩm có `ton_toi_thieu > 0` và `ton_kha_dung` dưới mức đó.
+- `GET /noi-bo/ton-kho/{san_pham_id}/lo` -> các lô theo hạn gần trước: `{lo_id, so_lo, ngay_san_xuat, han_su_dung, trang_thai, kha_dung, so_luong_ton, so_luong_giu, so_luong_biet_tru, gia_nhap}`. **Chỉ vai trò có quyền `stock.import` (kho, Admin) thấy `gia_nhap`, `so_luong_*` và các tổng; dược sĩ nhận `null` ở các trường đó, chỉ có `kha_dung`.**
+- `GET /noi-bo/canh-bao-kho` (`stock.alert.view` mức `xem`: kho, Admin) -> `{ton_thap, can_han, het_han}`, mỗi nhóm `{tong, du_lieu}` (`du_lieu` cắt ở 200 mục): sản phẩm đang kinh doanh tồn khả dụng dưới mức tối thiểu; lô `can_han` và lô `het_han` còn hàng (tồn hoặc biệt trữ > 0).
+- **Job nền** (`uv run python -m app.jobs`, APScheduler giờ Việt Nam, mỗi job giữ `pg_try_advisory_lock` nên chạy chồng bị bỏ qua): `ht01_lo` 00:05 (lô `dang_ban`/`can_han` chuyển `can_han`, `het_han` hoặc về `dang_ban` theo `nguong_can_han_ngay`; lô `khoa`, `thu_hoi` không đổi; lô hết hạn bị gỡ khỏi phân bổ `dang_giu` và giữ lại theo FEFO, đơn không đủ hàng thì báo nhân viên kho kèm mã đơn); `ht02_canh_bao_kho` 07:00 (mỗi nhân viên kho đang hoạt động nhận tối đa một thông báo mỗi loại `canh_bao_ton_thap`, `canh_bao_can_han`, `canh_bao_het_han` mỗi ngày giờ VN, chỉ loại có mục); `don_lich_su` 03:30 (xóa `lich_su_xem`, `lich_su_tim_kiem` quá 90 ngày).
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

@@ -1546,6 +1546,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/noi-bo/ton-kho": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tồn kho theo sản phẩm (KHO05) */
+        get: operations["ton_theo_san_pham_api_v1_noi_bo_ton_kho_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/ton-kho/{san_pham_id}/lo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Các lô của sản phẩm (KHO05) */
+        get: operations["ton_theo_lo_api_v1_noi_bo_ton_kho__san_pham_id__lo_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/canh-bao-kho": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cảnh báo tồn thấp, cận hạn, hết hạn (KHO06) */
+        get: operations["canh_bao_kho_api_v1_noi_bo_canh_bao_kho_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1895,6 +1946,12 @@ export interface components {
             so_ngay_con_lai: number;
             /** Toi Thieu */
             toi_thieu: number;
+        };
+        /** CanhBaoKhoRa */
+        CanhBaoKhoRa: {
+            ton_thap: components["schemas"]["NhomCanhBao_SanPhamThap_"];
+            can_han: components["schemas"]["NhomCanhBao_LoCanhBao_"];
+            het_han: components["schemas"]["NhomCanhBao_LoCanhBao_"];
         };
         /**
          * CapNhatHoSoYeuCau
@@ -2468,6 +2525,29 @@ export interface components {
             /** Ly Do */
             ly_do?: string | null;
         };
+        /** LoCanhBao */
+        LoCanhBao: {
+            /** Lo Id */
+            lo_id: number;
+            /** San Pham Id */
+            san_pham_id: number;
+            /** Sku */
+            sku: string;
+            /** Ten San Pham */
+            ten_san_pham: string;
+            /** So Lo */
+            so_lo: string;
+            /**
+             * Han Su Dung
+             * Format: date
+             */
+            han_su_dung: string;
+            trang_thai: components["schemas"]["TrangThaiLo"];
+            /** So Luong Ton */
+            so_luong_ton: number;
+            /** So Luong Biet Tru */
+            so_luong_biet_tru: number;
+        };
         /**
          * LoaiBaiViet
          * @enum {string}
@@ -2748,6 +2828,20 @@ export interface components {
             gia_tri_moi: unknown;
             /** Ip */
             ip: string | null;
+        };
+        /** NhomCanhBao[LoCanhBao] */
+        NhomCanhBao_LoCanhBao_: {
+            /** Tong */
+            tong: number;
+            /** Du Lieu */
+            du_lieu: components["schemas"]["LoCanhBao"][];
+        };
+        /** NhomCanhBao[SanPhamThap] */
+        NhomCanhBao_SanPhamThap_: {
+            /** Tong */
+            tong: number;
+            /** Du Lieu */
+            du_lieu: components["schemas"]["SanPhamThap"][];
         };
         /**
          * NoiDungChuyenMonCongKhai
@@ -3177,6 +3271,19 @@ export interface components {
              */
             thanh_phan: components["schemas"]["ThanhPhanVao"][];
         };
+        /** SanPhamThap */
+        SanPhamThap: {
+            /** San Pham Id */
+            san_pham_id: number;
+            /** Sku */
+            sku: string;
+            /** Ten */
+            ten: string;
+            /** Ton Kha Dung */
+            ton_kha_dung: number;
+            /** Ton Toi Thieu */
+            ton_toi_thieu: number;
+        };
         /** SanPhamThe */
         SanPhamThe: {
             /** Id */
@@ -3369,6 +3476,56 @@ export interface components {
             /** Logo Url */
             logo_url?: string | null;
         };
+        /** TonLo */
+        TonLo: {
+            /** Lo Id */
+            lo_id: number;
+            /** So Lo */
+            so_lo: string;
+            /** Ngay San Xuat */
+            ngay_san_xuat: string | null;
+            /**
+             * Han Su Dung
+             * Format: date
+             */
+            han_su_dung: string;
+            trang_thai: components["schemas"]["TrangThaiLo"];
+            /** Kha Dung */
+            kha_dung: number;
+            /** So Luong Ton */
+            so_luong_ton: number | null;
+            /** So Luong Giu */
+            so_luong_giu: number | null;
+            /** So Luong Biet Tru */
+            so_luong_biet_tru: number | null;
+            /** Gia Nhap */
+            gia_nhap: string | null;
+        };
+        /** TonSanPham */
+        TonSanPham: {
+            /** San Pham Id */
+            san_pham_id: number;
+            /** Sku */
+            sku: string;
+            /** Ten */
+            ten: string;
+            /** Don Vi Co So */
+            don_vi_co_so: string;
+            /** Ton Kha Dung */
+            ton_kha_dung: number;
+            /** Ton Toi Thieu */
+            ton_toi_thieu: number;
+            /** Thap */
+            thap: boolean;
+            /** Tong Ton */
+            tong_ton: number | null;
+            /** Tong Giu */
+            tong_giu: number | null;
+            /** Tong Biet Tru */
+            tong_biet_tru: number | null;
+            /** So Lo */
+            so_lo: number;
+        };
         /** TongHopDanhGia */
         TongHopDanhGia: {
             /** So Luong */
@@ -3401,6 +3558,11 @@ export interface components {
          * @enum {string}
          */
         TrangThaiKinhDoanh: "dang_kinh_doanh" | "ngung_kinh_doanh";
+        /**
+         * TrangThaiLo
+         * @enum {string}
+         */
+        TrangThaiLo: "dang_ban" | "can_han" | "khoa" | "het_han" | "thu_hoi";
         /**
          * TrangThaiNoiDung
          * @enum {string}
@@ -3585,6 +3747,17 @@ export interface components {
         Trang_ThuongHieuDoc_: {
             /** Du Lieu */
             du_lieu: components["schemas"]["ThuongHieuDoc"][];
+            /** Tong */
+            tong: number;
+            /** Trang */
+            trang: number;
+            /** Kich Thuoc */
+            kich_thuoc: number;
+        };
+        /** Trang[TonSanPham] */
+        Trang_TonSanPham_: {
+            /** Du Lieu */
+            du_lieu: components["schemas"]["TonSanPham"][];
             /** Tong */
             tong: number;
             /** Trang */
@@ -7470,6 +7643,93 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ton_theo_san_pham_api_v1_noi_bo_ton_kho_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                chi_thap?: boolean;
+                /** @description Số trang, bắt đầu từ 1 */
+                trang?: number;
+                /** @description Số dòng mỗi trang */
+                kich_thuoc?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Trang_TonSanPham_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ton_theo_lo_api_v1_noi_bo_ton_kho__san_pham_id__lo_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                san_pham_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TonLo"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    canh_bao_kho_api_v1_noi_bo_canh_bao_kho_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CanhBaoKhoRa"];
                 };
             };
         };
