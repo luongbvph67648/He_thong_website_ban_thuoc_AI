@@ -53,8 +53,12 @@ def khoa_jwt_cho_test():
 
 
 @pytest.fixture(autouse=True)
-def cau_hinh_co_dinh_cho_test(monkeypatch):
-    """Ghim các cấu hình ảnh hưởng hành vi mà `backend/.env` của máy dev có thể đổi (ví dụ `COOKIE_SECURE=false`)."""
+def cau_hinh_co_dinh_cho_test(monkeypatch, tmp_path):
+    """Ghim các cấu hình ảnh hưởng hành vi mà `backend/.env` của máy dev có thể đổi (ví dụ `COOKIE_SECURE=false`).
+
+    Thư mục lưu file là thư mục tạm của từng test: test upload không bao giờ ghi vào `backend/storage`.
+    """
+    monkeypatch.setattr(settings, "LUU_TRU_THU_MUC", str(tmp_path / "luu_tru"))
     monkeypatch.setattr(settings, "COOKIE_SECURE", True)
     monkeypatch.setattr(settings, "REFRESH_NGAY", 14)
     monkeypatch.setattr(settings, "JWT_ACCESS_PHUT", 15)

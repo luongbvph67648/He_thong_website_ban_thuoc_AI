@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     # để khỏi vô tình tạo Admin với mật khẩu đoán được).
     ADMIN_EMAIL: str = ""
     ADMIN_MAT_KHAU: SecretStr = SecretStr("")
+    # Thư mục lưu file (spec 08 mục 6). Đường dẫn tương đối tính từ `backend/`, không phụ thuộc thư mục đang chạy.
+    LUU_TRU_THU_MUC: str = "./storage"
 
     @property
     def cors_origins_list(self) -> list[str]:

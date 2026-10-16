@@ -74,7 +74,7 @@ class DonViVanChuyen(Protocol):
 
 ## 6. Lưu trữ file (`core/luu_tru.py`)
 - **Hai vùng lưu trữ:**
-  - `cong_khai`: ảnh sản phẩm, banner, bài viết. Phục vụ tĩnh qua `/tep/...`.
+  - `cong_khai`: ảnh sản phẩm, banner, bài viết. Phục vụ qua `GET /api/v1/tep/<khóa>` (dưới `/api/v1` để dùng chung proxy của frontend và nginx; QĐ-17).
   - `rieng_tu`: ảnh đơn thuốc, ảnh/video đổi trả, chứng từ hoàn tiền. Không phục vụ tĩnh.
 - **Dev:** thư mục `LUU_TRU_THU_MUC`. Có thể thay bằng S3/MinIO sau này qua cùng interface (`luu`, `doc`, `xoa`, `url_ky(khoa, het_han)`).
 - **URL ký:** `HMAC(khoa | het_han)` bằng `LUU_TRU_KHOA_KY`, hết hạn sau 10 phút. Endpoint đọc kiểm chữ ký, hạn và quyền (spec 06 mục 7).

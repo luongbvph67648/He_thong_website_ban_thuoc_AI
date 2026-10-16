@@ -16,6 +16,8 @@ describe('trangThai', () => {
     ['don_hang', 'TrangThaiDon'],
     ['thanh_toan', 'TrangThaiThanhToan'],
     ['kenh_ban', 'KenhBan'],
+    ['loai_san_pham', 'LoaiSanPham'],
+    ['kinh_doanh', 'TrangThaiKinhDoanh'],
   ] as const)('bảng nhãn %s khớp từng giá trị enum %s của API (thêm giá trị mới mà quên nhãn thì test báo)', (loai, ten) => {
     expect(Object.keys(TRANG_THAI[loai]).sort()).toEqual(giaTriEnum(ten).sort())
   })

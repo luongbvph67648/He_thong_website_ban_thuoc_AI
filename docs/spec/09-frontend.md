@@ -72,7 +72,8 @@ Trang tài khoản cá nhân `/nhan-vien/tai-khoan` (hồ sơ: họ tên, số �
 | `/nhan-vien` | AD01 | `staff.manage` |
 | `/vai-tro` | AD18 | `role.manage` |
 | `/khach-hang`, `/khach-hang/:id` | AD02 | `customer.manage` |
-| `/danh-muc`, `/san-pham`, `/du-lieu-chung` | AD03, AD04, AD05 | `category.manage`, `product.commercial.manage`, `master_data.manage` |
+| `/danh-muc`, `/du-lieu-chung` | AD03, AD05 | `category.manage`, `master_data.manage` |
+| `/san-pham`, `/san-pham/moi`, `/san-pham/:id` | AD04 | `product.commercial.manage` |
 | `/khuyen-mai` | AD06 | `promotion.manage` |
 | `/noi-dung` | AD07 | `cms.manage` |
 | `/cau-hinh`, `/cau-hinh-ai`, `/tri-thuc-ai`, `/giam-sat-ai` | AD08, AD09, AD10, AD11 | `config.manage`, `ai.config`, `ai.knowledge.sync`, `ai.monitor` |
@@ -91,6 +92,7 @@ Trang tài khoản cá nhân `/nhan-vien/tai-khoan` (hồ sơ: họ tên, số �
 - **Nhật ký (`/quan-tri/nhat-ky`, AD15):** bộ lọc bảng, hành động, bản ghi, nhân viên, khoảng ngày; tất cả nằm trên URL. Mỗi dòng mở rộng ra hiện giá trị cũ và mới (so từng trường, trường đổi được tô nổi bật); dòng của dữ liệu sức khỏe ghi rõ "giá trị không được lưu".
 - **Danh mục (`/quan-tri/danh-muc`, AD03):** cây tối đa 3 cấp, kéo thả để sắp xếp trong cùng cha hoặc chuyển sang cha khác (gọi `PUT .../vi-tri`, hiển thị cây mới trả về). Mỗi nút có số sản phẩm trực tiếp, nhãn "Đang ẩn" khi `dang_hien_thi = false`; thao tác thêm danh mục con (tắt ở cấp 3), sửa (tên, ảnh, hiển thị), ẩn/hiện, xóa (hỏi xác nhận, hiện thông điệp `409` của máy chủ khi còn sản phẩm hoặc danh mục con). Thả không hợp lệ (quá 3 cấp, vào chính nó) bị chặn ngay trên giao diện và máy chủ vẫn kiểm tra lại.
 - **Dữ liệu dùng chung (`/quan-tri/du-lieu-chung`, AD05):** ba thẻ Thương hiệu, Nhà sản xuất, Hoạt chất; mỗi thẻ là bảng có tìm kiếm, sắp xếp, phân trang trên URL, hộp thoại thêm/sửa, xóa có xác nhận (thương hiệu và nhà sản xuất; tắt nút khi còn sản phẩm, báo thông điệp của máy chủ khi số liệu đã cũ). Hoạt chất không có nút Xóa (QĐ-16). Cột "Số sản phẩm" cho biết bản ghi đang gắn với bao nhiêu sản phẩm.
+- **Sản phẩm (`/quan-tri/san-pham`, `/san-pham/moi`, `/san-pham/:id`, AD04):** danh sách có ảnh chính, SKU, tên (liên kết tới chi tiết), loại, danh mục, thương hiệu, giá mặc định và trạng thái; tìm theo tên/SKU, lọc loại, danh mục (gồm danh mục con) và trạng thái, sắp xếp theo cột, tất cả nằm trên URL. Thêm sản phẩm là MỘT form (thông tin, đơn vị, thành phần) gửi trong một lần; ảnh tải lên được sau khi tạo. Trang sửa có bốn tab: Thông tin (chỉ gửi trường đã đổi), Đơn vị và giá, Thành phần, Ảnh (tải lên, đặt ảnh chính, đổi thứ tự, xóa); tab nào lưu bằng lời gọi riêng kèm `phien_ban` đã thấy. Chi tiết KHÔNG tự làm mới khi focus lại cửa sổ (bản đã thấy mới là bản để so xung đột); gặp `409` thì tải bản mới nhưng giữ giá trị đang gõ. Thương hiệu, nhà sản xuất, hoạt chất chọn bằng ô tìm kiếm phía máy chủ. Chọn thuốc kê đơn thì hiện cảnh báo, tắt "nổi bật" và vẫn kiểm tra lại ở máy chủ. Chỉ Admin sửa được (`day_du`); mức chỉ xem thấy dữ liệu nhưng không có nút lưu, tải ảnh, xóa.
 - **Đồng bộ quyền cho phiên đang mở** (`useDongBoPhienNoiBo` trong khung nội bộ): gọi `GET /noi-bo/toi` khi cửa sổ được focus lại và mỗi 5 phút, cập nhật vai trò, quyền và cờ đổi mật khẩu vào store phiên, nên Admin đổi phân quyền thì menu của nhân viên đang đăng nhập đổi theo mà không cần đăng nhập lại. Chỉ là lớp giao diện: backend kiểm tra quyền thật ở mỗi request.
 
 ## 3. Quy tắc hiển thị nghiệp vụ

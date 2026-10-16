@@ -22,6 +22,8 @@ import TrangChiTietKhachHang from './khu/quan-tri/khach-hang/TrangChiTietKhachHa
 import TrangDanhMuc from './khu/quan-tri/danh-muc/TrangDanhMuc'
 import TrangDuLieuChung from './khu/quan-tri/du-lieu-chung/TrangDuLieuChung'
 import TrangKhachHang from './khu/quan-tri/khach-hang/TrangKhachHang'
+import TrangChiTietSanPham from './khu/quan-tri/san-pham/TrangChiTietSanPham'
+import TrangSanPham from './khu/quan-tri/san-pham/TrangSanPham'
 import TrangNhatKy from './khu/quan-tri/nhat-ky/TrangNhatKy'
 import TrangVaiTro from './khu/quan-tri/vai-tro/TrangVaiTro'
 import { MUC_QUAN_TRI } from './khu/quan-tri/menu'
@@ -53,6 +55,9 @@ const TRANG_QUAN_TRI_THAT: Record<string, ReactNode> = {
   '/khach-hang/:id': <TrangChiTietKhachHang />,
   '/danh-muc': <TrangDanhMuc />,
   '/du-lieu-chung': <TrangDuLieuChung />,
+  '/san-pham': <TrangSanPham />,
+  '/san-pham/moi': <TrangChiTietSanPham />,
+  '/san-pham/:id': <TrangChiTietSanPham />,
   '/cau-hinh': <TrangCauHinh />,
   '/nhat-ky': <TrangNhatKy />,
 }

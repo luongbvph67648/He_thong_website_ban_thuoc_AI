@@ -47,6 +47,18 @@ REGISTRY: dict[tuple[str, str], tuple[str, str]] = {
     ("PATCH", f"{TIEN_TO_NOI_BO}/danh-muc/{{danh_muc_id}}"): ("category.manage", "day_du"),
     ("PUT", f"{TIEN_TO_NOI_BO}/danh-muc/{{danh_muc_id}}/vi-tri"): ("category.manage", "day_du"),
     ("DELETE", f"{TIEN_TO_NOI_BO}/danh-muc/{{danh_muc_id}}"): ("category.manage", "day_du"),
+    # AD04: chỉ Admin có `product.commercial.manage` (day_du).
+    ("GET", f"{TIEN_TO_NOI_BO}/san-pham"): ("product.commercial.manage", "xem"),
+    ("GET", f"{TIEN_TO_NOI_BO}/san-pham/{{san_pham_id}}"): ("product.commercial.manage", "xem"),
+    ("POST", f"{TIEN_TO_NOI_BO}/san-pham"): ("product.commercial.manage", "day_du"),
+    ("PATCH", f"{TIEN_TO_NOI_BO}/san-pham/{{san_pham_id}}"): ("product.commercial.manage", "day_du"),
+    ("DELETE", f"{TIEN_TO_NOI_BO}/san-pham/{{san_pham_id}}"): ("product.commercial.manage", "day_du"),
+    ("PUT", f"{TIEN_TO_NOI_BO}/san-pham/{{san_pham_id}}/don-vi"): ("product.commercial.manage", "day_du"),
+    ("PUT", f"{TIEN_TO_NOI_BO}/san-pham/{{san_pham_id}}/thanh-phan"): ("product.commercial.manage", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/san-pham/{{san_pham_id}}/anh"): ("product.commercial.manage", "day_du"),
+    ("PUT", f"{TIEN_TO_NOI_BO}/san-pham/{{san_pham_id}}/anh/thu-tu"): ("product.commercial.manage", "day_du"),
+    ("PUT", f"{TIEN_TO_NOI_BO}/san-pham/{{san_pham_id}}/anh/{{anh_id}}/chinh"): ("product.commercial.manage", "day_du"),
+    ("DELETE", f"{TIEN_TO_NOI_BO}/san-pham/{{san_pham_id}}/anh/{{anh_id}}"): ("product.commercial.manage", "day_du"),
     # AD05: Admin day_du, dược sĩ chi_xem (`master_data.manage` không chỉ-ADMIN). Hoạt chất không có DELETE (QĐ-16).
     ("GET", f"{TIEN_TO_NOI_BO}/thuong-hieu"): ("master_data.manage", "xem"),
     ("GET", f"{TIEN_TO_NOI_BO}/thuong-hieu/{{ban_ghi_id}}"): ("master_data.manage", "xem"),
