@@ -419,7 +419,7 @@ async def khoi_tao_trang_thai(
     ghi_chu: str | None = None,
 ) -> LichSuTrangThai:
     """Tạo đơn mới (dòng "tạo mới" 1 đến 6). `don` là `DonHang` chưa có `trang_thai` và chưa add vào phiên,
-    các dòng hàng gắn qua `don.chi_tiet`; hàm lưu đơn cùng dòng hàng rồi mới kiểm tra "không có thuốc kê đơn" bằng SQL."""
+    các dòng hàng gắn qua `don.chi_tiet`; hàm lưu đơn cùng dòng hàng rồi kiểm tra "không thuốc kê đơn" bằng SQL."""
     chuyen = _tim_dong(None, den, tac_nhan, nguon)
     _kiem_tra_tac_nhan_khach(None, chuyen, tac_nhan)
     if tac_nhan.loai == LoaiTacNhan.khach and don.khach_hang_id != tac_nhan.khach_hang_id:
