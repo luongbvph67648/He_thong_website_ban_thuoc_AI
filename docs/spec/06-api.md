@@ -454,6 +454,14 @@ Nhân viên (mã quyền `return.review`, dược sĩ):
 - `POST /noi-bo/doi-tra/{yc_id}/hoan-tien`: sau khi kho nhận, tạo giao dịch `thanh_toan` `hoan_tien` `khoi_tao` (dòng 6); Admin xác nhận ở T6.3.
 - `POST /noi-bo/doi-tra/{yc_id}/thay-the`: tạo đơn thay thế 0đ có `don_hang_goc_id`, giữ hàng FEFO, dòng 8 rồi dòng 30 (spec 04).
 
+### 3.33 Nhận hàng trả về và hàng hoàn (KHO10, T6.2)
+Mã quyền `return.receive` (chỉ nhân viên kho; service chốt thêm vai trò `WAREHOUSE`). Kho không thấy thông tin khách.
+- `GET /noi-bo/nhan-hang/doi-tra`: yêu cầu `da_duyet` chờ nhận; mỗi dòng kèm các lô đã xuất cho dòng đơn (`lo_id`, `so_lo`, `han_su_dung`) và URL ký của ảnh/video khách gửi.
+- `POST /noi-bo/nhan-hang/doi-tra/{yc_id} {dong: [{ct_don_hang_id, lo_id?, so_luong_nhan}], ket_qua_kiem_hang}`: phải đủ mọi dòng của yêu cầu, mỗi dòng một lần. `so_luong_nhan` theo đơn vị của dòng đơn, không vượt số khách trả; `> 0` thì bắt buộc `lo_id` thuộc các lô đã xuất cho dòng đó. Mỗi lô: `so_luong_biet_tru += so_luong_nhan x he_so`, thẻ kho `nhan_tra_ve` khu `biet_tru`, chứng từ `yeu_cau_doi_tra`; `ct_yeu_cau_doi_tra.lo_id`, `so_luong_nhan`; yêu cầu sang `kho_da_nhan`, ghi `nhan_vien_kho_id`, `ket_qua_kiem_hang`; báo khách. Sai trạng thái: `409`.
+- `GET /noi-bo/nhan-hang/hoan-ve`: đơn `hoan_ve_kho`.
+- `POST /noi-bo/nhan-hang/hoan-ve/{don_id} {dong: [{ct_don_hang_id, tinh_trang: nguyen_niem_phong | hu_hong}], ghi_chu?}` -> `{ma_don, trang_thai, cho_hoan_tien, so_luong_hoan_nhap, so_luong_biet_tru}`: nguyên niêm phong thì hoàn nhập đúng lô (`hoan_nhap`), hư hỏng vào biệt trữ (`nhan_tra_ve`), rồi đơn sang `da_huy` qua dòng 27; đơn đã thanh toán tự có giao dịch hoàn tiền `khoi_tao`.
+- Ở DS09, hoàn tiền và đơn thay thế tính theo số THỰC NHẬN; kho không nhận được hàng nào thì chỉ còn đường từ chối.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

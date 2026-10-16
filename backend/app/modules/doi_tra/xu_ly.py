@@ -129,7 +129,9 @@ async def _tinh_hoan(db: AsyncSession, yc: YeuCauDoiTra, don: DonHang) -> Decima
     """Số tiền hoàn (spec 04 mục 5), cộng phí vận chuyển khi trả toàn bộ các dòng; không vượt tổng đã trả."""
     cts = {c.id: c for c in (await db.execute(select(CtDonHang).where(CtDonHang.don_hang_id == don.id))).scalars()}
     ds = (await db.execute(select(CtYeuCauDoiTra).where(CtYeuCauDoiTra.yeu_cau_id == yc.id))).scalars().all()
-    tra = {r.ct_don_hang_id: r.so_luong for r in ds}
+    # Kho đã nhận thì hoàn theo số thực nhận (không vượt số khách yêu cầu trả).
+    tra = {r.ct_don_hang_id: r.so_luong if r.so_luong_nhan is None else min(r.so_luong, r.so_luong_nhan) for r in ds}
+    tra = {i: sl for i, sl in tra.items() if sl > 0}
     so = dich_vu.tien_hoan([(cts[i], sl) for i, sl in tra.items()])
     if all(tra.get(i) == c.so_luong for i, c in cts.items()):
         so += don.phi_van_chuyen
@@ -220,6 +222,8 @@ async def tao_hoan_tien(db: AsyncSession, nv: NhanVien, yc_id: int) -> DoiTraNoi
     if await dich_vu.giao_dich_hoan(db, yc.id) is not None:
         raise LoiNghiepVu("TRUNG_DU_LIEU", "Yêu cầu này đã có giao dịch hoàn tiền")
     so_tien = await _tinh_hoan(db, yc, don)
+    if so_tien <= 0:
+        raise _sai_trang_thai("Kho không nhận được hàng nào nên không có gì để hoàn tiền; hãy từ chối yêu cầu")
     goc = (
         (
             await db.execute(
@@ -269,14 +273,20 @@ async def gui_hang_thay_the(db: AsyncSession, nv: NhanVien, yc_id: int) -> DoiTr
     yc, goc, _ = await _lay(db, nv, yc_id, khoa=True)
     if yc.trang_thai != TT.kho_da_nhan or yc.huong_xu_ly != HuongXuLyDoiTra.gui_hang_thay_the:
         raise _sai_trang_thai("Chỉ gửi hàng thay thế cho yêu cầu hướng thay thế mà kho đã nhận hàng")
-    dong = (
-        await db.execute(
-            select(CtYeuCauDoiTra, CtDonHang)
-            .join(CtDonHang, CtDonHang.id == CtYeuCauDoiTra.ct_don_hang_id)
-            .where(CtYeuCauDoiTra.yeu_cau_id == yc.id)
-            .order_by(CtYeuCauDoiTra.id)
-        )
-    ).all()
+    dong = [
+        (r, ct)
+        for r, ct in (
+            await db.execute(
+                select(CtYeuCauDoiTra, CtDonHang)
+                .join(CtDonHang, CtDonHang.id == CtYeuCauDoiTra.ct_don_hang_id)
+                .where(CtYeuCauDoiTra.yeu_cau_id == yc.id)
+                .order_by(CtYeuCauDoiTra.id)
+            )
+        ).all()
+        if (r.so_luong_nhan or 0) > 0
+    ]
+    if not dong:
+        raise _sai_trang_thai("Kho không nhận được hàng nào nên không có gì để thay thế; hãy từ chối yêu cầu")
     zero = lam_tron_vnd(0)
     moi = DonHang(
         ma_don=await ma_don_hang(db),
@@ -305,7 +315,7 @@ async def gui_hang_thay_the(db: AsyncSession, nv: NhanVien, yc_id: int) -> DoiTr
             ten_san_pham=ct.ten_san_pham,
             ten_don_vi=ct.ten_don_vi,
             he_so=ct.he_so,
-            so_luong=r.so_luong,
+            so_luong=min(r.so_luong, r.so_luong_nhan or 0),
             don_gia=zero,
             giam_gia_phan_bo=zero,
             thanh_tien=zero,

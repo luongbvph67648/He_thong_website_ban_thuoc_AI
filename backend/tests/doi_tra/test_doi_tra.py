@@ -240,6 +240,8 @@ async def test_tu_choi_can_ly_do_va_kiem_hang(dang_nhap_khach, dang_nhap_duoc_si
 async def _kho_da_nhan(db, ma, huong):
     yc = (await db.execute(select(YeuCauDoiTra).where(YeuCauDoiTra.ma_yeu_cau == ma))).scalars().one()
     yc.trang_thai, yc.huong_xu_ly = "kho_da_nhan", huong
+    for r in (await db.execute(select(CtYeuCauDoiTra).where(CtYeuCauDoiTra.yeu_cau_id == yc.id))).scalars():
+        r.so_luong_nhan = r.so_luong  # kho nhận đủ (T6.2 làm bước này thật)
     await db.flush()
     return yc
 

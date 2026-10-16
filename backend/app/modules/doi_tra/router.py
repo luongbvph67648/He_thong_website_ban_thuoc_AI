@@ -13,7 +13,7 @@ from app.core.tham_so import KHONG_NUL, IdInt
 from app.models.enums import LyDoDoiTra, TrangThaiDoiTra
 from app.models.he_thong import NhanVien
 from app.models.khach_hang import KhachHang
-from app.modules.doi_tra import dich_vu, xu_ly
+from app.modules.doi_tra import dich_vu, kho, xu_ly
 from app.modules.doi_tra.schemas import (
     DoiTraChiTietKhach,
     DoiTraNoiBoChiTiet,
@@ -24,10 +24,18 @@ from app.modules.doi_tra.schemas import (
     TaiKhoanNhanHoanVao,
     TuChoiDoiTraVao,
 )
+from app.modules.doi_tra.schemas_kho import (
+    DoiTraKhoRa,
+    HoanVeKhoRa,
+    KetQuaKiemHoan,
+    KiemHoanVeVao,
+    NhanDoiTraVao,
+)
 
 router = APIRouter(tags=["Đổi trả"])
 Khach = Annotated[KhachHang, Depends(khach_hien_tai)]
 DuocSi = Annotated[NhanVien, Depends(yeu_cau_quyen("return.review"))]
+Kho = Annotated[NhanVien, Depends(yeu_cau_quyen("return.receive"))]
 _DONG = TypeAdapter(list[DongTraVao])
 
 
@@ -109,3 +117,27 @@ async def hoan_tien(yc_id: IdInt, nv: DuocSi, db: Db):
 @router.post("/noi-bo/doi-tra/{yc_id}/thay-the", response_model=DoiTraNoiBoChiTiet, summary="Gửi hàng thay thế (DS09)")
 async def thay_the(yc_id: IdInt, nv: DuocSi, db: Db):
     return await xu_ly.gui_hang_thay_the(db, nv, yc_id)
+
+
+@router.get("/noi-bo/nhan-hang/doi-tra", response_model=list[DoiTraKhoRa], summary="Hàng khách trả chờ nhận (KHO10)")
+async def kho_ds_doi_tra(nv: Kho, db: Db):
+    return await kho.danh_sach_doi_tra(db, nv)
+
+
+@router.post(
+    "/noi-bo/nhan-hang/doi-tra/{yc_id}", response_model=DoiTraKhoRa, summary="Nhận và kiểm hàng khách trả (KHO10)"
+)
+async def kho_nhan_doi_tra(yc_id: IdInt, vao: NhanDoiTraVao, nv: Kho, db: Db):
+    return await kho.nhan_doi_tra(db, nv, yc_id, vao)
+
+
+@router.get("/noi-bo/nhan-hang/hoan-ve", response_model=list[HoanVeKhoRa], summary="Đơn hoàn về kho chờ kiểm (KHO10)")
+async def kho_ds_hoan_ve(nv: Kho, db: Db):
+    return await kho.danh_sach_hoan_ve(db, nv)
+
+
+@router.post(
+    "/noi-bo/nhan-hang/hoan-ve/{don_id}", response_model=KetQuaKiemHoan, summary="Kiểm hàng hoàn về kho (KHO10)"
+)
+async def kho_kiem_hoan_ve(don_id: IdInt, vao: KiemHoanVeVao, nv: Kho, db: Db):
+    return await kho.kiem_hoan_ve(db, nv, don_id, vao)

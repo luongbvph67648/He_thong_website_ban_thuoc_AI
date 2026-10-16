@@ -27,7 +27,7 @@ class DongTraRa(BaseModel):
     so_luong_tra: int
     thanh_tien: TienDoc
     so_luong_nhan: int | None
-    """Kho thực nhận (đơn vị cơ sở), có sau khi kho nhận hàng."""
+    """Kho thực nhận (theo đơn vị của dòng đơn), có sau khi kho nhận hàng."""
 
 
 class DoiTraTom(BaseModel):

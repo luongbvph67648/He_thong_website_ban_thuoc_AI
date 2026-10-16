@@ -742,16 +742,16 @@ _Đổi trả, biệt trữ, hoàn tiền, đánh giá, hỏi đáp, thông báo
   - [x] Form đổi trả trong chi tiết đơn; màn xử lý đổi trả cho dược sĩ.
 - **Ghi chú triển khai:** `modules/doi_tra/` (`dich_vu`, `xu_ly`, `router`, `schemas`); API ở spec 06 mục 3.32; quyết định QĐ-36 (không đổi schema, tài khoản nhận hoàn nhập sau khi có giao dịch hoàn, tính số tiền hoàn, dòng 30 cho đơn thay thế). Hàng đổi trả sau khi kho nhận (`ket_qua_kiem_hang`, `so_luong_nhan`) do T6.2. Test `tests/doi_tra/test_doi_tra.py` (16), `TrangXuLyDoiTra.test.tsx`, `doiTra.test.ts`; giao diện `DoiTraNut`, `TrangDoiTraCuaToi`, `TrangXuLyDoiTra`.
 
-### [ ] T6.2 · Nhận hàng trả, hàng hoàn và biệt trữ
+### [x] T6.2 · Nhận hàng trả, hàng hoàn và biệt trữ
 - **Chức năng:** KHO10 (Nhận hàng trả về, hàng hoàn)
 - **Phụ thuộc:** T6.1
 - **Bảng:** `yeu_cau_doi_tra`, `ct_yeu_cau_doi_tra`, `lo_thuoc`, `phan_bo_lo`, `bien_dong_kho`
 - **Tiêu chí chấp nhận:**
-  - [ ] Hàng đổi trả: ghi `lo_id`, `so_luong_nhan`, kết quả kiểm; cộng `so_luong_biet_tru` (thẻ kho `nhan_tra_ve`).
-  - [ ] Đơn `hoan_ve_kho`: kiểm hàng; nguyên niêm phong → hoàn nhập đúng lô; hư hỏng → biệt trữ; chuyển `da_huy` qua HT06; đã thanh toán → tạo hoàn tiền.
+  - [x] Hàng đổi trả: ghi `lo_id`, `so_luong_nhan`, kết quả kiểm; cộng `so_luong_biet_tru` (thẻ kho `nhan_tra_ve`).
+  - [x] Đơn `hoan_ve_kho`: kiểm hàng; nguyên niêm phong → hoàn nhập đúng lô; hư hỏng → biệt trữ; chuyển `da_huy` qua HT06; đã thanh toán → tạo hoàn tiền.
 - **Giao diện:**
-  - [ ] Màn nhận hàng trả/hoàn cho kho.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Màn nhận hàng trả/hoàn cho kho.
+- **Ghi chú triển khai:** `doi_tra/kho.py`, `schemas_kho.py`, 4 route `/noi-bo/nhan-hang/...` (spec 06 mục 3.33), quyết định QĐ-37 (đơn vị theo dòng đơn, hàng khách trả luôn vào biệt trữ, hoàn tiền theo số thực nhận). Hàng hoàn: hoàn nhập đúng lô hoặc biệt trữ, rồi dòng 27 qua HT06 (hook tạo hoàn tiền). Giao diện `/hang-tra-ve`. Test `tests/doi_tra/test_nhan_hang_tra.py` (8), `TrangHangTraVe.test.tsx` (2).
 
 ### [ ] T6.3 · Xác nhận hoàn tiền
 - **Chức năng:** AD17 (Xác nhận hoàn tiền)

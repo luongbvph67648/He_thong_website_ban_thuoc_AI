@@ -368,3 +368,11 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **Từ chối sau khi kho nhận** cần `ket_qua_kiem_hang` do kho ghi (T6.2).
 - **Đơn thay thế (dòng 30):** tổng 0đ, `cod`, `da_thanh_toan`, `don_hang_goc_id`, giữ hàng FEFO; thêm dòng 30 vào bảng chuyển trạng thái để phân biệt với dòng 4.
 
+## QĐ-37: Nhận hàng trả về và hàng hoàn (2026-10-16, task T6.2)
+- **Đơn vị:** `so_luong_nhan` tính theo đơn vị của dòng đơn (cùng đơn vị khách trả); tồn cộng `so_luong_nhan x he_so`.
+- **Hàng khách trả luôn vào biệt trữ** (dù nguyên vẹn), vì đã qua tay khách; không bán lại. Xử lý tiếp bằng phiếu hủy hoặc xuất trả NCC.
+- **Một lô cho mỗi dòng:** schema `ct_yeu_cau_doi_tra` chỉ có một `lo_id`, nên kho chọn một lô trong các lô đã xuất cho dòng đó.
+- **Hoàn tiền/đơn thay thế theo số thực nhận** (`min(trả, nhận)`); không nhận được hàng nào thì dược sĩ chỉ có thể từ chối.
+- **Hàng hoàn kiểm theo từng dòng đơn** (nguyên niêm phong hoặc hư hỏng); hàng đã qua tay vận chuyển nhưng niêm phong nguyên vẹn thì hoàn nhập đúng lô.
+- **Kho không thấy thông tin khách** trong màn nhận hàng.
+
