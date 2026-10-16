@@ -22,6 +22,7 @@ from app.modules.cua_hang import chi_tiet as dich_vu_chi_tiet
 from app.modules.cua_hang import danh_muc as dich_vu_danh_muc
 from app.modules.cua_hang import danh_sach as dich_vu_danh_sach
 from app.modules.cua_hang import tim_kiem as dich_vu_tim_kiem
+from app.modules.cua_hang import tim_kiem_lai
 from app.modules.cua_hang.chi_tiet import NguonXem
 from app.modules.cua_hang.danh_sach import BoLoc, SapXep
 from app.modules.cua_hang.schemas import (
@@ -110,12 +111,15 @@ async def tim_kiem(
     x_ma_phien: Annotated[str | None, Header(max_length=200)] = None,
 ):
     tu_khoa = dich_vu_tim_kiem.chuan_hoa_tu_khoa(q)
-    ket_qua = await dich_vu_tim_kiem.tim_san_pham(db, tu_khoa, tp)
+    lai = await tim_kiem_lai.tim_lai(db, tu_khoa, tp)
+    ket_qua = lai.trang
     # Chỉ ghi lần tìm ở trang 1 (đổi trang không phải tìm mới); quá giới hạn thì vẫn trả kết quả, chỉ không ghi.
     ghi = len(tu_khoa) >= dich_vu_tim_kiem.TOI_THIEU_KY_TU and tp.trang == 1
     if ghi and bo_gioi_han.thu(f"tim:{dia_chi_ip(request)}", GHI_TIM_TOI_DA_MOI_IP, GHI_TIM_CUA_SO_GIAY) is None:
         ma_phien = dich_vu_chi_tiet.ma_phien_hop_le(x_ma_phien)
-        await dich_vu_tim_kiem.ghi_lich_su_tim_kiem(db, tu_khoa, ket_qua.tong, khach=khach, ma_phien=ma_phien)
+        await dich_vu_tim_kiem.ghi_lich_su_tim_kiem(
+            db, tu_khoa, ket_qua.tong, khach=khach, ma_phien=ma_phien, che_do=lai.che_do
+        )
     return ket_qua
 
 

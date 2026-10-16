@@ -7,6 +7,7 @@ hợp lệ. Giá và tồn kho không bao giờ đưa vào vector.
 import hashlib
 import re
 from dataclasses import dataclass, field
+from enum import Enum
 from typing import Any
 
 from pydantic import BaseModel
@@ -57,6 +58,11 @@ NHAN_TRUONG = {
 _DAU_CAU = re.compile(r"(?<=[.!?])\s+|\n+")
 
 
+def _gt(x: Any) -> str:
+    """Giá trị chuỗi của enum (đối tượng nạp sẵn trong phiên có thể còn giữ chuỗi thô)."""
+    return x.value if isinstance(x, Enum) else str(x)
+
+
 @dataclass
 class Doan:
     nguon_loai: NguonTriThuc
@@ -69,7 +75,7 @@ class Doan:
 
     @property
     def khoa(self) -> tuple[str, int, str, int]:
-        return (self.nguon_loai.value, self.nguon_id, self.truong, self.so_doan)
+        return (_gt(self.nguon_loai), self.nguon_id, self.truong, self.so_doan)
 
     @property
     def hash(self) -> str:
@@ -162,7 +168,7 @@ async def _doan_san_pham(db: AsyncSession) -> list[Doan]:
     }
     ket_qua: list[Doan] = []
     for sp, ten_dm in sp_ds:
-        loai = sp.loai_san_pham.value
+        loai = _gt(sp.loai_san_pham)
         meta = {
             "san_pham_id": sp.id,
             "loai_san_pham": loai,
@@ -221,10 +227,10 @@ async def _doan_bai_viet(db: AsyncSession) -> list[Doan]:
                 "loai_san_pham": None,
                 "can_ke_don": False,
                 "danh_muc_id": None,
-                "loai_nguon": b.loai.value,
+                "loai_nguon": _gt(b.loai),
                 "doan": i,
             }
-            ket_qua.append(Doan(nguon[b.loai], b.id, "noi_dung", i, d, None, meta))
+            ket_qua.append(Doan(nguon[LoaiBaiViet(_gt(b.loai))], b.id, "noi_dung", i, d, None, meta))
     return ket_qua
 
 
@@ -239,7 +245,7 @@ async def dong_bo(db: AsyncSession) -> KetQuaDongBo:
     mo_hinh = embedding.ten_mo_hinh()
     mong_muon = {d.khoa: d for d in await doan_mong_muon(db)}
     hien_co = {
-        (r.nguon_loai.value, r.nguon_id, r.truong or "", int((r.metadata_ or {}).get("doan", 0))): r
+        (_gt(r.nguon_loai), r.nguon_id, r.truong or "", int((r.metadata_ or {}).get("doan", 0))): r
         for r in (await db.execute(select(TaiLieuTriThuc))).scalars()
     }
     kq = KetQuaDongBo(mo_hinh=mo_hinh)
@@ -304,7 +310,7 @@ async def thong_ke(db: AsyncSession) -> ThongKeTriThuc:
     hien_tai = embedding.ten_mo_hinh()
     return ThongKeTriThuc(
         tong_doan=sum(theo_nguon.values()),
-        theo_nguon={k.value: v for k, v in theo_nguon.items()},
+        theo_nguon={_gt(k): v for k, v in theo_nguon.items()},
         mo_hinh_hien_tai=hien_tai,
         mo_hinh_trong_kho=mo_hinh_kho,
         cap_nhat_gan_nhat=await db.scalar(select(func.max(TaiLieuTriThuc.updated_at))),

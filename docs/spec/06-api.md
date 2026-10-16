@@ -503,6 +503,9 @@ Dược sĩ (service chốt vai trò `PHARMACIST`):
 - `GET /noi-bo/tri-thuc` (`ai.knowledge.sync`) -> `{tong_doan, theo_nguon, mo_hinh_hien_tai, mo_hinh_trong_kho, cap_nhat_gan_nhat, can_dong_bo_lai_vector}`. `POST /noi-bo/tri-thuc/dong-bo` -> `{them, sua, xoa, bo_qua, tong_doan, mo_hinh}`: đoạn tổng quan (mỗi sản phẩm đang kinh doanh), đoạn theo trường của nội dung chuyên môn bản `da_duyet` mới nhất (cắt 800 ký tự chồng 100), bài viết `da_duyet` có `dua_vao_ai` cùng chính sách và FAQ đã duyệt (cắt theo tiêu đề); bỏ qua đoạn có `hash_noi_dung` và `mo_hinh_embedding` không đổi; xóa đoạn của nguồn không còn hợp lệ; đang có lần đồng bộ khác chạy là `409`. Job `ai_dong_bo_tri_thuc` 02:30 hằng đêm.
 - Mã nguồn: `app/ai/claude.py` (`goi_json`, `stream_chat`, `SuDung`, `AiTuChoi`, `AiLoi`), `app/ai/gia_lap.py` (kịch bản cho test), `app/ai/embedding.py` (`embed`, `ten_mo_hinh`; nhóm phụ thuộc tùy chọn `ai-local` cho BGE-M3).
 
+### 3.40 Tìm kiếm lai (AI01, T7.2)
+`GET /tim-kiem` (KVL04) giữ nguyên hợp đồng. Khi module `tim_kiem` bật: lấy 50 sản phẩm theo từ khóa (T2.5) và tối đa 100 đoạn tri thức gần nhất theo cosine (`<=>`, chỉ đoạn cùng mô hình embedding đang dùng, khoảng cách <= 0,55), ghép bằng RRF (k = 60) kèm điểm cộng nhỏ 0,002 cho sản phẩm còn hàng, chỉ giữ sản phẩm còn hiển thị (`la_hien_thi`), tối đa 150 kết quả. Tìm được theo triệu chứng/công dụng ("đau đầu"). AI tắt, embedding hoặc truy vấn vector lỗi (chạy trong savepoint), hoặc kho chưa có đoạn nào gần: quay về chỉ từ khóa. `lich_su_tim_kiem.che_do` ghi `hybrid` khi dùng ghép, ngược lại `tu_khoa`. Trang tìm kiếm vẫn hiện thuốc kê đơn; `tim_kiem_lai.tim_lai(..., chi_khong_ke_don=True)` và `id_ngu_nghia(..., chi_khong_ke_don=True)` lọc `metadata->>'can_ke_don' = 'false'` trong SQL cho chatbot (T7.3).
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

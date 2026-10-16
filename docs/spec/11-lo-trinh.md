@@ -824,14 +824,14 @@ _Kho tri thức, tìm kiếm lai, chatbot RAG, chuyển dược sĩ, đọc ản
   - [x] Màn cấu hình AI và nút đồng bộ kho tri thức (hiển thị số đoạn thêm/sửa/xóa).
 - **Ghi chú triển khai:** `app/ai/{claude,gia_lap,embedding}.py`, `modules/ai_quan_tri/{cau_hinh_ai,tri_thuc,router}.py`, job `ai_dong_bo_tri_thuc`; API spec 06 mục 3.39; QĐ-43. Giao diện `/quan-tri/cau-hinh-ai`, `/quan-tri/tri-thuc-ai`. Test `tests/ai/test_claude.py` (11), `tests/ai/test_tri_thuc.py` (7), `ai.test.tsx` (3). Chưa chạy BGE-M3 thật và chưa gọi Claude thật (cần khóa và nhóm `ai-local`).
 
-### [ ] T7.2 · Tìm kiếm lai
+### [x] T7.2 · Tìm kiếm lai
 - **Chức năng:** AI01 (Tìm kiếm thông minh)
 - **Phụ thuộc:** T7.1, T2.5
 - **Bảng:** `san_pham`, `tai_lieu_tri_thuc`, `lich_su_tim_kiem`
 - **Tiêu chí chấp nhận:**
-  - [ ] Kết hợp kết quả trigram (T2.5) và vector (`<=>` cosine trên `tai_lieu_tri_thuc`) bằng Reciprocal Rank Fusion (k = 60); tìm được theo triệu chứng/công dụng.
-  - [ ] AI lỗi hoặc tắt → tự quay về chỉ từ khóa (test bằng client giả ném lỗi). Ghi `che_do = hybrid`.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Kết hợp kết quả trigram (T2.5) và vector (`<=>` cosine trên `tai_lieu_tri_thuc`) bằng Reciprocal Rank Fusion (k = 60); tìm được theo triệu chứng/công dụng.
+  - [x] AI lỗi hoặc tắt → tự quay về chỉ từ khóa (test bằng client giả ném lỗi). Ghi `che_do = hybrid`.
+- **Ghi chú triển khai:** `cua_hang/tim_kiem_lai.py` (`tim_lai`, `ghep_rrf`, `id_ngu_nghia`); route `/tim-kiem` dùng nó; API spec 06 mục 3.40. Chưa thêm điểm thưởng "bán chạy" vào RRF (chỉ cộng nhỏ cho còn hàng). Test `tests/ai/test_tim_kiem_lai.py` (7).
 
 ### [ ] T7.3 · Chatbot tư vấn (RAG)
 - **Chức năng:** KVL05 (Chat với trợ lý AI), AI02 (Phân loại ý định, phát hiện dấu hiệu nguy hiểm), AI03 (Trả lời bằng RAG)

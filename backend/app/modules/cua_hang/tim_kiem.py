@@ -172,9 +172,16 @@ async def goi_y(db: AsyncSession, q: str) -> list[GoiYTimKiem]:
 
 
 async def ghi_lich_su_tim_kiem(
-    db: AsyncSession, q: str, so_ket_qua: int, *, khach: KhachHang | None, ma_phien: str | None
+    db: AsyncSession,
+    q: str,
+    so_ket_qua: int,
+    *,
+    khach: KhachHang | None,
+    ma_phien: str | None,
+    che_do: str = "tu_khoa",
 ) -> None:
-    """Ghi `lich_su_tim_kiem` (`che_do = tu_khoa`). Khách đăng nhập theo token, vãng lai theo mã phiên. Cùng người tìm
+    """Ghi `lich_su_tim_kiem` (`che_do` = `tu_khoa` hoặc `hybrid`). Khách đăng nhập theo token, vãng lai theo mã phiên.
+    Cùng người tìm
     cùng từ khóa (không phân biệt hoa thường) trong 30 phút chỉ giữ một dòng."""
     tu_khoa = q[:255]
     nguoi = (
@@ -201,7 +208,7 @@ async def ghi_lich_su_tim_kiem(
             khach_hang_id=khach.id if khach is not None else None,
             ma_phien=None if khach is not None else ma_phien,
             tu_khoa=tu_khoa,
-            che_do="tu_khoa",
+            che_do=che_do,
             so_ket_qua=so_ket_qua,
         )
     )
