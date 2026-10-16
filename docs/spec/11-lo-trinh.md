@@ -520,18 +520,23 @@ _Nhập kho theo lô, thẻ kho, cảnh báo, kiểm kê, hủy, xuất trả, b
 
 _Giỏ hàng, máy trạng thái, đặt hàng giữ hàng FEFO, thanh toán, xử lý và giao đơn._
 
-### [ ] T4.1 · Giỏ hàng và sổ địa chỉ
+### [x] T4.1 · Giỏ hàng và sổ địa chỉ
 - **Chức năng:** KVL07 (Quản lý giỏ hàng), KTV01 (Quản lý hồ sơ, sổ địa chỉ)
 - **Phụ thuộc:** T2.4
 - **Bảng:** `gio_hang`, `ct_gio_hang`, `san_pham`, `don_vi_quy_doi`, `luat_mua_kem`, `khach_hang`, `dia_chi`
 - **Tiêu chí chấp nhận:**
-  - [ ] Giỏ của khách vãng lai ở localStorage; `PUT /api/v1/toi/gio-hang/gop` gộp khi đăng nhập (cộng dồn, cắt theo giới hạn).
-  - [ ] Từ chối thuốc kê đơn (`ma_loi = "THUOC_KE_DON_KHONG_VAO_GIO"`), đơn vị `ban_online = false`, vượt `so_luong_toi_da_moi_don` (tính theo đơn vị cơ sở).
-  - [ ] Gợi ý "thường mua cùng" đọc `luat_mua_kem` (rỗng thì ẩn).
-  - [ ] Sổ địa chỉ: CRUD, đúng 1 mặc định; mã tỉnh/xã theo danh mục của đơn vị vận chuyển (spec 08).
+  - [x] Giỏ của khách vãng lai ở localStorage; `PUT /api/v1/toi/gio-hang/gop` gộp khi đăng nhập (cộng dồn, cắt theo giới hạn).
+  - [x] Từ chối thuốc kê đơn (`ma_loi = "THUOC_KE_DON_KHONG_VAO_GIO"`), đơn vị `ban_online = false`, vượt `so_luong_toi_da_moi_don` (tính theo đơn vị cơ sở).
+  - [x] Gợi ý "thường mua cùng" đọc `luat_mua_kem` (rỗng thì ẩn).
+  - [x] Sổ địa chỉ: CRUD, đúng 1 mặc định; mã tỉnh/xã theo danh mục của đơn vị vận chuyển (spec 08).
 - **Giao diện:**
-  - [ ] Mini-cart, trang giỏ hàng, quản lý địa chỉ trong trang tài khoản.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Mini-cart, trang giỏ hàng, quản lý địa chỉ trong trang tài khoản.
+- **Ghi chú triển khai:**
+  - Spec 06 mục 3.20, QĐ-23. Giỏ không giữ hàng; thuốc kê đơn bị chặn ở service cho mọi đường vào giỏ (thêm, sửa, gộp), dòng đã lưu mà sản phẩm đổi loại thì `mua_duoc = false`. Giới hạn mua cộng mọi đơn vị của sản phẩm quy về đơn vị cơ sở; gộp giỏ cắt theo giới hạn và báo `bo_qua`.
+  - Danh mục tỉnh/xã là bản giả (JSON) ở `tich_hop/van_chuyen/`; bản GHN làm ở T4.7. Địa chỉ lưu `ma_tinh`/`ma_phuong_xa`, tên do máy chủ điền, `ma_quan_huyen` để trống.
+  - Giao diện: mini-cart ở header (số lượng + popover), `/gio-hang` (đổi số lượng, đổi đơn vị, xóa, "Thường mua cùng" tự ẩn khi rỗng), nút "Thêm vào giỏ" ở trang sản phẩm, `/tai-khoan` có sổ địa chỉ. `test/render.tsx` nay bọc `<App>` của antd.
+  - Chưa làm: sửa hồ sơ cá nhân và đổi mật khẩu của khách (chưa có API), Idempotency-Key cho thêm giỏ không cần (cộng dồn là thao tác của người dùng).
+
 
 ### [ ] T4.2 · Máy trạng thái đơn hàng
 - **Chức năng:** HT06 (Máy trạng thái đơn hàng)
@@ -953,3 +958,5 @@ Lỗi hoặc việc phát hiện trong lúc làm nhưng nằm ngoài phạm vi t
 - [ ] (T1.3-rv) Mặc định thiên về dev: `TIN_NHAN_CHE_DO=gia` (OTP ghi vào log nếu quên đặt `that`), `.env.example` đặt `COOKIE_SECURE=false`; thêm chốt khi khởi động ở môi trường production và đưa vào checklist deploy (T8.2/T8.3).
 - [ ] (T1.3-rv) Registry/ma trận phân quyền: `tests/phan_quyen/ma_tran.py` bỏ qua route không có `methods` (WebSocket `/tu-van/ws`, T6.x); các guard hiện nhận `Request` nên chưa dùng được cho WebSocket. Route thật chưa có ca bị chặn nào vì chỉ có `profile.self`: từ T3.1 trở đi mỗi route nội bộ mới tự đưa ca bị chặn vào ma trận.
 - [ ] (T3.2) Job dọn ảnh mồ côi (banner, ảnh bìa bài viết, ảnh sản phẩm tải lên nhưng bản ghi không lưu): quét `storage/cong-khai`, xóa file không được bản ghi nào tham chiếu và cũ hơn 24 giờ.
+- [ ] (T4.1) Khách thành viên chưa sửa được hồ sơ cá nhân (họ tên, email) và đổi mật khẩu trong trang tài khoản (KTV01): spec 06 chưa có `PATCH /toi` và `POST /toi/doi-mat-khau`; cần bổ sung spec rồi làm.
+- [ ] (T4.1) Giỏ hàng dùng số tồn khả dụng chỉ để cảnh báo; chưa có test tranh chấp nhiều session cho `them_dong`/`gop_gio` cùng một giỏ (đã tuần tự hóa bằng khóa dòng `gio_hang`).

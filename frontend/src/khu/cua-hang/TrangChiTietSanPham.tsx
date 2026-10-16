@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Alert, Breadcrumb, Button, Col, Descriptions, Empty, Progress, Rate, Result, Row, Segmented, Skeleton, Space, Table, Tabs, Tag, Tooltip, Typography } from 'antd'
+import { Alert, App, Breadcrumb, Button, Col, Descriptions, Empty, InputNumber, Progress, Rate, Result, Row, Segmented, Skeleton, Space, Table, Tabs, Tag, Typography } from 'antd'
 import { useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../../api/client'
@@ -19,6 +19,7 @@ import {
 import { NhanTrangThai } from '../../components/NhanTrangThai'
 import { usePhien } from '../../stores/phien'
 import { LuoiSanPham } from './TheSanPham'
+import { useGioHang } from './gio-hang/gioHang'
 
 function ThuVien({ anh, ten }: { anh: SanPhamChiTiet['anh']; ten: string }) {
   const [chon, datChon] = useState(() => Math.max(0, anh.findIndex((a) => a.la_anh_chinh)))
@@ -53,6 +54,10 @@ function ThuVien({ anh, ten }: { anh: SanPhamChiTiet['anh']; ten: string }) {
 
 /** Giá, chọn đơn vị và hành động mua. Thuốc kê đơn KHÔNG có nút thêm vào giỏ (CLAUDE.md quy tắc 6). */
 function KhuMuaHang({ sp }: { sp: SanPhamChiTiet }) {
+  const { message } = App.useApp()
+  const gio = useGioHang()
+  const [soLuong, datSoLuong] = useState(1)
+  const [dangThem, datDangThem] = useState(false)
   const [donViId, datDonViId] = useState<number | null>(null)
   const donVi = sp.don_vi.find((d) => d.id === donViId) ?? sp.don_vi.find((d) => d.la_mac_dinh) ?? sp.don_vi[0]
 
@@ -90,13 +95,24 @@ function KhuMuaHang({ sp }: { sp: SanPhamChiTiet }) {
       </Typography.Title>
       {donVi.he_so > 1 && <Typography.Text type="secondary">1 {donVi.ten_don_vi} = {donVi.he_so} {sp.don_vi.find((d) => d.he_so === 1)?.ten_don_vi ?? 'đơn vị nhỏ nhất'}</Typography.Text>}
       {donVi.con_hang ? <Tag color="green">Còn hàng</Tag> : <Tag>Hết hàng</Tag>}
-      <Tooltip title="Giỏ hàng đang được xây dựng">
-        <span style={{ display: 'block' }}>
-          <Button type="primary" size="large" block disabled>
-            Thêm vào giỏ
-          </Button>
-        </span>
-      </Tooltip>
+      <Space>
+        <InputNumber aria-label="Số lượng" min={1} max={9999} precision={0} value={soLuong} onChange={(v) => datSoLuong(typeof v === 'number' ? v : 1)} />
+        <Button
+          type="primary"
+          size="large"
+          loading={dangThem}
+          disabled={!donVi.con_hang}
+          onClick={async () => {
+            datDangThem(true)
+            const loi = await gio.them({ san_pham_id: sp.id, don_vi_id: donVi.id, so_luong: soLuong })
+            datDangThem(false)
+            if (loi) void message.error(loi)
+            else void message.success('Đã thêm vào giỏ hàng')
+          }}
+        >
+          Thêm vào giỏ
+        </Button>
+      </Space>
     </Space>
   )
 }

@@ -1,10 +1,12 @@
-import { LogoutOutlined, ShoppingCartOutlined, UserOutlined } from '@ant-design/icons'
+import { LogoutOutlined, UserOutlined } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button, Layout, Skeleton, Space } from 'antd'
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { dangXuatKhach } from '../../api/dangXuat'
 import { usePhien } from '../../stores/phien'
 import { ChanTrang } from './ChanTrang'
+import { MiniGioHang } from './gio-hang/MiniGioHang'
+import { useGopGioKhiDangNhap } from './gio-hang/gioHang'
 import { MenuDanhMuc } from './MenuDanhMuc'
 import { OTimKiem } from './OTimKiem'
 
@@ -12,13 +14,14 @@ const { Header, Content } = Layout
 
 /**
  * Layout khu cửa hàng (`/`): header gồm logo, tìm kiếm, giỏ hàng, tài khoản, kèm thanh danh mục 3 cấp. Widget chat nổi
- * (T6.x) và số lượng trên giỏ hàng (T4.x) sẽ gắn vào đây khi có dữ liệu.
+ * (T6.x) sẽ gắn vào đây khi có dữ liệu.
  */
 export default function CuaHangLayout() {
   const khachDaDangNhap = usePhien((s) => s.loai === 'khach')
   const hoTen = usePhien((s) => s.hoSo?.hoTen)
   const daKhoiPhuc = usePhien((s) => s.daKhoiPhuc)
   const dieuHuong = useNavigate()
+  useGopGioKhiDangNhap()
   const queryClient = useQueryClient()
 
   async function dangXuat() {
@@ -46,9 +49,7 @@ export default function CuaHangLayout() {
         </Link>
         <OTimKiem />
         <Space size="large">
-          <Link to="/gio-hang">
-            <ShoppingCartOutlined /> Giỏ hàng
-          </Link>
+          <MiniGioHang />
           {!daKhoiPhuc ? (
             <span role="status" aria-label="Đang tải tài khoản">
               <Skeleton.Button active size="small" />

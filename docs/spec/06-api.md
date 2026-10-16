@@ -289,6 +289,25 @@ Quyền `report.inventory` (`xem`: kho và Admin). Tính hoàn toàn từ `bien_
   - `den_ngay` < `tu_ngay` hoặc kỳ dài hơn 3.660 ngày là `400 DU_LIEU_KHONG_HOP_LE`.
 - `GET /noi-bo/bao-cao/nhap-xuat-ton/excel` cùng bộ lọc (không phân trang), trả file `.xlsx`; quá 20.000 dòng là `400` (thu hẹp bộ lọc). Chuỗi bắt đầu bằng `= + - @` được thêm dấu nháy để Excel không hiểu là công thức.
 
+### 3.20 Giỏ hàng, sổ địa chỉ và địa giới (KVL07, KTV01, T4.1)
+**Giỏ hàng.** Khách vãng lai giữ giỏ ở localStorage (`[{san_pham_id, don_vi_id, so_luong}]`), khách thành viên có giỏ ở CSDL (`gio_hang` một giỏ mỗi khách, `ct_gio_hang` duy nhất theo (`san_pham_id`, `don_vi_id`)). Giỏ KHÔNG giữ hàng; tồn chỉ bị giữ khi đặt hàng (T4.4).
+- **Quy tắc thêm/sửa một dòng** (mọi đường vào giỏ dùng chung một hàm, thuốc kê đơn bị chặn ở service, không chỉ ở UI):
+  - Sản phẩm là `thuoc_ke_don`: `422 THUOC_KE_DON_KHONG_VAO_GIO`. Sản phẩm không hiển thị với khách (đã xóa, ngừng kinh doanh, danh mục ẩn): `404 KHONG_TIM_THAY`.
+  - `don_vi_id` không thuộc sản phẩm hoặc `ban_online = false`: `400 DU_LIEU_KHONG_HOP_LE` (`chi_tiet: [{truong: "don_vi_id", loi}]`).
+  - `so_luong` từ 1 đến 9.999 mỗi dòng. Tổng của sản phẩm trong giỏ, quy về đơn vị cơ sở (`so_luong * he_so`, cộng mọi đơn vị của sản phẩm), vượt `so_luong_toi_da_moi_don`: `422 VUOT_SO_LUONG_TOI_DA` với `chi_tiet: {san_pham_id, toi_da}` (đơn vị cơ sở). Giới hạn rỗng là không giới hạn.
+- **Khách thành viên** (`khach_hien_tai`, giỏ luôn là giỏ của khách trong token):
+  - `GET /toi/gio-hang` -> `GioHangRa`. `POST /toi/gio-hang/dong` `{san_pham_id, don_vi_id, so_luong}` -> cộng dồn vào dòng cùng (sản phẩm, đơn vị) rồi trả `GioHangRa`.
+  - `PUT /toi/gio-hang/dong/{id}` `{so_luong?, don_vi_id?}`: đặt số lượng và/hoặc đổi đơn vị; đổi sang đơn vị đã có dòng thì gộp (cộng số lượng) vào dòng đó. `DELETE /toi/gio-hang/dong/{id}` xóa một dòng, `DELETE /toi/gio-hang` xóa hết. Dòng của giỏ khác là `404`.
+  - `PUT /toi/gio-hang/gop` `{dong: [...]}` (tối đa 100 dòng): gộp giỏ localStorage khi đăng nhập. Cộng dồn vào giỏ tài khoản, số lượng vượt giới hạn bị CẮT về mức còn được thêm (làm tròn xuống theo đơn vị của dòng), dòng không hợp lệ (thuốc kê đơn, sản phẩm ẩn, đơn vị không bán online, hết chỗ theo giới hạn) bị bỏ qua, không làm hỏng cả lần gộp. Trả `{gio_hang: GioHangRa, bo_qua: [{san_pham_id, don_vi_id, ly_do}]}` với `ly_do` là `thuoc_ke_don`, `khong_hien_thi`, `don_vi_khong_hop_le` hoặc `vuot_toi_da`.
+- **Công khai** `POST /gio-hang/xem` `{dong: [...]}` (tối đa 100 dòng, không lưu gì): dựng `GioHangRa` cho giỏ localStorage của khách vãng lai (tên, giá hiện hành, cờ mua được). `GET /gio-hang/mua-kem?san_pham_id=...` (tối đa 20 id) -> tối đa 6 sản phẩm "Thường được mua cùng" từ `luat_mua_kem` (`san_pham_a` trong giỏ, `san_pham_b` chưa có trong giỏ, hiển thị, KHÔNG phải thuốc kê đơn, có đơn vị bán online), xếp theo `lift` rồi `confidence` giảm dần; chưa có luật thì trả `[]` (giao diện ẩn mục này).
+- **`GioHangRa`:** `{dong: [{dong_id (null với giỏ vãng lai), san_pham: {id, ten, slug, anh_chinh_url, can_tu_van}, don_vi: {id, ten_don_vi, he_so, gia_ban}, don_vi_co_the_chon: [{id, ten_don_vi, he_so, gia_ban}], so_luong, thanh_tien, toi_da_don_vi (null nếu không giới hạn), ton_kha_dung_don_vi, mua_duoc, ly_do}], tam_tinh, tong_so_luong}`. `mua_duoc = false` kèm `ly_do` (`thuoc_ke_don`, `khong_hien_thi`, `don_vi_khong_hop_le`, `vuot_toi_da`) khi dòng đã lưu không còn hợp lệ (sản phẩm đổi loại, ngừng bán...); dòng đó không tính vào `tam_tinh`. `thanh_tien = lam_tron_vnd(gia_ban * so_luong)`; `tam_tinh` là tổng các dòng mua được. Tiền dạng chuỗi số.
+**Sổ địa chỉ** (`/toi/dia-chi`, `khach_hien_tai`, tối đa 10 địa chỉ mỗi khách; địa chỉ của khách khác là `404`):
+- `GET` -> `[{id, ten_nguoi_nhan, so_dien_thoai, dia_chi_chi_tiet, ma_tinh, ten_tinh, ma_phuong_xa, ten_phuong_xa, la_mac_dinh}]`, mặc định trước.
+- `POST` `{ten_nguoi_nhan, so_dien_thoai, dia_chi_chi_tiet, ma_tinh, ma_phuong_xa, la_mac_dinh?}` -> 201. `PUT /{id}` cùng trường (trừ `la_mac_dinh`), `POST /{id}/mac-dinh` đặt mặc định, `DELETE /{id}`.
+- `ma_tinh`, `ma_phuong_xa` phải có trong danh mục địa giới và xã thuộc tỉnh đó, ngược lại `400`; `ten_tinh`, `ten_phuong_xa` do máy chủ điền từ danh mục (không nhận từ client). `ma_quan_huyen` để trống (mô hình 2 cấp).
+- Luôn đúng một địa chỉ mặc định khi khách có ít nhất một địa chỉ: địa chỉ đầu tiên tự là mặc định; đặt mặc định mới thì bỏ mặc định cũ; xóa địa chỉ mặc định thì địa chỉ cũ nhất còn lại thành mặc định.
+**Địa giới** (công khai, spec 08 mục 8): `GET /dia-gioi/tinh` -> `[{ma, ten}]`; `GET /dia-gioi/tinh/{ma}/xa` -> `[{ma, ten}]`, mã tỉnh lạ là `404`. Nguồn là danh mục của đơn vị vận chuyển (`tich_hop/van_chuyen`); T4.1 chỉ có bản giả (file JSON), bản GHN master data cache 24 giờ làm cùng adapter vận chuyển (T4.7).
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

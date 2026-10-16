@@ -23,6 +23,8 @@ import TrangNoiDungChuyenMon from './khu/nhan-vien/chuyen-mon/TrangNoiDungChuyen
 import TrangSoanNoiDung from './khu/nhan-vien/chuyen-mon/TrangSoanNoiDung'
 import TrangTuongTac from './khu/nhan-vien/chuyen-mon/TrangTuongTac'
 import TrangBaoCaoNxt from './khu/nhan-vien/kho/TrangBaoCaoNxt'
+import TrangGioHang from './khu/cua-hang/gio-hang/TrangGioHang'
+import TrangTaiKhoan from './khu/cua-hang/tai-khoan/TrangTaiKhoan'
 import TrangCanhBao from './khu/nhan-vien/kho/TrangCanhBao'
 import TrangDieuChinh from './khu/nhan-vien/kho/TrangDieuChinh'
 import TrangKiemKe from './khu/nhan-vien/kho/TrangKiemKe'
@@ -73,6 +75,8 @@ const TRANG_THAT: Record<string, ReactNode> = {
   '/bai-viet/:slug': <TrangBaiViet loai="bai_viet" />,
   '/chinh-sach/:slug': <TrangBaiViet loai="chinh_sach" />,
   '/hoi-dap': <TrangHoiDap />,
+  '/gio-hang': <TrangGioHang />,
+  '/tai-khoan': <TrangTaiKhoan />,
 }
 
 /** Trang khu nhân viên đã làm thật (khóa là đường dẫn trong `MUC_NHAN_VIEN`); còn lại là trang giữ chỗ. */

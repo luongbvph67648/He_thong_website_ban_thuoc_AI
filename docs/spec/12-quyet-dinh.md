@@ -245,3 +245,16 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
   - **`ton_kho.giu_hang_nhieu`:** đơn nhiều dòng giữ hàng trong MỘT lần khóa mọi lô ứng viên theo id tăng dần (FEFO chỉ quyết định thứ tự lấy sau khi đã khóa), thiếu hàng ở dòng nào thì không đổi gì. Bất biến 4 và 5 (liên quan đơn hàng) thêm vào `tests/bat_bien` ở T4.4.
   - **Rà soát nghiệp vụ gộp theo giai đoạn** (một lần cho T3.1 đến T3.5) để tiết kiệm chi phí, theo yêu cầu của người dùng.
 - **Hệ quả:** spec 06 mục 3.15 và bảng mã lỗi (`CAN_XAC_NHAN_CANH_BAO`, `LO_KHONG_NHAP_DUOC`); `modules/kho/`; `tests/bat_bien/`.
+
+## QĐ-23: Giỏ hàng và sổ địa chỉ (2026-10-16, task T4.1)
+- **Quyết định:**
+  - **Giỏ không giữ hàng;** tồn chỉ bị giữ khi đặt hàng (T4.4). Giỏ chỉ cảnh báo (`ton_kha_dung_don_vi`), không từ chối vì hết hàng.
+  - **Một hàm kiểm tra cho mọi đường vào giỏ** (thêm, sửa, gộp): thuốc kê đơn bị chặn ở service (`422 THUOC_KE_DON_KHONG_VAO_GIO`), kể cả khi sản phẩm bị đổi loại về sau (dòng đã lưu hiện `mua_duoc = false`, không tính vào tạm tính). Không có ràng buộc CSDL chéo bảng cho việc này (CHECK không tham chiếu bảng khác); chấp nhận chặn ở service như quy tắc 6 cho phép.
+  - **Giới hạn mua tính theo đơn vị cơ sở trên cả sản phẩm** (cộng mọi đơn vị): 2 hộp (20 viên) + 6 viên vượt giới hạn 25. Thêm/sửa vượt giới hạn là `422 VUOT_SO_LUONG_TOI_DA`; riêng gộp giỏ vãng lai thì CẮT về mức còn được thêm (làm tròn xuống theo đơn vị của dòng), hết chỗ thì bỏ qua dòng và báo trong `bo_qua`, để một dòng xấu không làm hỏng cả lần đăng nhập.
+  - **Giỏ vãng lai chỉ lưu `{san_pham_id, don_vi_id, so_luong}` ở localStorage;** tên, giá và cờ mua được luôn do máy chủ dựng lại (`POST /gio-hang/xem`, không lưu gì), nên giá cũ trong trình duyệt không bao giờ được dùng để tính tiền.
+  - **Gộp giỏ chạy một lần khi phát hiện khách đã đăng nhập** (kể cả lấy lại phiên lúc tải trang), thành công mới xóa giỏ cục bộ; lỗi mạng thì giữ lại để thử lần sau.
+  - **Gợi ý "thường mua cùng"** loại thuốc kê đơn và sản phẩm không hiển thị ngay ở truy vấn; chưa có luật thì trả rỗng và giao diện ẩn mục.
+  - **Sổ địa chỉ:** tối đa 10; tên tỉnh/xã do máy chủ điền từ danh mục địa giới (không tin client); khóa dòng khách khi sửa để luôn đúng một địa chỉ mặc định; danh mục địa giới T4.1 là bản giả (file JSON, spec 08 mục 8), bản GHN thêm cùng adapter vận chuyển (T4.7).
+  - **Chưa làm (KTV01):** sửa hồ sơ cá nhân và đổi mật khẩu của khách (spec 06 chưa có API `PATCH /toi`); ghi ở "Việc phát sinh".
+- **Hệ quả:** spec 06 mục 3.20; `modules/gio_hang/`, `modules/dia_chi/`, `tich_hop/van_chuyen/`; `frontend/src/khu/cua-hang/{gio-hang,tai-khoan}`; `test/render.tsx` bọc `<App>` của antd.
+

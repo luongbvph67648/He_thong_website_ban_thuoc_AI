@@ -1,0 +1,41 @@
+{
+  "tinh": [
+    {"ma": "201", "ten": "Hà Nội"},
+    {"ma": "202", "ten": "Thành phố Hồ Chí Minh"},
+    {"ma": "203", "ten": "Đà Nẵng"},
+    {"ma": "204", "ten": "Cần Thơ"},
+    {"ma": "205", "ten": "Hải Phòng"}
+  ],
+  "xa": {
+    "201": [
+      {"ma": "2010101", "ten": "Phường Hoàn Kiếm"},
+      {"ma": "2010102", "ten": "Phường Cửa Nam"},
+      {"ma": "2010103", "ten": "Phường Ba Đình"},
+      {"ma": "2010104", "ten": "Phường Cầu Giấy"},
+      {"ma": "2010105", "ten": "Xã Gia Lâm"}
+    ],
+    "202": [
+      {"ma": "2020101", "ten": "Phường Sài Gòn"},
+      {"ma": "2020102", "ten": "Phường Bến Thành"},
+      {"ma": "2020103", "ten": "Phường Tân Định"},
+      {"ma": "2020104", "ten": "Phường Thủ Đức"},
+      {"ma": "2020105", "ten": "Xã Bình Chánh"}
+    ],
+    "203": [
+      {"ma": "2030101", "ten": "Phường Hải Châu"},
+      {"ma": "2030102", "ten": "Phường Thanh Khê"},
+      {"ma": "2030103", "ten": "Phường Sơn Trà"},
+      {"ma": "2030104", "ten": "Xã Hòa Vang"}
+    ],
+    "204": [
+      {"ma": "2040101", "ten": "Phường Ninh Kiều"},
+      {"ma": "2040102", "ten": "Phường Cái Răng"},
+      {"ma": "2040103", "ten": "Xã Phong Điền"}
+    ],
+    "205": [
+      {"ma": "2050101", "ten": "Phường Hồng Bàng"},
+      {"ma": "2050102", "ten": "Phường Lê Chân"},
+      {"ma": "2050103", "ten": "Xã An Hải"}
+    ]
+  }
+}

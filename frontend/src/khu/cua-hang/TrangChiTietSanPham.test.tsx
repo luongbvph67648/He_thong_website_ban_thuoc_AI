@@ -9,9 +9,10 @@ import { renderTai } from '../../test/render'
 vi.setConfig({ testTimeout: 60_000 })
 
 const GET = vi.fn()
+const POST = vi.fn()
 vi.mock('../../api/client', async (goc) => ({
   ...(await goc<typeof import('../../api/client')>()),
-  api: { GET: (...a: unknown[]) => GET(...a), POST: vi.fn() },
+  api: { GET: (...a: unknown[]) => GET(...a), POST: (...a: unknown[]) => POST(...a) },
 }))
 
 function dapUng(sp: () => unknown) {
@@ -24,6 +25,7 @@ function dapUng(sp: () => unknown) {
 const lanGoiChiTiet = () => GET.mock.calls.filter((c) => c[0] === '/api/v1/san-pham/{slug}')
 beforeEach(() => {
   GET.mockReset()
+  POST.mockReset()
   localStorage.clear()
   usePhien.setState({ daKhoiPhuc: true })
 })
@@ -47,12 +49,18 @@ describe('TrangChiTietSanPham: sản phẩm thường', () => {
     expect(screen.getByText('Còn hàng')).toBeInTheDocument()
   })
 
-  it('không có nút "Cần tư vấn"; nút Thêm vào giỏ bị khóa vì giỏ hàng chưa mở', async () => {
+  it('không có nút "Cần tư vấn"; khách vãng lai thêm vào giỏ thì lưu ở localStorage', async () => {
     dapUng(() => ok(chiTiet()))
+    POST.mockResolvedValue(ok({ dong: [], tam_tinh: '0.00', tong_so_luong: 0 }))
     renderTai('/san-pham/paracetamol-500mg')
     const nut = (await screen.findByText('Thêm vào giỏ')).closest('button') as HTMLButtonElement
-    expect(nut).toBeDisabled()
+    expect(nut).toBeEnabled()
     expect(screen.queryByText('Cần tư vấn từ dược sĩ')).not.toBeInTheDocument()
+    await userEvent.click(nut)
+    await waitFor(() => expect(JSON.parse(localStorage.getItem('gio_hang_khach') ?? '[]')).toHaveLength(1))
+    const dong = JSON.parse(localStorage.getItem('gio_hang_khach')!)[0]
+    expect(dong.so_luong).toBe(1)
+    expect(dong.san_pham_id).toBeGreaterThan(0)
   })
 
   it('đổi sang sản phẩm khác không giữ đơn vị đã chọn của sản phẩm trước', async () => {

@@ -1,6 +1,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { render } from '@testing-library/react'
-import { ConfigProvider } from 'antd'
+import { App, ConfigProvider } from 'antd'
 import viVN from 'antd/locale/vi_VN'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { taoRoutes } from '../router'
@@ -30,9 +30,11 @@ export function renderTai(duong: string, phien?: PhienGia) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
   const ketQua = render(
     <ConfigProvider locale={viVN}>
-      <QueryClientProvider client={client}>
-        <RouterProvider router={router} />
-      </QueryClientProvider>
+      <App>
+        <QueryClientProvider client={client}>
+          <RouterProvider router={router} />
+        </QueryClientProvider>
+      </App>
     </ConfigProvider>,
   )
   return { router, ...ketQua }
