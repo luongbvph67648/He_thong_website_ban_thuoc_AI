@@ -64,6 +64,7 @@ src/
 ## Test
 - `npm test` chạy vitest ở chế độ theo dõi; một lần: `npm test -- --run`. Test ở cạnh file (`x.test.ts(x)`).
 - `src/test/render.tsx::renderTai(duong, phien?)` dựng ứng dụng thật (router + provider) tại một đường dẫn với phiên giả; dùng cho test điều hướng và phân quyền.
+- **Truy vấn trong bảng/cây antd**: `getByRole('button', { name })` tính tên truy cập của mọi nút nên mất cả chục giây mỗi lần trên jsdom (trên CI 2 vCPU là hết giờ, T2.1); dùng `within(hàng).getByText('Xóa').closest('button')` cho nút trong hàng và `hidden: true` nếu buộc dùng vai trò. Hộp thoại luôn nằm trong DOM (ẩn): khẳng định "không có nút" bằng vai trò không kèm `hidden`.
 - Test hàm thời gian phải đúng ở mọi múi giờ máy (`TZ=America/Los_Angeles npm test -- --run` cũng phải xanh).
 - Vitest + Testing Library cho component có logic (giỏ hàng, tính tiền hiển thị, guard quyền).
 - Playwright cho luồng chính (spec 10 mục 8), chạy với backend + seed mẫu.

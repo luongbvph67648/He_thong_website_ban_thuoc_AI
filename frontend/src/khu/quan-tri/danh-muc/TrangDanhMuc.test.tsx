@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { usePhien } from '../../../stores/phien'
 import TrangDanhMuc from './TrangDanhMuc'
 
-vi.setConfig({ testTimeout: 30_000 })
+vi.setConfig({ testTimeout: 60_000 }) // antd + jsdom chậm; CI chỉ có 2 vCPU mà chạy song song nhiều file
 
 const GET = vi.fn()
 const POST = vi.fn()

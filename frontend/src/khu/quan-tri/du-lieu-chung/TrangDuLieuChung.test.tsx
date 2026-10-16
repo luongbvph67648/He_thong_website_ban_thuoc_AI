@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { usePhien } from '../../../stores/phien'
 import TrangDuLieuChung from './TrangDuLieuChung'
 
-vi.setConfig({ testTimeout: 30_000 })
+vi.setConfig({ testTimeout: 60_000 }) // antd + jsdom chậm; CI chỉ có 2 vCPU mà chạy song song nhiều file
 
 const GET = vi.fn()
 const POST = vi.fn()
@@ -71,6 +71,20 @@ function dung(duong = '/du-lieu-chung', quyen: 'day_du' | 'chi_xem' = 'day_du') 
 const thamSoGanNhat = () => GET.mock.calls.at(-1)?.[1]?.params?.query
 const duongGanNhat = () => GET.mock.calls.at(-1)?.[0]
 const dong = async (ten: string) => (await screen.findByText(ten)).closest('tr') as HTMLElement
+/**
+ * Nút theo chữ trong một khung. Dùng `getByText` thay vì `getByRole('button', { name })`: truy vấn theo vai trò tính tên
+ * truy cập của mọi nút trong bảng antd và mất cả chục giây mỗi lần trên jsdom (hết giờ trên CI).
+ */
+const nut = (khung: HTMLElement, chu: string) => within(khung).getByText(chu).closest('button') as HTMLButtonElement
+/** Nút "Xóa" trong hộp xác nhận (Popconfirm) đang mở. */
+const nutXacNhanXoa = async () => {
+  const hop = await waitFor(() => {
+    const p = document.querySelector<HTMLElement>('.ant-popover:not(.ant-popover-hidden)')
+    if (!p) throw new Error('hộp xác nhận chưa mở')
+    return p
+  })
+  return nut(hop, 'Xóa')
+}
 const hopThoai = async () => within(await screen.findByRole('dialog', { hidden: true }))
 
 beforeEach(() => {
@@ -199,7 +213,7 @@ describe('TrangDuLieuChung: thêm và sửa', () => {
     GET.mockImplementation(async () => trang([{ ...NHA_SAN_XUAT[0], quoc_gia: 'Việt Nam' }]))
     dung('/du-lieu-chung?nhom=nha-san-xuat')
     const hang = await dong('Pymepharco')
-    await nguoi.click(within(hang).getByRole('button', { hidden: true, name: 'Sửa' }))
+    await nguoi.click(nut(hang, 'Sửa'))
     const h = await hopThoai()
     expect(h.getByLabelText('Tên nhà sản xuất')).toHaveValue('Pymepharco')
     expect(h.getByLabelText(/Quốc gia/)).toHaveValue('Việt Nam')
@@ -234,10 +248,10 @@ describe('TrangDuLieuChung: xóa', () => {
     DELETE.mockResolvedValue(khongThan)
     dung()
     const dangDung = await dong('Sanofi')
-    expect(within(dangDung).getByRole('button', { hidden: true, name: 'Xóa' })).toBeDisabled()
+    expect(nut(dangDung, 'Xóa')).toBeDisabled()
     const chuaDung = await dong('Chưa dùng')
-    await nguoi.click(within(chuaDung).getByRole('button', { hidden: true, name: 'Xóa' }))
-    await nguoi.click(screen.getAllByRole('button', { hidden: true, name: 'Xóa' }).at(-1)!) // nút xác nhận trong hộp xác nhận (nằm cuối DOM)
+    await nguoi.click(nut(chuaDung, 'Xóa'))
+    await nguoi.click(await nutXacNhanXoa()) // nút xác nhận trong hộp xác nhận
     await waitFor(() => expect(DELETE).toHaveBeenCalledTimes(1))
     expect(DELETE).toHaveBeenCalledWith('/api/v1/noi-bo/thuong-hieu/{ban_ghi_id}', { params: { path: { ban_ghi_id: 2 } } })
     expect(await screen.findByText('Đã xóa “Chưa dùng”')).toBeInTheDocument()
@@ -249,8 +263,8 @@ describe('TrangDuLieuChung: xóa', () => {
     dung()
     const hang = await dong('Chưa dùng') // trên màn hình là 0 sản phẩm, nhưng vừa có người gắn vào
     const truoc = GET.mock.calls.length
-    await nguoi.click(within(hang).getByRole('button', { hidden: true, name: 'Xóa' }))
-    await nguoi.click(screen.getAllByRole('button', { hidden: true, name: 'Xóa' }).at(-1)!)
+    await nguoi.click(nut(hang, 'Xóa'))
+    await nguoi.click(await nutXacNhanXoa())
     expect(await screen.findByText(/đang được gắn với sản phẩm/)).toBeInTheDocument()
     await waitFor(() => expect(GET.mock.calls.length).toBeGreaterThan(truoc))
   })
