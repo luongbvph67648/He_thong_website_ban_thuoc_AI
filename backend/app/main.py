@@ -9,6 +9,7 @@ from app.core.log import cau_hinh_log
 from app.core.loi import dang_ky_xu_ly_loi
 from app.core.middleware import HEADER_REQUEST_ID, GioiHanKichThuocThan, QuyTacThanRequest, RequestIdMiddleware
 from app.health import router as health_router
+from app.modules.ai_quan_tri.router import router as ai_quan_tri_router
 from app.modules.ban_hang.router_dat_ho import router as dat_ho_router
 from app.modules.ban_hang.router_khach import router as don_hang_khach_router
 from app.modules.ban_hang.router_kho import router as soan_hang_router
@@ -189,6 +190,7 @@ def create_app() -> FastAPI:
     app.include_router(don_thuoc_router, prefix="/api/v1")
     app.include_router(pos_router, prefix="/api/v1")
     app.include_router(doi_tra_router, prefix="/api/v1")
+    app.include_router(ai_quan_tri_router, prefix="/api/v1")
     app.include_router(chung_tu_kho_router, prefix="/api/v1")
     app.include_router(thu_hoi_router, prefix="/api/v1")
     app.include_router(thong_bao_khach_router, prefix="/api/v1")

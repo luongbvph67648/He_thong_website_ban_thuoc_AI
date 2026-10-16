@@ -498,6 +498,11 @@ Dược sĩ (service chốt vai trò `PHARMACIST`):
 - Màn đơn hàng và nội dung chuyên môn của Admin dùng lại API nội bộ có sẵn ở mức `chi_xem` (`GET /noi-bo/don-hang...` với `order.view`; `GET /noi-bo/chuyen-mon...` với `content.professional.edit` mức xem). Mọi API ghi cùng nhóm trả `403` cho Admin (test `tests/kho/test_chung_tu_kho_admin.py` và ma trận phân quyền).
 - Giao diện: `/quan-tri/xem/don-hang[/:id]`, `/xem/chung-tu-kho`, `/xem/chuyen-mon[/:id]` dùng lại trang của nhân viên (nút ghi bọc `YeuCauQuyen` nên ẩn với mức xem).
 
+### 3.39 Hạ tầng AI, cấu hình AI và kho tri thức (AD09, AD10, T7.1)
+- `GET /noi-bo/cau-hinh-ai` (`ai.config`) -> `{ai_module, ai_dau_hieu_nguy_hiem, ai_nguong_chuyen_duoc_si, ai_loi_nhac_bo_sung, phien_ban}`; `PUT` cùng đường dẫn nhận các trường cần đổi (tùy chọn) kèm `phien_ban` vừa đọc (lệch là `409 DU_LIEU_DA_THAY_DOI`). `ai_module` phải đủ 6 module (`tim_kiem`, `chat`, `tra_anh`, `doc_don_thuoc`, `goi_y`, `du_bao`); dấu hiệu nguy hiểm tối đa 200 cụm 2-100 ký tự (bỏ trùng); ngưỡng trong (0, 1]; lời nhắc tối đa 2000 ký tự. Chỉ Admin ghi, ghi nhật ký từng khóa đổi. Nơi dùng đọc bằng `ai.cau_hinh_ai.doc/module_bat` mỗi lần.
+- `GET /noi-bo/tri-thuc` (`ai.knowledge.sync`) -> `{tong_doan, theo_nguon, mo_hinh_hien_tai, mo_hinh_trong_kho, cap_nhat_gan_nhat, can_dong_bo_lai_vector}`. `POST /noi-bo/tri-thuc/dong-bo` -> `{them, sua, xoa, bo_qua, tong_doan, mo_hinh}`: đoạn tổng quan (mỗi sản phẩm đang kinh doanh), đoạn theo trường của nội dung chuyên môn bản `da_duyet` mới nhất (cắt 800 ký tự chồng 100), bài viết `da_duyet` có `dua_vao_ai` cùng chính sách và FAQ đã duyệt (cắt theo tiêu đề); bỏ qua đoạn có `hash_noi_dung` và `mo_hinh_embedding` không đổi; xóa đoạn của nguồn không còn hợp lệ; đang có lần đồng bộ khác chạy là `409`. Job `ai_dong_bo_tri_thuc` 02:30 hằng đêm.
+- Mã nguồn: `app/ai/claude.py` (`goi_json`, `stream_chat`, `SuDung`, `AiTuChoi`, `AiLoi`), `app/ai/gia_lap.py` (kịch bản cho test), `app/ai/embedding.py` (`embed`, `ten_mo_hinh`; nhóm phụ thuộc tùy chọn `ai-local` cho BGE-M3).
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

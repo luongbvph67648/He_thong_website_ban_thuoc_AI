@@ -5,8 +5,11 @@ from datetime import timedelta
 from sqlalchemy import delete
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.loi import LoiNghiepVu
 from app.core.thoi_gian import bay_gio_utc
 from app.models.ai import LichSuTimKiem, LichSuXem
+from app.modules.ai_quan_tri.tri_thuc import KetQuaDongBo
+from app.modules.ai_quan_tri.tri_thuc import dong_bo as dong_bo_tri_thuc
 from app.modules.ban_hang.het_han import KetQuaHt03, huy_don_qua_han
 from app.modules.ban_hang.tu_hoan_tat import KetQuaHt08Don, tu_hoan_tat_don
 from app.modules.kho.canh_bao import gui_thong_bao_ht02, nhan_vien_kho
@@ -42,6 +45,14 @@ async def ht03_huy_qua_han(db: AsyncSession) -> KetQuaHt03:
 
 async def ht07_nhac_mua_lai(db: AsyncSession) -> KetQuaHt07:
     return await nhac_mua_lai(db)
+
+
+async def ai_dong_bo_tri_thuc(db: AsyncSession) -> KetQuaDongBo | None:
+    """AD10 hằng đêm; đang có lần đồng bộ khác (Admin bấm tay) thì bỏ qua đêm nay."""
+    try:
+        return await dong_bo_tri_thuc(db)
+    except LoiNghiepVu:
+        return None
 
 
 async def ht08_tu_hoan_tat(db: AsyncSession) -> KetQuaHt08Don:

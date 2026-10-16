@@ -35,6 +35,8 @@ import TrangKiemDuyet from './khu/nhan-vien/kiem-duyet/TrangKiemDuyet'
 import TrangLienHeThuHoi from './khu/nhan-vien/thu-hoi/TrangLienHeThuHoi'
 import TrangThucHienThuHoi from './khu/nhan-vien/thu-hoi/TrangThucHienThuHoi'
 import TrangXemChungTuKho from './khu/quan-tri/xem/TrangXemChungTuKho'
+import TrangCauHinhAi from './khu/quan-tri/ai/TrangCauHinhAi'
+import TrangTriThucAi from './khu/quan-tri/ai/TrangTriThucAi'
 import TrangThuHoi from './khu/quan-tri/thu-hoi/TrangThuHoi'
 import TrangHangTraVe from './khu/nhan-vien/hang-tra-ve/TrangHangTraVe'
 import TrangXuLyDoiTra from './khu/nhan-vien/doi-tra/TrangXuLyDoiTra'
@@ -171,6 +173,8 @@ const TRANG_QUAN_TRI_THAT: Record<string, ReactNode> = {
   '/duyet-phieu': <TrangDuyetPhieu />,
   '/hoan-tien': <TrangHoanTien />,
   '/thu-hoi': <TrangThuHoi />,
+  '/cau-hinh-ai': <TrangCauHinhAi />,
+  '/tri-thuc-ai': <TrangTriThucAi />,
   '/xem/don-hang': <TrangQuanLyDon />,
   '/xem/don-hang/:id': <TrangChiTietDon />,
   '/xem/chung-tu-kho': <TrangXemChungTuKho />,

@@ -12,6 +12,7 @@ from app.core.log import cau_hinh_log
 from app.core.thoi_gian import VN_TZ
 from app.jobs.chay import HamJob, chay_job
 from app.jobs.cong_viec import (
+    ai_dong_bo_tri_thuc,
     don_lich_su,
     ht01_cap_nhat_lo,
     ht02_canh_bao_kho,
@@ -25,6 +26,7 @@ LICH: tuple[tuple[str, HamJob, int, int], ...] = (
     ("ht01_lo", ht01_cap_nhat_lo, 0, 5),
     ("ht02_canh_bao_kho", ht02_canh_bao_kho, 7, 0),
     ("ht07_nhac_mua_lai", ht07_nhac_mua_lai, 8, 0),
+    ("ai_dong_bo_tri_thuc", ai_dong_bo_tri_thuc, 2, 30),
     ("don_lich_su", don_lich_su, 3, 30),
 )
 # Job chạy theo chu kỳ phút: (tên, hàm, số phút giữa hai lần). HT03 hủy đơn quá hạn; HT08 tự hoàn tất đơn.

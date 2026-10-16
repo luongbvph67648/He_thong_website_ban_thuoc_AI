@@ -409,3 +409,11 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - HT07 không nhắc mua lại thuốc kê đơn (quy tắc 6); dữ liệu mẫu giữ `dung_dinh_ky` cho thuốc kê đơn nên lọc ở truy vấn.
 - Kho nhận hàng trả không vượt số đã xuất của lô được chọn; đơn thay thế không đổi trả tiếp; kiểm số tệp trước khi đọc vào bộ nhớ; chứng từ hoàn tiền dọn khi rollback.
 
+## QĐ-43: Hạ tầng AI (2026-10-16, task T7.1)
+- **Fallback:** dùng dạng `fallbacks: "default"` với beta `server-side-fallback-2026-07-01` (không phải mảng model), không gửi cho Haiku. Không ép `tool_choice`, không gửi `thinking`; độ sâu chỉnh bằng `output_config.effort`.
+- **Client giả** nằm cùng giao diện trong `ai/gia_lap.py`, chọn bằng `AI_GIA_LAP`; mọi test ghim `AI_GIA_LAP` và `EMBEDDING_GIA_LAP` bằng fixture autouse. Nhánh thật được test bằng client thay thế (kiểm tham số, usage, refusal, vòng tool).
+- **Embedding giả** băm từng từ đã bỏ dấu vào 1024 chiều (có chuẩn hóa): chung từ vựng thì gần nhau, đủ để test tìm kiếm lai. `sentence-transformers` chỉ ở nhóm `ai-local`, không cài mặc định.
+- **Khóa đoạn tri thức** là (`nguon_loai`, `nguon_id`, `truong`, `metadata.doan`), không thêm cột. Nội dung chuyên môn dùng `nguon_id` = id phiên bản nên đổi phiên bản thì đoạn cũ bị xóa và đoạn mới được thêm.
+- **Cấu hình AI** lưu ở bốn khóa `ai_*` của `cau_hinh` nhưng sửa như một tài liệu có `phien_ban` chung (AD09), tách khỏi AD08.
+- Đoạn của thuốc kê đơn vẫn được lập chỉ mục (kèm `can_ke_don = true`) để tìm kiếm của trang cửa hàng thấy; chatbot phải lọc `can_ke_don = false` trong SQL (T7.3).
+

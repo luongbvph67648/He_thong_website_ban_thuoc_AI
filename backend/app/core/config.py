@@ -30,6 +30,16 @@ class Settings(BaseSettings):
     # để khỏi vô tình tạo Admin với mật khẩu đoán được).
     # Khóa Fernet mã hóa `ho_so_suc_khoe.benh_nen` (cách sinh khóa: xem .env.example).
     KHOA_MA_HOA: SecretStr = SecretStr("")
+    # AI (spec 07): `AI_GIA_LAP=true` dùng client giả (`ai/gia_lap.py`), không gọi mạng và không cần khóa.
+    ANTHROPIC_API_KEY: SecretStr = SecretStr("")
+    CLAUDE_MODEL: str = "claude-opus-5-5"
+    AI_GIA_LAP: bool = True
+    AI_GIA_INPUT: float = 4  # USD / 1 triệu token
+    AI_GIA_OUTPUT: float = 20
+    AI_GIA_CACHE_READ: float = 0.20
+    AI_NGAN_SACH_NGAY_USD: float = 2
+    EMBEDDING_MODEL: str = "BAAI/bge-m3"
+    EMBEDDING_GIA_LAP: bool = True
     ADMIN_EMAIL: str = ""
     ADMIN_MAT_KHAU: SecretStr = SecretStr("")
     # Thanh toán online (spec 08 mục 2-4): `gia` chạy offline với trang "cổng giả"; `sandbox` gọi VNPay/MoMo thật.

@@ -386,3 +386,14 @@ def thong_bao_dung_kenh_ghi_nho(monkeypatch, kenh_tin_nhan):
     from app.modules.thong_bao import service as thong_bao_service
 
     monkeypatch.setattr(thong_bao_service, "lay_kenh_tin_nhan", lambda: kenh_tin_nhan)
+
+
+@pytest.fixture(autouse=True)
+def ai_gia_lap(monkeypatch):
+    """Test không bao giờ gọi Claude hay tải mô hình embedding thật; kịch bản giả được xóa trước mỗi test."""
+    from app.ai import gia_lap
+    from app.core.config import settings
+
+    monkeypatch.setattr(settings, "AI_GIA_LAP", True)
+    monkeypatch.setattr(settings, "EMBEDDING_GIA_LAP", True)
+    gia_lap.dat_lai()

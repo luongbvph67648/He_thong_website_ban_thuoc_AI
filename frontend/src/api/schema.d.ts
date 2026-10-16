@@ -2721,6 +2721,58 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/noi-bo/cau-hinh-ai": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Cấu hình AI (AD09) */
+        get: operations["lay_cau_hinh_api_v1_noi_bo_cau_hinh_ai_get"];
+        /** Sửa cấu hình AI (AD09) */
+        put: operations["sua_cau_hinh_api_v1_noi_bo_cau_hinh_ai_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/tri-thuc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Thống kê kho tri thức AI (AD10) */
+        get: operations["thong_ke_api_v1_noi_bo_tri_thuc_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/tri-thuc/dong-bo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Đồng bộ kho tri thức AI (AD10) */
+        post: operations["dong_bo_api_v1_noi_bo_tri_thuc_dong_bo_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/noi-bo/chung-tu-kho": {
         parameters: {
             query?: never;
@@ -4230,6 +4282,36 @@ export interface components {
             token_type: "bearer";
             /** Het Han Giay */
             het_han_giay: number;
+        };
+        /** CauHinhAiDoc */
+        CauHinhAiDoc: {
+            /** Ai Module */
+            ai_module: {
+                [key: string]: boolean;
+            };
+            /** Ai Dau Hieu Nguy Hiem */
+            ai_dau_hieu_nguy_hiem: string[];
+            /** Ai Nguong Chuyen Duoc Si */
+            ai_nguong_chuyen_duoc_si: number;
+            /** Ai Loi Nhac Bo Sung */
+            ai_loi_nhac_bo_sung: string;
+            /** Phien Ban */
+            phien_ban: string;
+        };
+        /** CauHinhAiSua */
+        CauHinhAiSua: {
+            /** Phien Ban */
+            phien_ban: string;
+            /** Ai Module */
+            ai_module?: {
+                [key: string]: boolean;
+            } | null;
+            /** Ai Dau Hieu Nguy Hiem */
+            ai_dau_hieu_nguy_hiem?: string[] | null;
+            /** Ai Nguong Chuyen Duoc Si */
+            ai_nguong_chuyen_duoc_si?: number | null;
+            /** Ai Loi Nhac Bo Sung */
+            ai_loi_nhac_bo_sung?: string | null;
         };
         /** CauHinhCapNhat */
         CauHinhCapNhat: {
@@ -5990,6 +6072,39 @@ export interface components {
          * @enum {string}
          */
         KenhBan: "online" | "dien_thoai" | "tai_quay";
+        /** KetQuaDongBo */
+        KetQuaDongBo: {
+            /**
+             * Them
+             * @default 0
+             */
+            them: number;
+            /**
+             * Sua
+             * @default 0
+             */
+            sua: number;
+            /**
+             * Xoa
+             * @default 0
+             */
+            xoa: number;
+            /**
+             * Bo Qua
+             * @default 0
+             */
+            bo_qua: number;
+            /**
+             * Tong Doan
+             * @default 0
+             */
+            tong_doan: number;
+            /**
+             * Mo Hinh
+             * @default
+             */
+            mo_hinh: string;
+        };
         /** KetQuaGop */
         KetQuaGop: {
             gio_hang: components["schemas"]["GioHangRa"];
@@ -7848,6 +7963,23 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** ThongKeTriThuc */
+        ThongKeTriThuc: {
+            /** Tong Doan */
+            tong_doan: number;
+            /** Theo Nguon */
+            theo_nguon: {
+                [key: string]: number;
+            };
+            /** Mo Hinh Hien Tai */
+            mo_hinh_hien_tai: string;
+            /** Mo Hinh Trong Kho */
+            mo_hinh_trong_kho: string[];
+            /** Cap Nhat Gan Nhat */
+            cap_nhat_gan_nhat?: unknown;
+            /** Can Dong Bo Lai Vector */
+            can_dong_bo_lai_vector: boolean;
         };
         /** ThuocTrenDonRa */
         ThuocTrenDonRa: {
@@ -14825,6 +14957,99 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lay_cau_hinh_api_v1_noi_bo_cau_hinh_ai_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CauHinhAiDoc"];
+                };
+            };
+        };
+    };
+    sua_cau_hinh_api_v1_noi_bo_cau_hinh_ai_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CauHinhAiSua"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CauHinhAiDoc"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    thong_ke_api_v1_noi_bo_tri_thuc_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThongKeTriThuc"];
+                };
+            };
+        };
+    };
+    dong_bo_api_v1_noi_bo_tri_thuc_dong_bo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KetQuaDongBo"];
                 };
             };
         };

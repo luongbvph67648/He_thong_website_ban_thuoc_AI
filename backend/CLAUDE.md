@@ -171,3 +171,4 @@ async def don_cua_toi(ma_don: str, kh: Annotated[KhachHang, Depends(khach_hien_t
 - **Đánh giá/hỏi đáp** (`danh_gia/`, T6.4, QĐ-39): đánh giá khóa dòng `ct_don_hang` rồi kiểm trùng; kiểm duyệt chỉ dược sĩ (`dam_bao_la_duoc_si`).
 - **Thông báo khách** (`thong_bao/`, T6.5, QĐ-40): luôn qua `gui_cho_khach` (tự gửi SMS/email theo `KENH_THEO_LOAI`); đổi trạng thái đơn tự báo khách trong `_ghi`; job HT07 `nhac_mua_lai`.
 - **Thu hồi lô** (`thu_hoi/`, T6.6, QĐ-41): tạo lệnh khóa lô theo id tăng + khóa advisory theo sản phẩm, gỡ đơn chưa xuất bằng `_phan_bo_lai` của HT01; chỉ dược sĩ xem danh sách khách; đóng lệnh khi hết khách chưa liên hệ và hết tồn.
+- **AI** (`app/ai/`, T7.1, QĐ-43): chỉ `ai/claude.py` import `anthropic`; chỉ `ai/embedding.py` tạo vector; test dùng `ai/gia_lap.KICH_BAN` (fixture autouse ghim `AI_GIA_LAP`). Đoạn tri thức chatbot phải lọc `metadata->>'can_ke_don' = 'false'` ngay trong SQL.

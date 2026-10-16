@@ -811,18 +811,18 @@ _Đổi trả, biệt trữ, hoàn tiền, đánh giá, hỏi đáp, thông báo
 
 _Kho tri thức, tìm kiếm lai, chatbot RAG, chuyển dược sĩ, đọc ảnh, gợi ý, dự báo._
 
-### [ ] T7.1 · Hạ tầng AI và kho tri thức
+### [x] T7.1 · Hạ tầng AI và kho tri thức
 - **Chức năng:** AD09 (Cấu hình AI), AD10 (Đồng bộ kho tri thức AI)
 - **Phụ thuộc:** T2.6
 - **Bảng:** `cau_hinh`, `tai_lieu_tri_thuc`, `thong_tin_chuyen_mon`, `bai_viet`
 - **Tiêu chí chấp nhận:**
-  - [ ] `ai/claude.py`: client `AsyncAnthropic`, hàm `goi_json` và `stream_chat` theo spec 07 mục 2 (fallbacks, xử lý refusal, ghi usage); `ai/gia_lap.py` client giả cho dev/test (`AI_GIA_LAP=true`).
-  - [ ] `ai/embedding.py`: BGE-M3 (sentence-transformers, chuẩn hóa vector) + bản giả sinh vector xác định từ hash.
-  - [ ] AD10: đồng bộ `tai_lieu_tri_thuc` từ nội dung chuyên môn đã duyệt + bài viết `dua_vao_ai`; chia đoạn theo trường; bỏ qua đoạn có `hash_noi_dung` không đổi; xóa đoạn của nguồn đã gỡ; chạy theo yêu cầu và hằng đêm.
-  - [ ] AD09: bật/tắt từng module AI, danh sách dấu hiệu nguy hiểm, ngưỡng chuyển dược sĩ (đọc từ `cau_hinh`).
+  - [x] `ai/claude.py`: client `AsyncAnthropic`, hàm `goi_json` và `stream_chat` theo spec 07 mục 2 (fallbacks, xử lý refusal, ghi usage); `ai/gia_lap.py` client giả cho dev/test (`AI_GIA_LAP=true`).
+  - [x] `ai/embedding.py`: BGE-M3 (sentence-transformers, chuẩn hóa vector) + bản giả sinh vector xác định từ hash.
+  - [x] AD10: đồng bộ `tai_lieu_tri_thuc` từ nội dung chuyên môn đã duyệt + bài viết `dua_vao_ai`; chia đoạn theo trường; bỏ qua đoạn có `hash_noi_dung` không đổi; xóa đoạn của nguồn đã gỡ; chạy theo yêu cầu và hằng đêm.
+  - [x] AD09: bật/tắt từng module AI, danh sách dấu hiệu nguy hiểm, ngưỡng chuyển dược sĩ (đọc từ `cau_hinh`).
 - **Giao diện:**
-  - [ ] Màn cấu hình AI và nút đồng bộ kho tri thức (hiển thị số đoạn thêm/sửa/xóa).
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Màn cấu hình AI và nút đồng bộ kho tri thức (hiển thị số đoạn thêm/sửa/xóa).
+- **Ghi chú triển khai:** `app/ai/{claude,gia_lap,embedding}.py`, `modules/ai_quan_tri/{cau_hinh_ai,tri_thuc,router}.py`, job `ai_dong_bo_tri_thuc`; API spec 06 mục 3.39; QĐ-43. Giao diện `/quan-tri/cau-hinh-ai`, `/quan-tri/tri-thuc-ai`. Test `tests/ai/test_claude.py` (11), `tests/ai/test_tri_thuc.py` (7), `ai.test.tsx` (3). Chưa chạy BGE-M3 thật và chưa gọi Claude thật (cần khóa và nhóm `ai-local`).
 
 ### [ ] T7.2 · Tìm kiếm lai
 - **Chức năng:** AI01 (Tìm kiếm thông minh)
