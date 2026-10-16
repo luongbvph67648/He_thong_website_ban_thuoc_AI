@@ -13,6 +13,16 @@ REGISTRY: dict[tuple[str, str], tuple[str, str]] = {
     ("GET", f"{TIEN_TO_NOI_BO}/ton-kho"): ("stock.view", "xem"),
     ("GET", f"{TIEN_TO_NOI_BO}/ton-kho/{{san_pham_id}}/lo"): ("stock.view", "xem"),
     ("GET", f"{TIEN_TO_NOI_BO}/canh-bao-kho"): ("stock.alert.view", "xem"),
+    # KHO07 (kho ghi, Admin xem), KHO08 (chỉ kho; duyệt của Admin ở T3.4).
+    ("GET", f"{TIEN_TO_NOI_BO}/kiem-ke"): ("stocktake.manage", "xem"),
+    ("POST", f"{TIEN_TO_NOI_BO}/kiem-ke"): ("stocktake.manage", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/kiem-ke/{{phieu_id}}"): ("stocktake.manage", "xem"),
+    ("PUT", f"{TIEN_TO_NOI_BO}/kiem-ke/{{phieu_id}}/so-luong"): ("stocktake.manage", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/kiem-ke/{{phieu_id}}/chot"): ("stocktake.manage", "day_du"),
+    ("DELETE", f"{TIEN_TO_NOI_BO}/kiem-ke/{{phieu_id}}"): ("stocktake.manage", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/dieu-chinh"): ("stock_adjust.create", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/dieu-chinh"): ("stock_adjust.create", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/dieu-chinh/{{phieu_id}}"): ("stock_adjust.create", "day_du"),
     # KHO01, KHO02: kho ghi, Admin xem.
     ("GET", f"{TIEN_TO_NOI_BO}/nha-cung-cap"): ("supplier.manage", "xem"),
     ("POST", f"{TIEN_TO_NOI_BO}/nha-cung-cap"): ("supplier.manage", "day_du"),

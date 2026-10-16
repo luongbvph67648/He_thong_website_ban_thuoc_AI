@@ -257,6 +257,18 @@ Mọi route dưới `/api/v1/noi-bo`. Nhân viên kho `day_du`, Admin `chi_xem` 
 - `GET /noi-bo/canh-bao-kho` (`stock.alert.view` mức `xem`: kho, Admin) -> `{ton_thap, can_han, het_han}`, mỗi nhóm `{tong, du_lieu}` (`du_lieu` cắt ở 200 mục): sản phẩm đang kinh doanh tồn khả dụng dưới mức tối thiểu; lô `can_han` và lô `het_han` còn hàng (tồn hoặc biệt trữ > 0).
 - **Job nền** (`uv run python -m app.jobs`, APScheduler giờ Việt Nam, mỗi job giữ `pg_try_advisory_lock` nên chạy chồng bị bỏ qua): `ht01_lo` 00:05 (lô `dang_ban`/`can_han` chuyển `can_han`, `het_han` hoặc về `dang_ban` theo `nguong_can_han_ngay`; lô `khoa`, `thu_hoi` không đổi; lô hết hạn bị gỡ khỏi phân bổ `dang_giu` và giữ lại theo FEFO, đơn không đủ hàng thì báo nhân viên kho kèm mã đơn); `ht02_canh_bao_kho` 07:00 (mỗi nhân viên kho đang hoạt động nhận tối đa một thông báo mỗi loại `canh_bao_ton_thap`, `canh_bao_can_han`, `canh_bao_het_han` mỗi ngày giờ VN, chỉ loại có mục); `don_lich_su` 03:30 (xóa `lich_su_xem`, `lich_su_tim_kiem` quá 90 ngày).
 
+### 3.17 Kiểm kê và phiếu điều chỉnh tồn (KHO07, KHO08, T3.3)
+Nhân viên kho `day_du` (`stocktake.manage`, `stock_adjust.create`); Admin chỉ xem kiểm kê. Duyệt phiếu điều chỉnh là việc của Admin ở T3.4.
+- **Kiểm kê** (`/noi-bo/kiem-ke`, `stocktake.manage`): phiếu `KK` + YY + 6 số, trạng thái `dang_kiem` rồi `da_chot`.
+  - `POST` `{danh_muc_id?}` -> 201: chụp tồn sổ sách (`so_luong_ton` khu bán, không tính biệt trữ) của MỌI lô còn tồn của sản phẩm chưa xóa; có `danh_muc_id` thì chỉ sản phẩm trong danh mục đó và danh mục con. Không có lô nào là `400`; quá 5.000 lô là `400` (kiểm kê theo danh mục). `danh_muc_id` phải là danh mục chưa xóa.
+  - `GET ?trang_thai=&trang=&kich_thuoc=` -> trang `{id, ma_phieu, danh_muc: {id, ten}|null, nhan_vien, trang_thai, thoi_diem_chup_ton, chot_luc, so_dong, so_dong_lech}`; `GET /{id}` thêm `dong: [{lo_id, san_pham: {id, sku, ten}, so_lo, han_su_dung, so_luong_so_sach, so_luong_thuc_te, chenh_lech}]` theo tên sản phẩm rồi hạn dùng.
+  - `PUT /{id}/so-luong` `{dong: [{lo_id, so_luong_thuc_te}]}` (nhập nhanh theo lô, 1 đến 500 dòng): chỉ khi `dang_kiem`, `lo_id` phải thuộc phiếu, `so_luong_thuc_te` từ 0 đến 2.000.000.000; `chenh_lech = thuc_te - so_sach`. Phiếu đã chốt là `409 CHUYEN_TRANG_THAI_KHONG_HOP_LE`. Ghi đè số đã nhập cho lô đó (người nhập sau thắng).
+  - `POST /{id}/chot`: mọi dòng phải đã nhập số thực tế (còn thiếu là `400` kèm `chi_tiet.so_dong_chua_nhap`); `trang_thai = da_chot`, `chot_luc`. Tồn KHÔNG đổi.
+  - `DELETE /{id}` -> 204 chỉ khi `dang_kiem` (xóa hẳn phiếu và dòng, có nhật ký); đã chốt là `409`.
+- **Phiếu điều chỉnh** (`/noi-bo/dieu-chinh`, `stock_adjust.create`): `DC` + YY + 6 số, `trang_thai_duyet = cho_duyet`, tồn CHƯA đổi (duyệt ở T3.4).
+  - `POST` `{ly_do, phieu_kiem_ke_id?}` hoặc `{ly_do, dong: [{lo_id, so_luong_thay_doi}]}` (đúng một trong hai): từ phiếu kiểm kê đã chốt thì lấy các dòng có `chenh_lech != 0` (không có dòng lệch là `400`; phiếu chưa chốt là `409`; đã có phiếu điều chỉnh `cho_duyet` hoặc `da_duyet` của phiếu kiểm kê đó là `409 TRUNG_DU_LIEU`, bị từ chối thì lập lại được). Lập tay: 1 đến 100 dòng, mỗi lô một lần, `so_luong_thay_doi` khác 0 (sửa nhầm lẫn khác kiểm kê, ví dụ nhập sai số lượng). `ly_do` 1 đến 1.000 ký tự.
+  - `GET ?trang_thai_duyet=&trang=&kich_thuoc=`, `GET /{id}` -> phiếu với `nguoi_lap`, `nguoi_duyet`, `ly_do_tu_choi`, `dong: [{lo_id, san_pham, so_lo, so_luong_thay_doi, so_luong_ton_hien_tai}]`.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

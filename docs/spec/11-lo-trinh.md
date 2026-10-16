@@ -454,16 +454,21 @@ _Nhập kho theo lô, thẻ kho, cảnh báo, kiểm kê, hủy, xuất trả, b
   - Chưa làm: dọn ảnh mồ côi của banner, bài viết (ghi lại ở "Việc phát sinh"); worker chưa có gói chạy (T8.3).
 
 
-### [ ] T3.3 · Kiểm kê và phiếu điều chỉnh
+### [x] T3.3 · Kiểm kê và phiếu điều chỉnh
 - **Chức năng:** KHO07 (Kiểm kê), KHO08 (Lập phiếu điều chỉnh tồn)
 - **Phụ thuộc:** T3.1
 - **Bảng:** `phieu_kiem_ke`, `ct_kiem_ke`, `phieu_dieu_chinh`, `ct_phieu_dieu_chinh`
 - **Tiêu chí chấp nhận:**
-  - [ ] Phiếu kiểm kê (toàn kho hoặc theo danh mục) chụp tồn sổ sách; nhập số thực tế; chốt → tính chênh lệch.
-  - [ ] Lập phiếu điều chỉnh từ kết quả kiểm kê (chỉ các dòng lệch), trạng thái chờ duyệt; tồn chưa đổi.
+  - [x] Phiếu kiểm kê (toàn kho hoặc theo danh mục) chụp tồn sổ sách; nhập số thực tế; chốt → tính chênh lệch.
+  - [x] Lập phiếu điều chỉnh từ kết quả kiểm kê (chỉ các dòng lệch), trạng thái chờ duyệt; tồn chưa đổi.
 - **Giao diện:**
-  - [ ] Màn kiểm kê (nhập nhanh theo lô), màn phiếu điều chỉnh.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Màn kiểm kê (nhập nhanh theo lô), màn phiếu điều chỉnh.
+- **Ghi chú triển khai:**
+  - Spec 06 mục 3.17. Kiểm kê chụp `so_luong_ton` khu bán của lô còn tồn (khóa lô khi chụp); chênh lệch tính theo số sổ sách lúc chụp nên điều chỉnh là thay đổi TƯƠNG ĐỐI, vẫn đúng nếu có bán trong lúc kiểm. Phiếu điều chỉnh đòi người lập có `stock_adjust.create` (chỉ kho); lập từ kiểm kê (chỉ dòng lệch, mỗi phiếu kiểm kê một phiếu điều chỉnh còn hiệu lực) hoặc lập tay cho các sai sót khác (vd nhập sai số lượng, vì phiếu nhập không sửa được).
+  - Thêm ngoài tiêu chí: xóa phiếu kiểm kê đang kiểm, lập điều chỉnh lập tay.
+  - Giao diện: `/nhan-vien/kiem-ke` (lập phiếu, nhập nhanh theo lô, lọc dòng lệch, chốt, lập điều chỉnh), `/nhan-vien/dieu-chinh` (danh sách, chi tiết). Duyệt ở T3.4.
+  - Chưa làm: ghi nhận hàng tìm thấy ở lô đang tồn 0 (kiểm kê chỉ gồm lô còn tồn; dùng điều chỉnh lập tay).
+
 
 ### [ ] T3.4 · Phiếu hủy, phiếu xuất trả và duyệt
 - **Chức năng:** KHO09 (Lập phiếu hủy hàng), KHO11 (Xuất trả nhà cung cấp), AD12 (Duyệt phiếu hủy, điều chỉnh tồn, xuất trả NCC)

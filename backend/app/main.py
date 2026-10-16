@@ -15,6 +15,7 @@ from app.modules.chuyen_mon.router_tuong_tac import router as tuong_tac_router
 from app.modules.cua_hang.router import router as cua_hang_router
 from app.modules.he_thong.router_cau_hinh import router as cau_hinh_router
 from app.modules.he_thong.router_nhat_ky import router as nhat_ky_router
+from app.modules.kho.router_kiem_ke import router as kiem_ke_router
 from app.modules.kho.router_nha_cung_cap import router as nha_cung_cap_router
 from app.modules.kho.router_phieu_nhap import router as phieu_nhap_router
 from app.modules.kho.router_ton_kho import router as ton_kho_router
@@ -110,6 +111,7 @@ def create_app() -> FastAPI:
     app.include_router(nha_cung_cap_router, prefix="/api/v1")
     app.include_router(phieu_nhap_router, prefix="/api/v1")
     app.include_router(ton_kho_router, prefix="/api/v1")
+    app.include_router(kiem_ke_router, prefix="/api/v1")
     return app
 
 
