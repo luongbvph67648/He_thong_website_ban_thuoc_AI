@@ -167,8 +167,8 @@ describe('khu nhân viên', () => {
   })
 
   it('trang có quyền hiện nội dung (đang xây dựng) kèm mã chức năng', async () => {
-    renderTai('/nhan-vien/thu-hoi', { ...duocSi, quyen: { ...duocSi.quyen, 'recall.contact': 'day_du' } })
-    expect(await screen.findByText(/DS13/)).toBeInTheDocument()
+    renderTai('/nhan-vien/danh-gia-ai', { ...duocSi, quyen: { ...duocSi.quyen, 'ai_answer.review': 'day_du' } })
+    expect(await screen.findByText(/DS12/)).toBeInTheDocument()
   })
 
   it('trang không có quyền hiện 403 nhưng vẫn giữ layout và địa chỉ', async () => {
@@ -179,8 +179,8 @@ describe('khu nhân viên', () => {
   })
 
   it('quyền chỉ xem vẫn vào được trang xem', async () => {
-    renderTai('/nhan-vien/thu-hoi', { loai: 'noi_bo', vaiTro: 'PHARMACIST', quyen: { 'recall.contact': 'chi_xem' } })
-    expect(await screen.findByText(/DS13/)).toBeInTheDocument()
+    renderTai('/nhan-vien/danh-gia-ai', { loai: 'noi_bo', vaiTro: 'PHARMACIST', quyen: { 'ai_answer.review': 'chi_xem' } })
+    expect(await screen.findByText(/DS12/)).toBeInTheDocument()
   })
 
   it('/nhan-vien tự chuyển tới trang đầu tiên được phép', async () => {
@@ -323,7 +323,7 @@ describe('khu quản trị', () => {
   })
 
   it('trang xem chỉ cần quyền mức xem', async () => {
-    renderTai('/quan-tri/xem/don-hang', admin)
-    expect(await screen.findByText(/AD16/)).toBeInTheDocument()
+    renderTai('/quan-tri/xem/chung-tu-kho', { ...admin, quyen: { ...admin.quyen, 'stock_doc.view': 'chi_xem' } })
+    expect(await screen.findByRole('heading', { name: 'Chứng từ kho' })).toBeInTheDocument()
   })
 })

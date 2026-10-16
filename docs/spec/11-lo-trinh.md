@@ -798,14 +798,14 @@ _Đổi trả, biệt trữ, hoàn tiền, đánh giá, hỏi đáp, thông báo
   - [x] Màn lệnh thu hồi (Admin), danh sách khách cần liên hệ (dược sĩ).
 - **Ghi chú triển khai:** `modules/thu_hoi/` (`dich_vu`, `router`, `schemas`); `PhieuXuatTraTao.lenh_thu_hoi_id`; API spec 06 mục 3.37; QĐ-41. Giao diện: `/quan-tri/thu-hoi`, `/nhan-vien/thuc-hien-thu-hoi`, `/nhan-vien/thu-hoi`. Test `tests/thu_hoi/test_thu_hoi.py` (6), `ThuHoi.test.tsx`.
 
-### [ ] T6.7 · Màn xem tổng hợp cho Admin
+### [x] T6.7 · Màn xem tổng hợp cho Admin
 - **Chức năng:** AD16 (Xem đơn hàng, chứng từ kho, nội dung chuyên môn)
 - **Phụ thuộc:** T6.6
 - **Bảng:** `don_hang`, `phieu_nhap`, `phieu_kiem_ke`, `thong_tin_chuyen_mon`
 - **Tiêu chí chấp nhận:**
-  - [ ] Màn gộp chứng từ kho (`GET /api/v1/noi-bo/chung-tu-kho`: phiếu nhập, kiểm kê, điều chỉnh, hủy, xuất trả) yêu cầu `stock_doc.view`; màn nội dung chuyên môn chỉ xem yêu cầu `content.view`; màn chi tiết dùng lại API nội bộ sẵn có ở mức `chi_xem` (đơn hàng: `order.view`).
-  - [ ] Admin không thao tác được: nút ghi bị ẩn, gọi API ghi trả 403 (có test cho từng loại).
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Màn gộp chứng từ kho (`GET /api/v1/noi-bo/chung-tu-kho`: phiếu nhập, kiểm kê, điều chỉnh, hủy, xuất trả) yêu cầu `stock_doc.view`; màn nội dung chuyên môn chỉ xem yêu cầu `content.view`; màn chi tiết dùng lại API nội bộ sẵn có ở mức `chi_xem` (đơn hàng: `order.view`).
+  - [x] Admin không thao tác được: nút ghi bị ẩn, gọi API ghi trả 403 (có test cho từng loại).
+- **Ghi chú triển khai:** `kho/chung_tu_kho.py` + `router_chung_tu.py` (API spec 06 mục 3.38); màn đơn hàng và chuyên môn của Admin tái dùng trang nhân viên với route `/quan-tri/xem/...` (thêm hai dòng chi tiết `:id` vào bảng spec 09). Test `tests/kho/test_chung_tu_kho_admin.py` (4: gộp/lọc/phân trang, vai trò khác `403`, Admin gọi API ghi `403` cho từng loại).
 
 ## P7 · AI
 

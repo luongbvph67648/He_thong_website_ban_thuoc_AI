@@ -2721,6 +2721,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/noi-bo/chung-tu-kho": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Gộp chứng từ kho, chỉ xem (AD16) */
+        get: operations["danh_sach_api_v1_noi_bo_chung_tu_kho_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/noi-bo/thu-hoi/thuc-hien": {
         parameters: {
             query?: never;
@@ -4264,6 +4281,27 @@ export interface components {
             don_chua_su_dung: boolean;
             /** Da Kiem Tra Tuong Tac */
             da_kiem_tra_tuong_tac: boolean;
+        };
+        /** ChungTuKho */
+        ChungTuKho: {
+            loai: components["schemas"]["LoaiChungTu"];
+            /** Id */
+            id: number;
+            /** Ma Phieu */
+            ma_phieu: string;
+            /** Trang Thai */
+            trang_thai: string | null;
+            /** Nguoi Lap */
+            nguoi_lap: string;
+            /** Nguoi Duyet */
+            nguoi_duyet: string | null;
+            /** Ghi Chu */
+            ghi_chu: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /** ChuyenTrangThai */
         ChuyenTrangThai: {
@@ -6492,6 +6530,11 @@ export interface components {
          */
         LoaiBaiViet: "bai_viet" | "chinh_sach" | "faq";
         /**
+         * LoaiChungTu
+         * @enum {string}
+         */
+        LoaiChungTu: "phieu_nhap" | "kiem_ke" | "dieu_chinh" | "phieu_huy" | "xuat_tra";
+        /**
          * LoaiGiamGia
          * @enum {string}
          */
@@ -8029,6 +8072,17 @@ export interface components {
         Trang_BaiVietTomTat_: {
             /** Du Lieu */
             du_lieu: components["schemas"]["BaiVietTomTat"][];
+            /** Tong */
+            tong: number;
+            /** Trang */
+            trang: number;
+            /** Kich Thuoc */
+            kich_thuoc: number;
+        };
+        /** Trang[ChungTuKho] */
+        Trang_ChungTuKho_: {
+            /** Du Lieu */
+            du_lieu: components["schemas"]["ChungTuKho"][];
             /** Tong */
             tong: number;
             /** Trang */
@@ -14762,6 +14816,41 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KetQuaKiemHoan"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    danh_sach_api_v1_noi_bo_chung_tu_kho_get: {
+        parameters: {
+            query?: {
+                loai?: components["schemas"]["LoaiChungTu"] | null;
+                /** @description Số trang, bắt đầu từ 1 */
+                trang?: number;
+                /** @description Số dòng mỗi trang */
+                kich_thuoc?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Trang_ChungTuKho_"];
                 };
             };
             /** @description Validation Error */

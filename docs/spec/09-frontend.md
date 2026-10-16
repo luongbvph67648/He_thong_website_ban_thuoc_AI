@@ -84,7 +84,9 @@ Trang tài khoản cá nhân `/nhan-vien/tai-khoan` (hồ sơ: họ tên, số �
 | `/thu-hoi` | AD13 | `recall.create` |
 | `/hoan-tien` | AD17 | `refund.confirm` |
 | `/nhat-ky` | AD15 | `audit.view` |
-| `/xem/don-hang`, `/xem/chung-tu-kho`, `/xem/chuyen-mon` | AD16 | `order.view`, `stock_doc.view`, `content.view` (mức xem) |
+| `/xem/don-hang`, `/xem/don-hang/:id` | AD16 | `order.view` (mức xem) |
+| `/xem/chung-tu-kho` | AD16 | `stock_doc.view` (mức xem) |
+| `/xem/chuyen-mon`, `/xem/chuyen-mon/:id` | AD16 | `content.view` (mức xem) |
 
 #### Trang quản lý nhân viên (`/quan-tri/nhan-vien`, AD01) và vai trò, phân quyền (`/quan-tri/vai-tro`, AD18)
 - **Nhân viên:** bảng lọc theo tên/email/mã (tìm không phân biệt dấu), vai trò, trạng thái; bộ lọc và số trang nằm trên URL (`?q=&vai_tro=&trang_thai=&trang=`) nên tải lại hay chia sẻ liên kết vẫn giữ nguyên. Hàng của chính mình tắt Khóa, Đặt lại mật khẩu, Xóa kèm giải thích (backend cũng chặn). Khóa, đặt lại mật khẩu, xóa đều hỏi xác nhận; nút thao tác bọc `YeuCauQuyen` nên chỉ hiện với mức đầy đủ.

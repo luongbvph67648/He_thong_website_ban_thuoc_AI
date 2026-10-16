@@ -23,6 +23,8 @@ export const MUC_QUAN_TRI: readonly MucDieuHuong[] = [
   { duong: '/giam-sat-ai', nhan: 'Giám sát AI', nhom: 'Hệ thống và AI', quyen: ['ai.monitor'], chucNang: ['AD11'] },
   { duong: '/nhat-ky', nhan: 'Nhật ký hệ thống', nhom: 'Hệ thống và AI', quyen: ['audit.view'], chucNang: ['AD15'] },
   { duong: '/xem/don-hang', nhan: 'Xem đơn hàng', nhom: 'Chỉ xem', quyen: ['order.view'], chucNang: ['AD16'] },
+  { duong: '/xem/don-hang/:id', nhan: 'Chi tiết đơn (chỉ xem)', quyen: ['order.view'], chucNang: ['AD16'], trongMenu: false },
   { duong: '/xem/chung-tu-kho', nhan: 'Xem chứng từ kho', nhom: 'Chỉ xem', quyen: ['stock_doc.view'], chucNang: ['AD16'] },
   { duong: '/xem/chuyen-mon', nhan: 'Xem nội dung chuyên môn', nhom: 'Chỉ xem', quyen: ['content.view'], chucNang: ['AD16'] },
+  { duong: '/xem/chuyen-mon/:id', nhan: 'Nội dung chuyên môn (chỉ xem)', quyen: ['content.view'], chucNang: ['AD16'], trongMenu: false },
 ]

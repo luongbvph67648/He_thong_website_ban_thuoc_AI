@@ -34,6 +34,7 @@ import TrangDanhGiaCuaToi from './khu/cua-hang/danh-gia/TrangDanhGiaCuaToi'
 import TrangKiemDuyet from './khu/nhan-vien/kiem-duyet/TrangKiemDuyet'
 import TrangLienHeThuHoi from './khu/nhan-vien/thu-hoi/TrangLienHeThuHoi'
 import TrangThucHienThuHoi from './khu/nhan-vien/thu-hoi/TrangThucHienThuHoi'
+import TrangXemChungTuKho from './khu/quan-tri/xem/TrangXemChungTuKho'
 import TrangThuHoi from './khu/quan-tri/thu-hoi/TrangThuHoi'
 import TrangHangTraVe from './khu/nhan-vien/hang-tra-ve/TrangHangTraVe'
 import TrangXuLyDoiTra from './khu/nhan-vien/doi-tra/TrangXuLyDoiTra'
@@ -170,6 +171,11 @@ const TRANG_QUAN_TRI_THAT: Record<string, ReactNode> = {
   '/duyet-phieu': <TrangDuyetPhieu />,
   '/hoan-tien': <TrangHoanTien />,
   '/thu-hoi': <TrangThuHoi />,
+  '/xem/don-hang': <TrangQuanLyDon />,
+  '/xem/don-hang/:id': <TrangChiTietDon />,
+  '/xem/chung-tu-kho': <TrangXemChungTuKho />,
+  '/xem/chuyen-mon': <TrangNoiDungChuyenMon />,
+  '/xem/chuyen-mon/:id': <TrangSoanNoiDung />,
 }
 
 /** Toàn bộ route của ứng dụng (tách khỏi `createBrowserRouter` để test dựng bằng memory router). */

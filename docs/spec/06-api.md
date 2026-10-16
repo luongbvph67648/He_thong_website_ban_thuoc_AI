@@ -493,6 +493,11 @@ Dược sĩ (service chốt vai trò `PHARMACIST`):
 - **Kho** (`recall.execute`, Admin xem): `GET /noi-bo/thu-hoi/thuc-hien`, `GET /noi-bo/thu-hoi/thuc-hien/{id}`: lệnh đang mở và các lô cần gom với tồn bán, tồn biệt trữ, số đã bán ra. Kho gom hàng rồi lập phiếu hủy (`ly_do = thu_hoi`) hoặc phiếu xuất trả NCC; `POST /noi-bo/xuat-tra` nhận thêm `lenh_thu_hoi_id` (lệnh phải đang mở và mọi lô thuộc lệnh, nếu không `400`). Admin duyệt phiếu ở AD12 như thường lệ.
 - **Dược sĩ** (`recall.contact`, Admin chỉ xem): `GET /noi-bo/thu-hoi/lien-he`, `GET /noi-bo/thu-hoi/lien-he/{id}/khach` (chỉ lệnh đang mở; dược sĩ và Admin xem được, chỉ dược sĩ ghi), `PUT /noi-bo/thu-hoi/lien-he/khach/{ct_id} {ket_qua_lien_he, so_luong_da_thu_ve?, ghi_chu?}` (`so_luong_da_thu_ve` không vượt `so_luong_da_ban`).
 
+### 3.38 Xem tổng hợp cho Admin (AD16, T6.7)
+- `GET /noi-bo/chung-tu-kho?loai=&trang=&kich_thuoc=` (`stock_doc.view`, Admin chỉ xem; kho và dược sĩ `403`): gộp `phieu_nhap`, `kiem_ke`, `dieu_chinh`, `phieu_huy`, `xuat_tra` mới nhất trước, mỗi dòng `{loai, id, ma_phieu, trang_thai, nguoi_lap, nguoi_duyet, ghi_chu, created_at}`.
+- Màn đơn hàng và nội dung chuyên môn của Admin dùng lại API nội bộ có sẵn ở mức `chi_xem` (`GET /noi-bo/don-hang...` với `order.view`; `GET /noi-bo/chuyen-mon...` với `content.professional.edit` mức xem). Mọi API ghi cùng nhóm trả `403` cho Admin (test `tests/kho/test_chung_tu_kho_admin.py` và ma trận phân quyền).
+- Giao diện: `/quan-tri/xem/don-hang[/:id]`, `/xem/chung-tu-kho`, `/xem/chuyen-mon[/:id]` dùng lại trang của nhân viên (nút ghi bọc `YeuCauQuyen` nên ẩn với mức xem).
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:
