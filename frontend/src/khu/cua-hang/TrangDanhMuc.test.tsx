@@ -130,6 +130,21 @@ describe('TrangDanhMuc', () => {
     expect(GET.mock.calls.some((c) => c[0] === '/api/v1/san-pham')).toBe(false)
   })
 
+  it('slug danh mục sai mẫu (API trả 400) cũng là 404', async () => {
+    dapUng({ '/api/v1/danh-muc/{slug}': () => loi(400, 'DU_LIEU_KHONG_HOP_LE', 'Dữ liệu không hợp lệ') })
+    renderTai('/danh-muc/Thuoc')
+    expect(await screen.findByText('Không tìm thấy danh mục')).toBeInTheDocument()
+  })
+
+  it('trang vượt số trang: báo rõ và có nút về trang 1, không nói danh mục trống', async () => {
+    dapUng({ '/api/v1/san-pham': () => ok(trang([], 30)) })
+    const { router } = renderTai('/danh-muc/giam-dau?trang=999')
+    expect(await screen.findByText('Trang này không có sản phẩm')).toBeInTheDocument()
+    expect(screen.queryByText('Danh mục chưa có sản phẩm')).not.toBeInTheDocument()
+    await userEvent.setup().click(screen.getByRole('button', { name: /Về trang 1/ }))
+    await waitFor(() => expect(router.state.location.search).toBe(''))
+  })
+
   it('danh sách trống, và lỗi tải danh sách có nút thử lại', async () => {
     dapUng({ '/api/v1/san-pham': () => ok(trang([])) })
     renderTai('/danh-muc/giam-dau')

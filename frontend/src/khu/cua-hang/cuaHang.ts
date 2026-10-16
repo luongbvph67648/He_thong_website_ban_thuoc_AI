@@ -19,6 +19,8 @@ export function docNguonXem(gia: string | null): NguonXem | undefined {
 
 export const KHOA_QUERY_CUA_HANG = ['cua-hang'] as const
 export const KICH_THUOC_TRANG = 12
+/** Mã lỗi coi như "không có trang này": không tồn tại, hoặc slug sai mẫu (người dùng gõ chữ hoa, dấu cách...). */
+export const LOI_KHONG_CO: ReadonlySet<string> = new Set(['KHONG_TIM_THAY', 'DU_LIEU_KHONG_HOP_LE'])
 
 export const LOAI_SAN_PHAM: readonly { value: LoaiSanPham; label: string }[] = [
   { value: 'thuoc_ke_don', label: 'Thuốc kê đơn' },

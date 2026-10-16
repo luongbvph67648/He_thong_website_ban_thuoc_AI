@@ -9,6 +9,7 @@ import {
   docBoLoc,
   KHOA_QUERY_CUA_HANG,
   KICH_THUOC_TRANG,
+  LOI_KHONG_CO,
   SAP_XEP,
   taoQuerySanPham,
   type SapXep,
@@ -54,7 +55,7 @@ export default function TrangDanhMucCuaHang() {
 
   if (danhMuc.isPending) return <Skeleton active paragraph={{ rows: 8 }} />
   if (danhMuc.isError) {
-    const khongCo = laLoiApi(danhMuc.error) && danhMuc.error.ma_loi === 'KHONG_TIM_THAY'
+    const khongCo = laLoiApi(danhMuc.error) && LOI_KHONG_CO.has(danhMuc.error.ma_loi)
     return khongCo ? (
       <Result
         status="404"
@@ -121,6 +122,10 @@ export default function TrangDanhMucCuaHang() {
             />
           ) : danhSach.isPending ? (
             <Skeleton active paragraph={{ rows: 6 }} />
+          ) : danhSach.data.du_lieu.length === 0 && danhSach.data.tong > 0 ? (
+            <Empty description="Trang này không có sản phẩm">
+              <Button onClick={() => doiLoc({ trang: 1 })}>Về trang 1</Button>
+            </Empty>
           ) : danhSach.data.du_lieu.length === 0 ? (
             <Empty description={boLoc.conHang || boLoc.loai || boLoc.thuongHieu.length ? 'Không có sản phẩm phù hợp bộ lọc' : 'Danh mục chưa có sản phẩm'} />
           ) : (

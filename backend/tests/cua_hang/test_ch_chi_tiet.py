@@ -192,7 +192,10 @@ async def test_chi_hien_10_danh_gia_moi_nhat_nhung_thong_ke_tinh_het(client, db)
     ("ho_ten", "ket_qua"),
     [
         ("Nguyễn Văn An", "Nguyễn A."),
-        ("An", "An"),
+        ("An", "A…"),
+        ("0912345678", "Khách hàng"),
+        ("a@b.com", "Khách hàng"),
+        ("Nguyễn Văn 3", "Khách hàng"),
         ("  Trần   thị  bình ", "Trần B."),
         ("", "Khách hàng"),
         ("   ", "Khách hàng"),
@@ -316,3 +319,17 @@ async def test_token_khach_het_han_tra_401_de_client_lam_moi_con_token_vo_nghia_
     sp = await sp_ban_duoc(db)
     phan_hoi = await lay(client, sp, headers={"Authorization": "Bearer khong-phai-jwt"})
     assert phan_hoi.status_code == 200  # token vô nghĩa = khách vãng lai, không phải lỗi
+
+
+async def test_qua_gioi_han_ghi_tu_mot_ip_van_tra_san_pham_nhung_khong_ghi_lich_su(client, app, db):
+    from app.core.gioi_han import GioiHanCuaSoTruot, lay_bo_gioi_han_lich_su_xem
+    from app.modules.cua_hang import router as router_cua_hang
+
+    sp = await sp_ban_duoc(db)
+    bo = GioiHanCuaSoTruot()
+    app.dependency_overrides[lay_bo_gioi_han_lich_su_xem] = lambda: bo
+    # Mã phiên quay liên tục từ cùng một IP: chỉ GHI_XEM_TOI_DA_MOI_IP dòng đầu được ghi
+    for i in range(router_cua_hang.GHI_XEM_TOI_DA_MOI_IP + 5):
+        phan_hoi = await lay(client, sp, headers={"X-Ma-Phien": f"phien-quay-{i:05d}"})
+        assert phan_hoi.status_code == 200  # vượt giới hạn vẫn xem được sản phẩm
+    assert len(await so_lich_su(db, san_pham_id=sp.id)) == router_cua_hang.GHI_XEM_TOI_DA_MOI_IP

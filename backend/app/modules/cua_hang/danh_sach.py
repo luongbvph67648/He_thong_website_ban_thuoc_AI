@@ -18,11 +18,11 @@ from app.models.san_pham import AnhSanPham, DonViQuyDoi, SanPham, ThuongHieu
 from app.modules.cua_hang import danh_muc as dich_vu_danh_muc
 from app.modules.cua_hang.hien_thi import (
     CayHienThi,
+    ban_chay_30_ngay,
     chon_don_vi_gia,
     gia_hien_thi,
     la_hien_thi,
     nap_cay_hien_thi,
-    so_dong_ban_30_ngay,
     ton_kha_dung,
 )
 from app.modules.cua_hang.schemas import BoLocSanPham, SanPhamThe, ThuongHieuLoc, TrangChu
@@ -121,18 +121,21 @@ async def danh_sach(db: AsyncSession, loc: BoLoc, tp: ThamSoPhanTrang) -> Trang[
         )
     cay = await nap_cay_hien_thi(db)
     gia, ton = gia_hien_thi(), ton_kha_dung(hom_nay_vn())
+    ban_chay = ban_chay_30_ngay()
     dieu_kien = _cac_dieu_kien(cay, loc, gia, ton)
     sap_xep: dict[str, list[ColumnElement]] = {
         "moi": [SanPham.created_at.desc(), SanPham.id.desc()],
         "gia_tang": [gia.asc().nulls_last(), SanPham.id],
         "gia_giam": [gia.desc().nulls_last(), SanPham.id],
-        "ban_chay": [so_dong_ban_30_ngay().desc(), SanPham.id],
+        "ban_chay": [func.coalesce(ban_chay.c.so_dong, 0).desc(), SanPham.id],
         "ten": [func.lower(SanPham.ten), SanPham.id],
     }
     tong = await db.scalar(select(func.count()).select_from(SanPham).where(*dieu_kien)) or 0
-    dong = (
-        await db.execute(chon_the().where(*dieu_kien).order_by(*sap_xep[loc.sap_xep]).limit(tp.limit).offset(tp.offset))
-    ).all()
+    truy_van = chon_the()
+    if loc.sap_xep == "ban_chay":
+        truy_van = truy_van.outerjoin(ban_chay, ban_chay.c.san_pham_id == SanPham.id)
+    truy_van = truy_van.where(*dieu_kien).order_by(*sap_xep[loc.sap_xep]).limit(tp.limit).offset(tp.offset)
+    dong = (await db.execute(truy_van)).all()
     return tao_trang(await dung_the(db, dong), tong, tp)
 
 
@@ -149,12 +152,13 @@ async def trang_chu(db: AsyncSession) -> TrangChu:
             .limit(SO_SAN_PHAM_TRANG_CHU)
         )
     ).all()
-    ban_chay_dem = so_dong_ban_30_ngay()
+    gop = ban_chay_30_ngay()
     ban_chay = (
         await db.execute(
             chon_the()
-            .where(hien, khong_ke_don, ban_chay_dem > 0)
-            .order_by(ban_chay_dem.desc(), SanPham.id)
+            .join(gop, gop.c.san_pham_id == SanPham.id)
+            .where(hien, khong_ke_don)
+            .order_by(gop.c.so_dong.desc(), SanPham.id)
             .limit(SO_SAN_PHAM_TRANG_CHU)
         )
     ).all()

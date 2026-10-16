@@ -12,6 +12,7 @@ import {
   docNguonXem,
   DONG_KHONG_PHAI_THUOC,
   KHOA_QUERY_CUA_HANG,
+  LOI_KHONG_CO,
   MUC_NOI_DUNG_CHUYEN_MON,
   type SanPhamChiTiet,
 } from './cuaHang'
@@ -187,7 +188,8 @@ export default function TrangChiTietSanPhamCuaHang() {
 
   if (chiTiet.isPending) return <Skeleton active paragraph={{ rows: 10 }} />
   if (chiTiet.isError) {
-    if (laLoiApi(chiTiet.error) && chiTiet.error.ma_loi === 'KHONG_TIM_THAY')
+    // Slug sai mẫu (chữ hoa...) cũng là không có trang, không phải lỗi tạm để thử lại.
+    if (laLoiApi(chiTiet.error) && LOI_KHONG_CO.has(chiTiet.error.ma_loi))
       return <Result status="404" title="Không tìm thấy sản phẩm" subTitle="Sản phẩm không tồn tại hoặc đã ngừng bán." extra={<Link to="/">Về trang chủ</Link>} />
     return <Alert type="error" showIcon title="Không tải được sản phẩm" action={<Button onClick={() => void chiTiet.refetch()}>Thử lại</Button>} />
   }

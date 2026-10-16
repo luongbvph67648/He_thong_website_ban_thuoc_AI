@@ -37,12 +37,16 @@ _MA_PHIEN_HOP_LE = re.compile(r"[A-Za-z0-9_-]{8,64}")
 
 
 def ten_rut_gon(ho_ten: str) -> str:
-    """ "Nguyễn Văn An" -> "Nguyễn A."; một từ thì giữ nguyên. Không lộ họ tên đầy đủ của người đánh giá."""
+    """Rút gọn tên người đánh giá: "Nguyễn Văn An" -> "Nguyễn A."; một từ -> chữ đầu và "…".
+
+    Không lộ họ tên đầy đủ, cũng không lộ số điện thoại hay email người dùng gõ vào ô họ tên (chứa chữ số hoặc "@"
+    thì chỉ hiện "Khách hàng").
+    """
     tu = ho_ten.split()
-    if not tu:
+    if not tu or any(c.isdigit() or c == "@" for c in ho_ten):
         return "Khách hàng"
     if len(tu) == 1:
-        return tu[0]
+        return f"{tu[0][0]}…"
     return f"{tu[0]} {tu[-1][0].upper()}."
 
 
@@ -148,7 +152,13 @@ async def _tuong_tu(
 
 
 async def chi_tiet(
-    db: AsyncSession, slug: str, *, khach: KhachHang | None, ma_phien: str | None, nguon: NguonXem | None
+    db: AsyncSession,
+    slug: str,
+    *,
+    khach: KhachHang | None,
+    ma_phien: str | None,
+    nguon: NguonXem | None,
+    duoc_ghi: bool = True,
 ) -> SanPhamChiTietCongKhai:
     cay = await nap_cay_hien_thi(db)
     sp = (await db.execute(select(SanPham).where(SanPham.slug == slug, la_hien_thi(cay.ids)))).scalar_one_or_none()
@@ -188,7 +198,8 @@ async def chi_tiet(
     nha_san_xuat = await db.get(NhaSanXuat, sp.nha_san_xuat_id) if sp.nha_san_xuat_id else None
     nd = await noi_dung_da_duyet(db, sp.id)
 
-    await _ghi_lich_su_xem(db, sp.id, khach, ma_phien, nguon)
+    if duoc_ghi:
+        await _ghi_lich_su_xem(db, sp.id, khach, ma_phien, nguon)
     return SanPhamChiTietCongKhai(
         id=sp.id,
         sku=sp.sku,

@@ -2,10 +2,11 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Header, Path, Query
+from fastapi import APIRouter, Depends, Header, Path, Query, Request
 from pydantic import Field
 
 from app.core.db import Db
+from app.core.gioi_han import GioiHanCuaSoTruot, lay_bo_gioi_han_lich_su_xem
 from app.core.phan_quyen import khach_tuy_chon
 from app.core.phan_trang import PhanTrang, Trang
 from app.core.tham_so import KHONG_NUL
@@ -25,6 +26,7 @@ from app.modules.cua_hang.schemas import (
     SanPhamThe,
     TrangChu,
 )
+from app.modules.tai_khoan.phien_http import dia_chi_ip
 
 router = APIRouter(tags=["Cửa hàng"])
 
@@ -86,14 +88,22 @@ async def bo_loc(db: Db, danh_muc: SlugDanhMuc = None):
     return await dich_vu_danh_sach.bo_loc(db, danh_muc)
 
 
+GHI_XEM_TOI_DA_MOI_IP = 120
+GHI_XEM_CUA_SO_GIAY = 600
+
+
 @router.get("/san-pham/{slug}", response_model=SanPhamChiTietCongKhai, summary="Chi tiết sản phẩm (KVL03)")
 async def chi_tiet_san_pham(
     slug: SlugDuongDan,
+    request: Request,
     db: Db,
     khach: Annotated[KhachHang | None, Depends(khach_tuy_chon)],
+    bo_gioi_han: Annotated[GioiHanCuaSoTruot, Depends(lay_bo_gioi_han_lich_su_xem)],
     nguon: NguonXem | None = None,
     x_ma_phien: Annotated[str | None, Header(max_length=200)] = None,
 ):
-    return await dich_vu_chi_tiet.chi_tiet(
-        db, slug, khach=khach, ma_phien=dich_vu_chi_tiet.ma_phien_hop_le(x_ma_phien), nguon=nguon
-    )
+    ma_phien = dich_vu_chi_tiet.ma_phien_hop_le(x_ma_phien)
+    # Mã phiên do client tự chọn nên một IP quay mã liên tục sẽ làm phình `lich_su_xem` và lệch gợi ý: quá giới hạn thì
+    # vẫn trả sản phẩm, chỉ không ghi lịch sử.
+    duoc_ghi = bo_gioi_han.thu(f"xem:{dia_chi_ip(request)}", GHI_XEM_TOI_DA_MOI_IP, GHI_XEM_CUA_SO_GIAY) is None
+    return await dich_vu_chi_tiet.chi_tiet(db, slug, khach=khach, ma_phien=ma_phien, nguon=nguon, duoc_ghi=duoc_ghi)

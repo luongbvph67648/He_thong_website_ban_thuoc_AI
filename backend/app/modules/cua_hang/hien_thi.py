@@ -8,7 +8,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date, timedelta
 
-from sqlalchemy import ColumnElement, and_, func, select
+from sqlalchemy import ColumnElement, Subquery, and_, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.thoi_gian import bay_gio_utc, hom_nay_vn
@@ -120,19 +120,16 @@ def gia_hien_thi() -> ColumnElement:
     )
 
 
-def so_dong_ban_30_ngay() -> ColumnElement[int]:
-    """Số dòng `ct_don_hang` của đơn không hủy trong 30 ngày qua (chỉ số "bán chạy")."""
+def ban_chay_30_ngay() -> Subquery:
+    """Bảng gộp (`san_pham_id`, `so_dong`): số dòng `ct_don_hang` của đơn không hủy trong 30 ngày qua ("bán chạy"). Gộp
+    MỘT lần rồi nối vào sản phẩm: truy vấn con tương quan theo từng sản phẩm chậm gấp hàng chục lần ở danh mục lớn."""
     moc = bay_gio_utc() - timedelta(days=SO_NGAY_BAN_CHAY)
     return (
-        select(func.count(CtDonHang.id))
+        select(CtDonHang.san_pham_id.label("san_pham_id"), func.count(CtDonHang.id).label("so_dong"))
         .join(DonHang, DonHang.id == CtDonHang.don_hang_id)
-        .where(
-            CtDonHang.san_pham_id == SanPham.id,
-            DonHang.created_at >= moc,
-            DonHang.trang_thai != TrangThaiDon.da_huy,
-        )
-        .correlate(SanPham)
-        .scalar_subquery()
+        .where(DonHang.created_at >= moc, DonHang.trang_thai != TrangThaiDon.da_huy)
+        .group_by(CtDonHang.san_pham_id)
+        .subquery("ban_chay")
     )
 
 

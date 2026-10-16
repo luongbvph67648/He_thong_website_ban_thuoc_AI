@@ -229,6 +229,13 @@ describe('TrangChiTietSanPham: lịch sử xem và lỗi', () => {
     expect(screen.getByRole('link', { name: 'Về trang chủ' })).toBeInTheDocument()
   })
 
+  it('slug sai mẫu (API trả 400) cũng hiện trang 404, không phải lỗi thử lại', async () => {
+    dapUng(() => loi(400, 'DU_LIEU_KHONG_HOP_LE', 'Dữ liệu không hợp lệ'))
+    renderTai('/san-pham/Paracetamol-500')
+    expect(await screen.findByText('Không tìm thấy sản phẩm')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Thử lại/ })).not.toBeInTheDocument()
+  })
+
   it('lỗi máy chủ có nút thử lại', async () => {
     dapUng(() => loi(500, 'LOI_HE_THONG', 'Lỗi'))
     renderTai('/san-pham/x')
