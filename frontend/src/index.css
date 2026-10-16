@@ -6,3 +6,22 @@
 body {
   margin: 0;
 }
+
+/* In hóa đơn POS: chỉ in vùng .hoa-don-in */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  .hoa-don-in,
+  .hoa-don-in * {
+    visibility: visible;
+  }
+  .hoa-don-in {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 80mm;
+    color: #000;
+    background: #fff;
+  }
+}

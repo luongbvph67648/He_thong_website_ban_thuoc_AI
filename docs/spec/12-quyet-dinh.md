@@ -353,3 +353,10 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **Khóa yêu cầu:** hết hạn (HT08) thì về `cho_duyet`. Khi đơn bị hủy trước xuất kho yêu cầu về `dang_tu_van` giữ nguyên dược sĩ và đặt lại `khoa_luc`, nên nếu dược sĩ bỏ đi thì HT08 trả về hàng chờ sau thời gian khóa. Hủy SAU khi đã xuất kho giữ `da_su_dung = true`.
 - **Chưa làm (để task sau):** dược sĩ tự nhập `ct_yeu_cau_don_thuoc` (AI06 ở T7.6 điền), gợi ý thuốc thay thế cùng hoạt chất (tìm theo hoạt chất đã có), thông báo cho dược sĩ khi có yêu cầu mới (KTV13/T6.5).
 
+## QĐ-35: Bán tại quầy POS (2026-10-16, task T5.4)
+- **Không dùng giỏ hàng.** POS tạo đơn từ danh sách dòng của quầy, dùng lại `kiem_tra_dong_de_dat(cho_phep_ke_don=True)`, `tinh_tien` và `khoi_tao_trang_thai`. Thuốc kê đơn bán được nhưng luôn gắn yêu cầu đơn thuốc kênh `tai_quay` do chính dược sĩ lập (kiểm ở service, không chỉ ở giao diện).
+- **Không có mã giảm giá ở quầy** và khách lẻ không cần tài khoản; gắn khách chỉ để tích lịch sử mua và đối chiếu dị ứng.
+- **Xuất kho đúng thứ tự của dòng 6:** đơn vào `hoan_tat` trước, rồi giữ và xuất kho trong cùng transaction (lỗi `HET_HANG` hoàn tác tất cả). Lô `can_han` được dùng, lô hết hạn hoặc ngừng bán thì không.
+- **Tiền thối chỉ có lúc bán:** DB không có cột "tiền khách đưa" nên không đổi schema; hóa đơn in lại không có hai số này. Tên nhà thuốc trên hóa đơn là hằng số `Nhà thuốc AI` (chưa có cấu hình thông tin cửa hàng).
+- **`da_su_dung`** của yêu cầu quầy bật ngay khi đơn hoàn tất (spec 04 mục 6).
+

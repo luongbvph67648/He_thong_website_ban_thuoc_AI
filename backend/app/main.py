@@ -13,6 +13,7 @@ from app.modules.ban_hang.router_dat_ho import router as dat_ho_router
 from app.modules.ban_hang.router_khach import router as don_hang_khach_router
 from app.modules.ban_hang.router_kho import router as soan_hang_router
 from app.modules.ban_hang.router_noi_bo import router as don_hang_noi_bo_router
+from app.modules.ban_hang.router_pos import router as pos_router
 from app.modules.chuyen_mon.router_bai_viet import router as bai_viet_duyet_router
 from app.modules.chuyen_mon.router_noi_dung import router as noi_dung_chuyen_mon_router
 from app.modules.chuyen_mon.router_tuong_tac import router as tuong_tac_router
@@ -73,6 +74,13 @@ QUY_TAC_THAN_REQUEST = (
     QuyTacThanRequest(
         "POST",
         re.compile(r"/api/v1/don-thuoc"),
+        5 * luu_tru.TOI_DA_ANH_BYTE + 256 * 1024,
+        "TEP_QUA_LON",
+        "Tối đa 5 ảnh, mỗi ảnh 5 MB",
+    ),
+    QuyTacThanRequest(
+        "POST",
+        re.compile(r"/api/v1/noi-bo/pos/don-thuoc"),
         5 * luu_tru.TOI_DA_ANH_BYTE + 256 * 1024,
         "TEP_QUA_LON",
         "Tối đa 5 ảnh, mỗi ảnh 5 MB",
@@ -152,6 +160,7 @@ def create_app() -> FastAPI:
     app.include_router(dat_ho_router, prefix="/api/v1")
     app.include_router(dia_chi_router, prefix="/api/v1")
     app.include_router(don_thuoc_router, prefix="/api/v1")
+    app.include_router(pos_router, prefix="/api/v1")
     app.include_router(don_thuoc_noi_bo_router, prefix="/api/v1")
     app.include_router(don_thuoc_xac_nhan_router, prefix="/api/v1")
     app.include_router(suc_khoe_router, prefix="/api/v1")

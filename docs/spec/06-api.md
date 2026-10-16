@@ -428,6 +428,19 @@ Khách đăng nhập, `khach_hang_id` lấy từ token. Nhân viên (kể cả A
   - `POST tu-choi`: dòng 9, nhả hàng, yêu cầu về `dang_tu_van` để tạo lại đơn.
 - **Vòng đời yêu cầu** (spec 04 mục 1.2): đơn từ đơn thuốc bị hủy hoặc hết hạn TRƯỚC khi xuất kho (dòng 9, 12, 14, 15) thì yêu cầu về `dang_tu_van` (dược sĩ cũ, `khoa_luc` tính lại); sang "Đang soạn hàng" (dòng 16) thì `da_su_dung = true` và không quay lại nữa. HT08 nhả khóa `dang_tu_van` quá `thoi_gian_khoa_don_thuoc_phut` về `cho_duyet`.
 
+### 3.31 Bán tại quầy POS (DS08, T5.4)
+Mã quyền `pos.sell` (chỉ dược sĩ; service chốt thêm vai trò `PHARMACIST`).
+- `GET /noi-bo/pos/san-pham?q=`: tìm theo tên, hoạt chất hoặc mã vạch (khớp đúng `don_vi_quy_doi.ma_vach`), tối đa 20, kể cả thuốc kê đơn. Mỗi sản phẩm có `ton_quay` (đơn vị cơ sở, gồm lô `dang_ban` và `can_han` còn hạn, trừ phần đang giữ), `co_lo_can_han`, mọi đơn vị tính (bán lẻ theo đơn vị nhỏ nhất) và `don_vi_khop_ma_vach` khi tìm bằng mã vạch.
+- `POST /noi-bo/pos/canh-bao {dong, sdt_khach?}` -> `{tuong_tac, di_ung, can_xac_nhan}`: cảnh báo tương tác và (khi gắn khách có tài khoản) dị ứng; chỉ trả cảnh báo, không trả hồ sơ.
+- `POST /noi-bo/pos/don-thuoc` (`multipart`: `anh` 1-5 tệp, `ho_ten`, `tuoi_hoac_nam_sinh?`, `so_dien_thoai?`, `ghi_chu?`) -> 201 `{id, ma_yeu_cau, ho_ten, trung_anh}`: lập yêu cầu đơn thuốc kênh `tai_quay` (spec 04 mục 1.2 dòng 2), vào thẳng `da_tao_don`, gắn dược sĩ lập; `trung_anh` là mã các yêu cầu đã dùng có cùng ảnh.
+- `POST /noi-bo/pos/don` (cần `Idempotency-Key`) `{dong, sdt_khach?, yeu_cau_don_thuoc_id?, phuong_thuc_thu: tien_mat | chuyen_khoan, tien_khach_dua?, xac_nhan_canh_bao?, xac_nhan_trung_anh?}` -> 201 `{don_id, hoa_don}`:
+  - Dòng kiểm như giỏ hàng nhưng không giới hạn đơn vị bán online và cho phép thuốc kê đơn. Giá lấy theo giá hiện tại, không mã giảm giá.
+  - Có thuốc kê đơn thì BẮT BUỘC `yeu_cau_don_thuoc_id` của yêu cầu kênh `tai_quay` do chính dược sĩ lập, chưa dùng (thiếu: `400`; của người khác hoặc không phải kênh quầy: `404`; đã gắn đơn: `409`). Đơn không có thuốc kê đơn mà kèm yêu cầu là `400`. Ảnh trùng đơn đã dùng: `409 CAN_XAC_NHAN_CANH_BAO` tới khi `xac_nhan_trung_anh`.
+  - Cảnh báo `nghiem_trong`/`chong_chi_dinh` hoặc dị ứng: `409 CAN_XAC_NHAN_CANH_BAO` tới khi `xac_nhan_canh_bao`.
+  - Tiền mặt: `tien_khach_dua` bắt buộc và không nhỏ hơn tổng (`400`), tiền thối = đưa - tổng; chuyển khoản không nhận `tien_khach_dua`. `sdt_khach` không có tài khoản là `404`.
+  - Một transaction: đơn `kenh_ban = tai_quay` vào thẳng `hoan_tat` (dòng 6), giữ hàng FEFO có lô cận hạn rồi xuất kho (thẻ kho `xuat_ban`), giao dịch `thanh_toan` `thanh_cong` do dược sĩ thu, yêu cầu đơn thuốc `da_su_dung = true`. Thiếu hàng là `409 HET_HANG` và không để lại gì.
+- `GET /noi-bo/pos/don/{id}/hoa-don`: dữ liệu hóa đơn để in lại (không có `tien_khach_dua` và `tien_thua`, chỉ có ngay lúc bán). Đơn không thuộc kênh quầy là `404`. Giao diện dựng HTML in được (khổ 80 mm).
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:
