@@ -481,6 +481,19 @@ _Nhập kho theo lô, thẻ kho, cảnh báo, kiểm kê, hủy, xuất trả, b
 - **Giao diện:**
   - [ ] Danh sách phiếu chờ duyệt cho Admin; form phiếu hủy/xuất trả.
 - **Ghi chú triển khai:** _(trống)_
+- **Ghi chú chuẩn bị (từ T3.1–T3.3, đọc trước khi làm):**
+  - Kiến trúc kho hiện có (`backend/app/modules/kho/`):
+    - `ton_kho.py`: mọi hàm đổi tồn (`tru_ton`, `dieu_chinh`, `giu_hang_nhieu`...) khóa lô `FOR UPDATE` theo id tăng dần, ghi `bien_dong_kho` cùng transaction. Chứng từ truyền vào bằng `ChungTu('phieu_dieu_chinh'|'phieu_huy'|'phieu_xuat_tra', id, nguoi_thuc_hien_id)`.
+    - `dieu_chinh.py`/`kiem_ke.py`: phiếu điều chỉnh đã lập ở trạng thái chờ duyệt, tồn chưa đổi (T3.3). Chênh lệch là thay đổi tương đối so với sổ sách lúc chụp. Mã phiếu qua `core/ma_chung_tu.ma_phieu(db, 'phieu_huy'|'phieu_xuat_tra'|...)`.
+    - Router nằm ở `router_*.py`; mọi route `/noi-bo/*` dùng `Depends(yeu_cau_quyen(ma, muc))` và phải thêm vào `tests/phan_quyen/registry.py`.
+    - `tests/kho/conftest.py` chạy `kiem_tra_bat_bien(db)` sau mỗi test (bất biến 1–3); test cố ý phá bất biến gắn `@pytest.mark.khong_kiem_bat_bien`.
+  - Việc cần làm ở T3.4:
+    1. Viết spec 06 mục 3.18 trước, thêm mã lỗi `TU_DUYET_KHONG_DUOC` vào cả `core/loi.py::MA_LOI` và bảng lỗi spec 06 mục 4.
+    2. Test trước: người duyệt = người lập → `TU_DUYET_KHONG_DUOC`; duyệt đúng thì tồn/thẻ kho đổi đúng; từ chối bắt buộc lý do và không đổi tồn.
+    3. Duyệt phải khóa phiếu, kiểm tra còn ở trạng thái chờ duyệt (tránh duyệt hai lần), rồi mới gọi `ton_kho`. Số lượng được kiểm tra lại tại thời điểm duyệt vì tồn có thể đã đổi sau khi lập.
+    4. Phiếu hủy/xuất trả chọn khu `kho_ban`/`biet_tru`; chỉ Admin có quyền duyệt (AD12), kho lập (KHO09/KHO11). Admin không đọc dữ liệu sức khỏe nhưng phiếu kho không dính phần này.
+    5. Giao diện: danh sách chờ duyệt cho Admin (gộp 3 loại phiếu) + form phiếu hủy/xuất trả; đăng ký route ở `src/router.tsx` (`TRANG_NHAN_VIEN_THAT`) và `menu.ts`.
+  - Quy ước làm tiết kiệm token: chỉ chạy test phần bị ảnh hưởng khi đang làm, chạy full một lần cuối task; `nghiep-vu-reviewer` chạy gộp một lần sau T3.5 (QĐ-22). `LoiNghiepVu` truyền `chi_tiet=` bằng keyword. Mỗi khi đổi backend phải restart uvicorn trước `npm run gen:api`.
 
 ### [ ] T3.5 · Báo cáo nhập - xuất - tồn
 - **Chức năng:** KHO13 (Báo cáo nhập, xuất, tồn)
