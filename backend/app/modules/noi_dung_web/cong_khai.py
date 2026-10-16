@@ -17,8 +17,15 @@ from app.models.he_thong import BaiViet
 from app.modules.noi_dung_web.schemas import BaiVietCongKhai, BaiVietCongKhaiTomTat
 
 TOM_TAT_TOI_DA = 200
+DAU_BAI = 1500
+"""Chỉ phần đầu này của bài được dùng để tóm tắt: regex bỏ ký hiệu Markdown chạy trên chuỗi dài ác ý (hàng chục nghìn
+`[`) là bậc hai, đủ chặn cả máy chủ; cắt trước khi chạy, và cắt luôn ở SQL để khỏi kéo toàn văn về."""
+TOI_DA_DONG_KEM_NOI_DUNG = 50
+# Mọi nhóm lặp đều có chặn trên và không vượt qua dòng mới, nên mỗi vị trí bắt đầu chỉ quét một đoạn ngắn.
 _KHONG_PHAI_CHU = re.compile(
-    r"```.*?```|`|!\[[^\]]*\]\([^)]*\)|\[([^\]]*)\]\([^)]*\)|[#>*_~|]+|^\s*[-+]\s+", re.S | re.M
+    r"```.*?```|`|!\[[^\]\n]{0,200}\]\([^)\n]{0,500}\)|\[([^\]\n]{0,200})\]\([^)\n]{0,500}\)|[#>*_~|]+"
+    r"|^[ \t]*[-+][ \t]+",
+    re.S | re.M,
 )
 _KHOANG_TRANG = re.compile(r"\s+")
 _TRUOC_DAU_CAU = re.compile(r"\s+([.,;:!?])")
@@ -26,7 +33,7 @@ _TRUOC_DAU_CAU = re.compile(r"\s+([.,;:!?])")
 
 def tom_tat(noi_dung: str) -> str:
     """Vài chữ đầu của bài, đã bỏ ký hiệu Markdown (đoạn mã, ảnh, liên kết giữ chữ, dấu #, *, >...)."""
-    sach = _KHONG_PHAI_CHU.sub(lambda m: m.group(1) or " ", noi_dung)
+    sach = _KHONG_PHAI_CHU.sub(lambda m: m.group(1) or " ", noi_dung[:DAU_BAI])
     sach = _TRUOC_DAU_CAU.sub(r"\1", _KHOANG_TRANG.sub(" ", sach)).strip()
     return sach if len(sach) <= TOM_TAT_TOI_DA else sach[:TOM_TAT_TOI_DA].rsplit(" ", 1)[0].rstrip() + "…"
 
@@ -44,9 +51,22 @@ async def danh_sach(
             "Dữ liệu không hợp lệ",
             chi_tiet=[{"truong": "kem_noi_dung", "loi": "Chỉ dùng được với loai=faq"}],
         )
-    stmt: Select[Any] = select(BaiViet, _ngay_dang().label("ngay_dang")).where(
-        BaiViet.loai == loai, BaiViet.trang_thai == TrangThaiNoiDung.da_duyet
-    )
+    if kem_noi_dung and tp.kich_thuoc > TOI_DA_DONG_KEM_NOI_DUNG:
+        raise LoiNghiepVu(
+            "DU_LIEU_KHONG_HOP_LE",
+            "Dữ liệu không hợp lệ",
+            chi_tiet=[{"truong": "kich_thuoc", "loi": f"Tối đa {TOI_DA_DONG_KEM_NOI_DUNG} khi kem_noi_dung=true"}],
+        )
+    cot_noi_dung = BaiViet.noi_dung if kem_noi_dung else func.left(BaiViet.noi_dung, DAU_BAI)
+    stmt: Select[Any] = select(
+        BaiViet.id,
+        BaiViet.tieu_de,
+        BaiViet.slug,
+        BaiViet.loai,
+        BaiViet.anh_bia_url,
+        cot_noi_dung.label("noi_dung"),
+        _ngay_dang().label("ngay_dang"),
+    ).where(BaiViet.loai == loai, BaiViet.trang_thai == TrangThaiNoiDung.da_duyet)
     if q and q.strip():
         mau = mau_tim_like(q)
         stmt = stmt.where(
@@ -58,16 +78,16 @@ async def danh_sach(
     return tao_trang(
         [
             BaiVietCongKhaiTomTat(
-                id=bv.id,
-                tieu_de=bv.tieu_de,
-                slug=bv.slug,
-                loai=bv.loai,
-                anh_bia_url=bv.anh_bia_url,
-                tom_tat=tom_tat(bv.noi_dung),
-                ngay_dang=ngay,
-                noi_dung=bv.noi_dung if kem_noi_dung else None,
+                id=d.id,
+                tieu_de=d.tieu_de,
+                slug=d.slug,
+                loai=d.loai,
+                anh_bia_url=d.anh_bia_url,
+                tom_tat=tom_tat(d.noi_dung),
+                ngay_dang=d.ngay_dang,
+                noi_dung=d.noi_dung if kem_noi_dung else None,
             )
-            for bv, ngay in dong
+            for d in dong
         ],
         tong,
         tp,

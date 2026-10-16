@@ -163,7 +163,9 @@ async def test_sua_khong_thay_doi_khong_ghi_nhat_ky_va_nhat_ky_khong_chua_toan_v
     assert sua.status_code == 200
     ghi = await nhat_ky(db, dang_nhap_admin.tai_khoan.id, "sua")
     assert (
-        len(ghi) == 1 and set(ghi[0].gia_tri_moi) == {"do_dai_noi_dung"} and "Khác hẳn" not in str(ghi[0].gia_tri_moi)
+        len(ghi) == 1
+        and set(ghi[0].gia_tri_moi) == {"do_dai_noi_dung", "dau_van_tay_noi_dung"}
+        and "Khác hẳn" not in str(ghi[0].gia_tri_moi)
     )
 
 

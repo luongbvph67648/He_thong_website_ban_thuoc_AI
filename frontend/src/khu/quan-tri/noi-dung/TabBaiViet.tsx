@@ -40,10 +40,19 @@ export function TabBaiViet({ loai, coGhi }: { loai: LoaiBai; coGhi: boolean }) {
     placeholderData: (truoc) => truoc,
   })
 
-  /** Gỡ / đăng lại cần đúng `phien_ban`: đọc bản mới nhất của bài ngay trước khi gửi (một cú bấm, không có form để giữ). */
+  /**
+   * Gỡ / đăng lại cần đúng `phien_ban`, mà dòng của danh sách không mang nó (không có toàn văn để băm). Đọc bản mới nhất
+   * của bài ngay trước khi gửi, nhưng CHỈ gửi khi bài vẫn như dòng người dùng đang thấy (cùng trạng thái, cùng lần cập
+   * nhật cuối); khác thì tải lại danh sách để người dùng xem lại, không ngầm đăng lại nội dung họ chưa thấy.
+   */
   const chuyen = async (b: BaiVietTomTat, hanhDong: 'go' | 'dang') => {
     const hienTai = await goi(() => api.GET('/api/v1/noi-bo/bai-viet/{bai_viet_id}', { params: { path: { bai_viet_id: b.id } } }))
     if (!hienTai.ok) return setThongDiep(thongDiepChung(hienTai.loi))
+    if (hienTai.data.trang_thai !== b.trang_thai || hienTai.data.updated_at !== b.updated_at) {
+      setThongDiep('Bài viết vừa được người khác thay đổi. Danh sách đã được tải lại, hãy xem lại rồi thử lần nữa.')
+      void queryClient.invalidateQueries({ queryKey: khoa })
+      return
+    }
     const params = { path: { bai_viet_id: b.id } }
     const body = { phien_ban: hienTai.data.phien_ban }
     const kq = await goi(() =>

@@ -14,7 +14,9 @@ from typing import Any
 
 from sqlalchemy import Select, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import defer
 
+from app.core.cau_hinh_khoa import dau_van_tay
 from app.core.loi import LoiNghiepVu
 from app.core.nhat_ky import ghi_nhat_ky
 from app.core.phan_quyen import dam_bao_la_admin
@@ -81,7 +83,11 @@ async def danh_sach(
     q: str | None,
     tp: ThamSoPhanTrang,
 ) -> tuple[list[BaiVietTomTatAdmin], int]:
-    stmt: Select[Any] = select(BaiViet, NhanVien.ho_ten).join(NhanVien, NhanVien.id == BaiViet.tac_gia_id)
+    stmt: Select[Any] = (
+        select(BaiViet, NhanVien.ho_ten)
+        .options(defer(BaiViet.noi_dung))  # danh sách không cần toàn văn (tối đa 100.000 ký tự mỗi bài)
+        .join(NhanVien, NhanVien.id == BaiViet.tac_gia_id)
+    )
     if loai is not None:
         stmt = stmt.where(BaiViet.loai == loai)
     if trang_thai is not None:
@@ -139,7 +145,8 @@ async def _slug_chua_dung(db: AsyncSession, tieu_de: str) -> str:
 
 
 def _ghi(bv: BaiViet) -> dict[str, Any]:
-    """Giá trị đưa vào nhật ký: KHÔNG kèm toàn văn `noi_dung` (có thể rất dài), chỉ độ dài."""
+    """Giá trị đưa vào nhật ký: KHÔNG kèm toàn văn `noi_dung` (có thể rất dài), chỉ độ dài và dấu vân tay (để biết nội
+    dung đã đổi dù độ dài không đổi)."""
     return {
         "loai": bv.loai,
         "tieu_de": bv.tieu_de,
@@ -148,6 +155,7 @@ def _ghi(bv: BaiViet) -> dict[str, Any]:
         "dua_vao_ai": bv.dua_vao_ai,
         "anh_bia_url": bv.anh_bia_url,
         "do_dai_noi_dung": len(bv.noi_dung),
+        "dau_van_tay_noi_dung": dau_van_tay(bv.noi_dung),
     }
 
 
@@ -191,7 +199,8 @@ async def sua(db: AsyncSession, actor: NhanVien, bai_viet_id: int, du_lieu: BaiV
     moi_ghi = _ghi(bv)
     if moi_ghi != cu:
         bv.updated_at = bay_gio_utc()
-        await db.flush()
+    await db.flush()  # `_chi_tiet` nạp lại từ CSDL: thay đổi chưa flush sẽ bị vứt
+    if moi_ghi != cu:
         await ghi_nhat_ky(
             db,
             nhan_vien_id=actor.id,

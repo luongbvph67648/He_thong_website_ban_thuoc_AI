@@ -157,7 +157,7 @@ describe('TrangHoiDap', () => {
     await userEvent.setup().click(await screen.findByText('Giao hàng mất bao lâu?'))
     expect(await screen.findByText('1 đến 3')).toBeInTheDocument()
     const goi = GET.mock.calls.filter((c) => c[0] === '/api/v1/bai-viet' && c[1].params.query.loai === 'faq').at(-1)
-    expect(goi?.[1].params.query).toEqual({ loai: 'faq', kem_noi_dung: true, kich_thuoc: 100 })
+    expect(goi?.[1].params.query).toEqual({ loai: 'faq', kem_noi_dung: true, kich_thuoc: 50 })
   })
 
   it('rỗng và lỗi tải', async () => {

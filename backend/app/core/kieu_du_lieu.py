@@ -58,22 +58,27 @@ DuongDanTuyChon = Annotated[str | None, BeforeValidator(_duong_dan_tuy_chon)]
 """Đường dẫn ảnh/logo: trống là `None`; chỉ nhận `/...` hoặc `http(s)://...` (không `javascript:`, `data:`)."""
 
 
+def chuan_hoa_van_ban(gia_tri: Any, toi_da: int, *, nhieu_dong: bool = False) -> str | None:
+    """Chuẩn hóa văn bản tùy chọn: trống (hoặc chỉ khoảng trắng) là `None`; một dòng thì gộp khoảng trắng, nhiều dòng
+    thì chỉ cắt đầu cuối và cho phép xuống dòng, tab; từ chối ký tự điều khiển/vô hình và chuỗi dài quá `toi_da`."""
+    if gia_tri is None:
+        return None
+    if not isinstance(gia_tri, str):
+        raise ValueError("Phải là chuỗi")
+    s = gia_tri.strip() if nhieu_dong else " ".join(gia_tri.split())
+    if s == "":
+        return None
+    if _co_ky_tu_dieu_khien(s, "\n\r\t" if nhieu_dong else ""):
+        raise ValueError(THONG_DIEP_KY_TU_CAM)
+    if len(s) > toi_da:
+        raise ValueError(f"Tối đa {toi_da} ký tự")
+    return s
+
+
 def van_ban_tuy_chon(toi_da: int, *, nhieu_dong: bool = False):
-    """Văn bản tùy chọn: trống (hoặc chỉ khoảng trắng) là `None`; một dòng thì gộp khoảng trắng, nhiều dòng thì chỉ cắt
-    đầu cuối và cho phép xuống dòng, tab; luôn từ chối ký tự điều khiển/vô hình khác và chuỗi dài quá `toi_da`."""
+    """Kiểu văn bản tùy chọn (xem `chuan_hoa_van_ban`)."""
 
     def kiem_tra(gia_tri: Any) -> str | None:
-        if gia_tri is None:
-            return None
-        if not isinstance(gia_tri, str):
-            raise ValueError("Phải là chuỗi")
-        s = gia_tri.strip() if nhieu_dong else " ".join(gia_tri.split())
-        if s == "":
-            return None
-        if _co_ky_tu_dieu_khien(s, "\n\r\t" if nhieu_dong else ""):
-            raise ValueError(THONG_DIEP_KY_TU_CAM)
-        if len(s) > toi_da:
-            raise ValueError(f"Tối đa {toi_da} ký tự")
-        return s
+        return chuan_hoa_van_ban(gia_tri, toi_da, nhieu_dong=nhieu_dong)
 
     return Annotated[str | None, BeforeValidator(kiem_tra)]

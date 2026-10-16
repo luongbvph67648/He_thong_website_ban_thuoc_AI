@@ -293,6 +293,17 @@ describe('Bài viết, chính sách, FAQ', () => {
     expect(POST.mock.calls[1][1].body).toEqual({ phien_ban: 'eeeeeeeeeeeeeeee' })
   })
 
+  it('gỡ bài mà bài vừa bị người khác sửa: không gửi, báo và tải lại danh sách', async () => {
+    dung()
+    const u = await mo('Bài viết sức khỏe')
+    const hang = (await screen.findByText('Phòng cảm cúm')).closest('tr') as HTMLElement
+    bai = [{ ...BAI, noi_dung: 'Người khác vừa sửa', updated_at: '2026-10-12T03:00:00Z', phien_ban: 'ffffffffffffffff' }]
+    await u.click(within(hang).getByText('Gỡ'))
+    await u.click(document.querySelector('.ant-popover .ant-btn-primary') as HTMLElement)
+    expect(await screen.findByText(/vừa được người khác thay đổi/)).toBeInTheDocument()
+    expect(POST).not.toHaveBeenCalled()
+  })
+
   it('chỉ xem: không có nút soạn, sửa, gỡ', async () => {
     dung({ 'cms.manage': 'chi_xem' })
     await mo('Bài viết sức khỏe')

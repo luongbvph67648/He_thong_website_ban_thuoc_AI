@@ -5,7 +5,7 @@ Khóa lạc quan bằng dấu vân tay nội dung (`phien_ban`), như các màn 
 `dang_hien`.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import select
@@ -35,12 +35,18 @@ def phien_ban(b: Banner) -> str:
     return dau_van_tay(_noi_dung(b))
 
 
+def _co_mui_gio(luc: datetime | None) -> datetime | None:
+    """Dữ liệu cũ ngoài miền (ghi trước khi có giới hạn năm) có thể về từ CSDL không kèm múi giờ: coi là UTC."""
+    return luc if luc is None or luc.tzinfo is not None else luc.replace(tzinfo=UTC)
+
+
 def tinh_trang(b: Banner, bay_gio: datetime) -> str:
+    bat_dau, ket_thuc = _co_mui_gio(b.bat_dau), _co_mui_gio(b.ket_thuc)
     if not b.dang_hien:
         return "da_tat"
-    if b.bat_dau and b.bat_dau > bay_gio:
+    if bat_dau and bat_dau > bay_gio:
         return "chua_den_gio"
-    if b.ket_thuc and b.ket_thuc <= bay_gio:
+    if ket_thuc and ket_thuc <= bay_gio:
         return "het_han"
     return "dang_hien"
 

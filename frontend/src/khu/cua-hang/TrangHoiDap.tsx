@@ -9,7 +9,7 @@ export default function TrangHoiDap() {
   const ds = useQuery({
     queryKey: [...KHOA_QUERY_BAI_VIET, 'faq'],
     queryFn: async () => {
-      const { data, error } = await api.GET('/api/v1/bai-viet', { params: { query: { loai: 'faq', kem_noi_dung: true, kich_thuoc: 100 } } })
+      const { data, error } = await api.GET('/api/v1/bai-viet', { params: { query: { loai: 'faq', kem_noi_dung: true, kich_thuoc: 50 } } })
       if (error || !data) throw error ?? new Error('Không tải được câu hỏi')
       return data
     },

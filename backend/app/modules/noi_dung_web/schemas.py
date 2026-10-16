@@ -1,12 +1,12 @@
 """Schema API nội dung website (spec 06 mục 3.14): banner và bài viết/chính sách/FAQ của Admin, và phần công khai."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated, Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import AfterValidator, AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
 from pydantic.functional_validators import BeforeValidator
 
-from app.core.kieu_du_lieu import DuongDanTuyChon, van_ban_tuy_chon
+from app.core.kieu_du_lieu import DuongDanTuyChon, chuan_hoa_van_ban, kieu_ten, van_ban_tuy_chon
 from app.models.enums import LoaiBaiViet, TrangThaiNoiDung
 
 VI_TRI_BANNER = ("trang_chu_chinh", "trang_chu_phu")
@@ -16,23 +16,39 @@ TOI_DA_NOI_DUNG = 100_000
 TOI_DA_TIEU_DE = 255
 
 TieuDeBanner = van_ban_tuy_chon(200)
-NoiDungBaiViet = Annotated[
-    str,
-    BeforeValidator(lambda v: v.strip() if isinstance(v, str) else v),
-    Field(min_length=1, max_length=TOI_DA_NOI_DUNG),
-]
 
 
-def _kiem_tra_tieu_de(gia_tri: object) -> object:
+def _kiem_tra_noi_dung(gia_tri: object) -> object:
+    """Markdown nhiều dòng: bỏ ký tự điều khiển/vô hình (NUL, surrogate lẻ làm CSDL báo 500), giữ xuống dòng và tab."""
     if not isinstance(gia_tri, str):
         return gia_tri
-    gon = " ".join(gia_tri.split())
-    if any(ord(c) < 32 or ord(c) == 127 for c in gon):
-        raise ValueError("Không được chứa ký tự điều khiển")
+    gon = chuan_hoa_van_ban(gia_tri, TOI_DA_NOI_DUNG, nhieu_dong=True)
+    if gon is None:
+        raise ValueError("Không được để trống")
     return gon
 
 
-TieuDeBaiViet = Annotated[str, BeforeValidator(_kiem_tra_tieu_de), Field(min_length=1, max_length=TOI_DA_TIEU_DE)]
+NoiDungBaiViet = Annotated[str, BeforeValidator(_kiem_tra_noi_dung)]
+TieuDeBaiViet = kieu_ten(TOI_DA_TIEU_DE)
+
+MIEN_NAM_BANNER = (2000, 2100)
+
+
+def _thoi_diem_trong_mien(gia_tri: datetime | None) -> datetime | None:
+    """Đổi về UTC (khớp giá trị CSDL trả về, nên dấu vân tay `phien_ban` không phụ thuộc múi giờ client gửi) và chặn
+    năm ngoài miền: năm 0001 làm datetime từ asyncpg mất múi giờ, năm 9999 tràn khi ghi."""
+    if gia_tri is None:
+        return None
+    try:
+        utc = gia_tri.astimezone(UTC)
+    except (OverflowError, ValueError):
+        utc = None
+    if utc is None or not MIEN_NAM_BANNER[0] <= utc.year <= MIEN_NAM_BANNER[1]:
+        raise ValueError(f"Thời điểm phải trong khoảng năm {MIEN_NAM_BANNER[0]} đến {MIEN_NAM_BANNER[1]}")
+    return utc
+
+
+ThoiDiemBanner = Annotated[AwareDatetime | None, AfterValidator(_thoi_diem_trong_mien)]
 
 
 # --- Banner ---------------------------------------------------------------------------------------
@@ -46,8 +62,8 @@ class BannerVao(BaseModel):
     lien_ket: DuongDanTuyChon = None
     vi_tri: ViTriBanner
     thu_tu: Annotated[int, Field(ge=0, le=9999, strict=True)] = 0
-    bat_dau: AwareDatetime | None = None
-    ket_thuc: AwareDatetime | None = None
+    bat_dau: ThoiDiemBanner = None
+    ket_thuc: ThoiDiemBanner = None
     dang_hien: bool = True
 
     @field_validator("anh_url")
@@ -75,8 +91,8 @@ class BannerSua(BaseModel):
     lien_ket: DuongDanTuyChon = None
     vi_tri: ViTriBanner | None = None
     thu_tu: Annotated[int, Field(ge=0, le=9999, strict=True)] | None = None
-    bat_dau: AwareDatetime | None = None
-    ket_thuc: AwareDatetime | None = None
+    bat_dau: ThoiDiemBanner = None
+    ket_thuc: ThoiDiemBanner = None
     dang_hien: bool | None = None
 
     @field_validator("anh_url", "vi_tri", "thu_tu", "dang_hien", mode="before")
