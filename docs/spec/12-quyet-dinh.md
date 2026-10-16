@@ -284,3 +284,15 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
   - Phí ship: nhận tại nhà thuốc 0; giao tận nơi miễn phí khi `tạm tính - giảm >= mien_phi_ship_tu`, còn lại hỏi adapter, lỗi adapter dùng `phi_ship_mac_dinh`. Schema chưa có khối lượng sản phẩm nên ước lượng 20 g mỗi đơn vị cơ sở.
   - Đơn COD không có `han_xac_nhan` (spec 04 dòng 1 không quy định); đơn VNPay/MoMo có `han_thanh_toan = now + thoi_han_thanh_toan_phut`.
 - **Hệ quả:** spec 06 mục 3.22; `modules/ban_hang/{dat_hang,schemas,router_khach}.py`; `core/idempotency.py`; `tests/ban_hang/test_dat_hang.py`; `frontend/src/khu/cua-hang/gio-hang/{TrangThanhToan,TrangKetQuaDatHang,thanhToan}`.
+
+## QĐ-27: Thanh toán online, IPN và hủy quá hạn (2026-10-16, task T4.5)
+- **Quyết định:**
+  - Giao dịch thanh toán được tạo ở API riêng `POST /toi/don-hang/{ma_don}/thanh-toan` (Idempotency-Key), không gộp vào đặt hàng: đặt hàng xong khách vẫn có đơn dù cổng lỗi, và "thanh toán lại" dùng cùng API với khóa mới. Mã tham chiếu cổng là `ma_don-idGiaoDich`.
+  - Chống trùng theo hai lớp: trạng thái giao dịch (đã khác `khoi_tao` là IPN lặp, trả mã "đã xác nhận") và `ma_giao_dich_cong` UNIQUE (cùng mã cổng trên giao dịch khác bị coi là lặp). Giao dịch rồi đơn bị khóa `FOR UPDATE` nên hai IPN đồng thời chỉ một bên chuyển trạng thái.
+  - IPN thất bại không hủy đơn (còn hạn thì khách thanh toán lại). IPN thành công đến khi đơn không còn `cho_thanh_toan` (đã hủy quá hạn, hoặc đã có giao dịch khác thành công) thì ghi nhận tiền đã vào, KHÔNG đổi trạng thái đơn, tạo giao dịch `hoan_tien` `khoi_tao` và `trang_thai_tt = cho_hoan_tien`; vẫn báo cổng "đã xác nhận" để cổng ngừng gọi lại. Đơn vừa quá hạn nhưng job HT03 chưa hủy vẫn nhận thanh toán.
+  - Phản hồi: VNPay `{"RspCode","Message"}` (00/01/02/04/97); MoMo `204` khi xử lý được (kể cả lặp), `400` khi sai chữ ký/số tiền/định dạng.
+  - Cổng giả: `THANH_TOAN_CHE_DO` nhận `gia` hoặc `sandbox` (đúng spec 01). `POST /webhook/gia-ipn` chỉ gắn khi `gia`, không cần đăng nhập vì không có tiền thật, và đi qua cùng `xu_ly_ipn`.
+  - HT03 chạy mỗi phút, hủy từng đơn qua `chuyen_trang_thai` trong savepoint riêng: đơn vừa nhận IPN (điều kiện dòng 12 không còn đúng) hoặc lỗi được bỏ qua, không làm hỏng cả lượt.
+  - Hoàn tiền thật qua cổng để T6.3 (AD17); `hoan_tien` của cổng thật chưa cài.
+- **Hệ quả:** spec 06 mục 3.23, 8; spec 09 (route `/thanh-toan-gia`); `tich_hop/thanh_toan/`, `modules/thanh_toan/`, `modules/ban_hang/het_han.py`, `jobs/`; `tests/thanh_toan/`; `frontend/src/khu/cua-hang/gio-hang/{TrangKetQuaDatHang,TrangCongGia,thanhToanOnline}`.
+

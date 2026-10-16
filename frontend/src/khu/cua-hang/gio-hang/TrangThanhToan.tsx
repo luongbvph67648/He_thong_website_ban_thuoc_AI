@@ -19,6 +19,7 @@ import {
   thanDatHang,
   type XemTruocRa,
 } from './thanhToan'
+import { chuyenSangCong, LA_ONLINE, layUrlThanhToan } from './thanhToanOnline'
 
 /** KTV02, KTV03, KTV04: địa chỉ, hình thức nhận, phương thức thanh toán, mã giảm giá, tổng tiền rồi đặt hàng. */
 export default function TrangThanhToan() {
@@ -75,6 +76,14 @@ function NoiDung() {
     if (r.ok) {
       khoaRef.current = null
       await qc.invalidateQueries({ queryKey: KHOA_GIO_HANG })
+      if (LA_ONLINE(r.data.phuong_thuc_tt)) {
+        const tt = await layUrlThanhToan(r.data.ma_don)
+        if (tt.ok) {
+          chuyenSangCong.di(tt.data.url_thanh_toan)
+          return
+        }
+        void message.warning('Đơn đã được tạo nhưng chưa mở được cổng thanh toán. Bạn có thể bấm "Thanh toán lại" ở trang sau.')
+      }
       navigate(`/thanh-toan/ket-qua?ma=${encodeURIComponent(r.data.ma_don)}`)
       return
     }

@@ -586,18 +586,24 @@ _Giỏ hàng, máy trạng thái, đặt hàng giữ hàng FEFO, thanh toán, x�
   - Chưa làm: phí ship thật qua GHN (T4.7); khối lượng sản phẩm chưa có trong schema nên gửi adapter ước lượng 20 g mỗi đơn vị cơ sở; thanh toán online thật và `han_thanh_toan` hết hạn (T4.5); khách vãng lai không đặt được (chỉ qua đơn thuốc, T5.x).
 
 
-### [ ] T4.5 · Thanh toán online và hủy quá hạn
+### [x] T4.5 · Thanh toán online và hủy quá hạn
 - **Chức năng:** KTV03 (Thanh toán online), HT04 (Xử lý IPN thanh toán), HT03 (Hủy đơn quá hạn)
 - **Phụ thuộc:** T4.4
 - **Bảng:** `thanh_toan`, `don_hang`, `phan_bo_lo`, `lo_thuoc`, `ma_giam_gia`
 - **Tiêu chí chấp nhận:**
-  - [ ] Adapter VNPay, MoMo (spec 08) + bản giả có trang "cổng giả" để bấm thành công/thất bại khi dev.
-  - [ ] IPN: kiểm chữ ký, kiểm số tiền khớp `tong_tien`, chống xử lý trùng bằng `ma_giao_dich_cong`, chuyển trạng thái qua HT06; trả đúng định dạng phản hồi cổng yêu cầu.
-  - [ ] HT03 mỗi phút: hủy đơn quá `han_thanh_toan`/`han_xac_nhan`, nhả giữ hàng, trả lượt mã giảm giá.
-  - [ ] Test: IPN gửi 2 lần chỉ xử lý 1 lần; IPN sai chữ ký bị từ chối; IPN đến sau khi đơn đã bị hủy quá hạn → tạo giao dịch hoàn tiền chờ xác nhận.
+  - [x] Adapter VNPay, MoMo (spec 08) + bản giả có trang "cổng giả" để bấm thành công/thất bại khi dev.
+  - [x] IPN: kiểm chữ ký, kiểm số tiền khớp `tong_tien`, chống xử lý trùng bằng `ma_giao_dich_cong`, chuyển trạng thái qua HT06; trả đúng định dạng phản hồi cổng yêu cầu.
+  - [x] HT03 mỗi phút: hủy đơn quá `han_thanh_toan`/`han_xac_nhan`, nhả giữ hàng, trả lượt mã giảm giá.
+  - [x] Test: IPN gửi 2 lần chỉ xử lý 1 lần; IPN sai chữ ký bị từ chối; IPN đến sau khi đơn đã bị hủy quá hạn → tạo giao dịch hoàn tiền chờ xác nhận.
 - **Giao diện:**
-  - [ ] Chuyển hướng sang cổng, trang kết quả thanh toán (đọc trạng thái từ backend, không tin tham số URL).
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Chuyển hướng sang cổng, trang kết quả thanh toán (đọc trạng thái từ backend, không tin tham số URL).
+- **Ghi chú triển khai:**
+  - Spec 06 mục 3.23 và 8, QĐ-27. `tich_hop/thanh_toan/` (`CongThanhToan` Protocol, VNPay HMAC-SHA512, MoMo HMAC-SHA256, cổng giả ký khóa giả) chọn theo `THANH_TOAN_CHE_DO` (`gia` mặc định, `sandbox` gọi cổng thật). `modules/thanh_toan/dich_vu.py` giữ `tao_thanh_toan` (KTV03, `Idempotency-Key`) và `xu_ly_ipn` (HT04: chữ ký, tìm giao dịch `ma_don-id`, số tiền, chống trùng, cập nhật; khóa giao dịch rồi đơn `FOR UPDATE`). Hook dòng 10, 11 đặt `trang_thai_tt = da_thanh_toan`. IPN thất bại: giao dịch `that_bai`, đơn giữ chờ thanh toán. IPN thành công nhưng đơn không còn chờ thanh toán (đã hủy quá hạn hoặc trả hai lần): ghi `thanh_cong` và tạo `hoan_tien` (`khoi_tao`) + `trang_thai_tt = cho_hoan_tien`.
+  - HT03: `ban_hang/het_han.py::huy_don_qua_han` hủy qua `chuyen_trang_thai` (savepoint từng đơn, nhả hàng và trả lượt mã nhờ hook dòng 9, 12); `app/jobs` thêm lịch theo phút (`LICH_PHUT`, mỗi phút) dùng chung `chay_job` với `pg_try_advisory_lock`.
+  - Giao diện: đặt hàng VNPay/MoMo tạo giao dịch rồi chuyển sang cổng; `/thanh-toan/ket-qua` hỏi lại mỗi 3 giây khi còn chờ thanh toán, có "Thanh toán lại"; `/thanh-toan-gia` là cổng giả.
+  - Test: 25 backend (`tests/thanh_toan/`: tạo giao dịch, idempotency, IPN VNPay/MoMo/giả, hai IPN tuần tự và đồng thời chỉ xử lý một lần, sai chữ ký/số tiền, đến muộn, HT03, route cổng giả chỉ ở chế độ giả), 11 frontend.
+  - Chưa làm: hoàn tiền thật qua VNPay/MoMo (`hoan_tien` ném `NotImplementedError`, làm ở T6.3); thông báo cho khách khi đơn bị hủy quá hạn (T4.7); dòng 9 "yêu cầu đơn thuốc quay lại Đang tư vấn" (T5.x).
+
 
 ### [ ] T4.6 · Xử lý đơn của dược sĩ và khách hủy đơn
 - **Chức năng:** DS01 (Xem, lọc danh sách đơn hàng), DS02 (Xác nhận đơn hàng), DS03 (Hủy đơn hàng), KTV06 (Hủy đơn hàng)
@@ -976,3 +982,4 @@ Lỗi hoặc việc phát hiện trong lúc làm nhưng nằm ngoài phạm vi t
 - [ ] (T4.1) Giỏ hàng dùng số tồn khả dụng chỉ để cảnh báo; chưa có test tranh chấp nhiều session cho `them_dong`/`gop_gio` cùng một giỏ (đã tuần tự hóa bằng khóa dòng `gio_hang`).
 - **T4.3:** chưa có test đồng thời cho `dung_ma` (hai đơn cùng dùng lượt cuối); mới dựa vào khóa FOR UPDATE.
 - **T4.4:** khóa Idempotency-Key nằm trong bộ nhớ tiến trình (mất khi khởi động lại, không dùng chung giữa nhiều tiến trình); đủ cho đồ án một tiến trình, cần bảng hoặc Redis nếu chạy nhiều worker.
+- **T4.5:** hoàn tiền thật qua cổng: `hoan_tien` của VNPay/MoMo chưa cài (T6.3); kiểm lại tên trường và bảng mã với tài liệu VNPay/MoMo hiện hành khi chạy sandbox thật (QĐ-27) và ghi phiên bản API.

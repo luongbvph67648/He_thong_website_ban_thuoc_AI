@@ -300,6 +300,13 @@ async def _xuat_kho(db: AsyncSession, don: DonHang, tac_nhan: TacNhan) -> None:
     await ton_kho.xuat_theo_phan_bo(db, await _phan_bo(db, don, TrangThaiPhanBo.dang_giu), _chung_tu(don, tac_nhan))
 
 
+async def _danh_dau_da_thanh_toan(db: AsyncSession, don: DonHang, tac_nhan: TacNhan) -> None:
+    """Dòng 10, 11: IPN thành công thì đơn đã thanh toán (giao dịch `thanh_toan` do HT04 ghi cùng transaction)."""
+    don.trang_thai_tt = TrangThaiThanhToan.da_thanh_toan
+
+
+for _so in (10, 11):
+    dang_ky_hook(_so, _danh_dau_da_thanh_toan)
 for _so in (9, 12, 14, 15):
     dang_ky_hook(_so, _nha_hang_giu)
 dang_ky_hook(16, _xuat_kho)

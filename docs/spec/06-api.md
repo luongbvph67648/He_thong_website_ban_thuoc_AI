@@ -338,6 +338,20 @@ Quyền `report.inventory` (`xem`: kho và Admin). Tính hoàn toàn từ `bien_
 - `POST /toi/don-hang/xem-truoc` (cùng thân, không cần `Idempotency-Key`, không giữ hàng, không dùng lượt mã) -> `{tam_tinh, giam_gia, phi_van_chuyen, tong_tien, ma_giam_gia}` cho trang thanh toán; lỗi như đặt hàng trừ lỗi tồn kho.
 - `GET /toi/don-hang/{ma_don}` -> `DonHangRa` (đơn của khách khác hoặc không có là `404`).
 
+### 3.23 Thanh toán online (KTV03, T4.5)
+`POST /toi/don-hang/{ma_don}/thanh-toan` (`khach_hien_tai`; đơn của khách khác hoặc không có là `404`). **Bắt buộc header `Idempotency-Key`** (UUID). Tạo một giao dịch `thanh_toan` loại `thanh_toan`, `trang_thai = khoi_tao`, cổng theo `don.phuong_thuc_tt`, rồi hỏi adapter URL thanh toán.
+- **Điều kiện:** đơn đang `cho_thanh_toan` và chưa quá `han_thanh_toan`; không thì `409 CHUYEN_TRANG_THAI_KHONG_HOP_LE`. Đơn COD không có bước này (`409` cùng mã).
+- **`200`** trả `{url_thanh_toan, han_thanh_toan}`. Bấm "Thanh toán lại" sau khi lần trước thất bại: gọi lại với khóa mới để có giao dịch mới (mã tham chiếu `ma_don` + `-` + id giao dịch nên không trùng).
+- **Idempotency:** cùng khóa thì trả lại đúng URL cũ, không tạo giao dịch mới; cùng khóa nhưng đơn khác là `409 TRUNG_DU_LIEU`.
+- **Trang kết quả** đọc `GET /toi/don-hang/{ma_don}` (mục 3.22), không tin tham số URL do cổng trả về.
+
+**Xử lý IPN (HT04)** dùng chung cho VNPay, MoMo và cổng giả, theo thứ tự: (1) kiểm chữ ký; (2) tìm giao dịch theo mã tham chiếu `ma_don-idGiaoDich`; (3) kiểm số tiền bằng `don.tong_tien` (đến đồng); (4) giao dịch đã khác `khoi_tao` thì là IPN lặp: chỉ trả "đã xác nhận", không đổi gì; (5) cập nhật giao dịch (khóa dòng `FOR UPDATE`), lưu payload thô vào `du_lieu_ipn` (đã bỏ chữ ký), `ma_giao_dich_cong` là mã giao dịch của cổng (UNIQUE).
+- **Thanh toán thất bại** (mã kết quả khác thành công): giao dịch `that_bai`, đơn giữ `cho_thanh_toan` để khách thanh toán lại.
+- **Thanh toán thành công và đơn còn `cho_thanh_toan`:** giao dịch `thanh_cong`, đơn chuyển qua `chuyen_trang_thai` (nguồn `ipn_thanh_toan`): đơn khách tự đặt dòng 10 -> `cho_xac_nhan`, đơn dược sĩ tạo dòng 11 -> `da_xac_nhan`; hook của hai dòng đặt `trang_thai_tt = da_thanh_toan`. Chấp nhận cả khi vừa quá `han_thanh_toan` nhưng job HT03 chưa kịp hủy.
+- **Thanh toán thành công nhưng đơn không còn `cho_thanh_toan`** (đã hủy quá hạn, hoặc đã có giao dịch khác thành công): tiền đã vào nên giao dịch vẫn ghi `thanh_cong`, không đổi trạng thái đơn; tạo giao dịch `hoan_tien` (`khoi_tao`, `thanh_toan_goc_id` = giao dịch này, cùng số tiền) và `trang_thai_tt = cho_hoan_tien` (Admin xác nhận ở T6.3). Vẫn trả "đã xác nhận" để cổng không gọi lại.
+- **Định dạng phản hồi cổng:** VNPay `200` JSON `{"RspCode","Message"}` (`00` thành công, `01` không thấy đơn, `02` đã xác nhận, `04` sai số tiền, `97` sai chữ ký, `99` lỗi khác); MoMo `204` không thân (sai chữ ký hoặc sai số tiền `400`). Sai chữ ký thì không ghi gì vào CSDL.
+- **Cổng giả:** `POST /webhook/gia-ipn` thân `{giao_dich: "<ma_don>-<id>", thanh_cong: bool}` (không cần đăng nhập vì tiền là giả; route chỉ được gắn khi `THANH_TOAN_CHE_DO=gia`). Server tự dựng IPN, ký bằng khóa giả và gọi cùng hàm xử lý IPN; trả `{"RspCode","Message"}` như VNPay. Trang frontend `/thanh-toan-gia?giao_dich=...` gọi route này.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:
@@ -397,6 +411,7 @@ Quyền `report.inventory` (`xem`: kho và Admin). Tính hoàn toàn từ `bien_
 |---|---|---|
 | `GET /api/v1/webhook/vnpay-ipn` | VNPay | Kiểm chữ ký → kiểm số tiền → chống trùng → HT04 → trả JSON `RspCode` theo tài liệu VNPay |
 | `POST /api/v1/webhook/momo-ipn` | MoMo | Kiểm chữ ký → kiểm số tiền → chống trùng → HT04 → trả đúng mã phản hồi MoMo yêu cầu |
+| `POST /api/v1/webhook/gia-ipn` | Cổng giả (chỉ khi `THANH_TOAN_CHE_DO=gia`) | Dựng IPN ký bằng khóa giả → cùng hàm xử lý IPN (mục 3.23) |
 | `POST /api/v1/webhook/ghn` | GHN | Kiểm token → ghi `van_don.du_lieu_webhook` → ánh xạ trạng thái → HT05/HT06 |
 
 - Trang "kết quả thanh toán" phía frontend **không** tin tham số trên URL trả về. Trang này hỏi lại backend trạng thái đơn.

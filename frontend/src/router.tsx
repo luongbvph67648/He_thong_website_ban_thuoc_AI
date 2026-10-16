@@ -25,6 +25,7 @@ import TrangTuongTac from './khu/nhan-vien/chuyen-mon/TrangTuongTac'
 import TrangBaoCaoNxt from './khu/nhan-vien/kho/TrangBaoCaoNxt'
 import TrangGioHang from './khu/cua-hang/gio-hang/TrangGioHang'
 import TrangKetQuaDatHang from './khu/cua-hang/gio-hang/TrangKetQuaDatHang'
+import TrangCongGia from './khu/cua-hang/gio-hang/TrangCongGia'
 import TrangThanhToan from './khu/cua-hang/gio-hang/TrangThanhToan'
 import TrangTaiKhoan from './khu/cua-hang/tai-khoan/TrangTaiKhoan'
 import TrangKhuyenMai from './khu/quan-tri/khuyen-mai/TrangKhuyenMai'
@@ -81,6 +82,7 @@ const TRANG_THAT: Record<string, ReactNode> = {
   '/gio-hang': <TrangGioHang />,
   '/thanh-toan': <TrangThanhToan />,
   '/thanh-toan/ket-qua': <TrangKetQuaDatHang />,
+  '/thanh-toan-gia': <TrangCongGia />,
   '/tai-khoan': <TrangTaiKhoan />,
 }
 

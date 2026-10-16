@@ -12,6 +12,7 @@ export const TRANG_CUA_HANG: readonly TrangCuaHang[] = [
   { duong: '/gio-hang', ten: 'Giỏ hàng', chucNang: ['KVL07'] },
   { duong: '/thanh-toan', ten: 'Thanh toán', chucNang: ['KTV02', 'KTV03', 'KTV04'] },
   { duong: '/thanh-toan/ket-qua', ten: 'Kết quả thanh toán', chucNang: ['KTV03'] },
+  { duong: '/thanh-toan-gia', ten: 'Cổng thanh toán giả (dev)', chucNang: ['KTV03'] },
   { duong: '/gui-don-thuoc', ten: 'Gửi đơn thuốc', chucNang: ['KVL08', 'KTV07'] },
   { duong: '/xac-nhan-don/:token', ten: 'Xác nhận đơn từ đơn thuốc', chucNang: ['DS05', 'KTV07'] },
   { duong: '/tra-cuu-anh', ten: 'Tra cứu thuốc bằng ảnh', chucNang: ['KVL06'] },

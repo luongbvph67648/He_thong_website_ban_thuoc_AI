@@ -30,6 +30,19 @@ class Settings(BaseSettings):
     # để khỏi vô tình tạo Admin với mật khẩu đoán được).
     ADMIN_EMAIL: str = ""
     ADMIN_MAT_KHAU: SecretStr = SecretStr("")
+    # Thanh toán online (spec 08 mục 2-4): `gia` chạy offline với trang "cổng giả"; `sandbox` gọi VNPay/MoMo thật.
+    THANH_TOAN_CHE_DO: Literal["gia", "sandbox"] = "gia"
+    FRONTEND_URL: str = "http://localhost:5173"
+    VNPAY_TMN_CODE: str = ""
+    VNPAY_HASH_SECRET: SecretStr = SecretStr("")
+    VNPAY_URL: str = ""
+    VNPAY_RETURN_URL: str = ""
+    MOMO_PARTNER_CODE: str = ""
+    MOMO_ACCESS_KEY: str = ""
+    MOMO_SECRET_KEY: SecretStr = SecretStr("")
+    MOMO_ENDPOINT: str = ""
+    MOMO_RETURN_URL: str = ""
+    MOMO_IPN_URL: str = ""
     # Thư mục lưu file (spec 08 mục 6). Đường dẫn tương đối tính từ `backend/`, không phụ thuộc thư mục đang chạy.
     LUU_TRU_THU_MUC: str = "./storage"
 

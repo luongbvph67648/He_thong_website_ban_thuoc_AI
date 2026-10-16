@@ -27,6 +27,7 @@ Trang tài khoản cá nhân `/nhan-vien/tai-khoan` (hồ sơ: họ tên, số �
 | `/gio-hang` | Giỏ hàng | KVL07 |
 | `/thanh-toan` | Thanh toán | KTV02, KTV03, KTV04 |
 | `/thanh-toan/ket-qua` | Kết quả thanh toán (hỏi lại backend) | KTV03 |
+| `/thanh-toan-gia` | Cổng thanh toán giả (chỉ dev, `THANH_TOAN_CHE_DO=gia`) | KTV03 |
 | `/gui-don-thuoc` | Gửi đơn thuốc (vãng lai có bước OTP) | KVL08, KTV07 |
 | `/xac-nhan-don/:token` | Khách vãng lai xác nhận đơn từ đơn thuốc | DS05, KTV07 |
 | `/tra-cuu-anh` | Chụp ảnh tra cứu thuốc | KVL06 |

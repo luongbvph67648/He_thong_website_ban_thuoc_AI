@@ -1,21 +1,28 @@
 import { useQuery } from '@tanstack/react-query'
-import { Button, Descriptions, Result, Spin, Table, Typography } from 'antd'
+import { Alert, App, Button, Descriptions, Result, Spin, Table, Typography } from 'antd'
+import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../../../api/client'
+import { thongDiepChung } from '../../../api/goi'
 import { dinhDangNgay, dinhDangTien } from '../../../lib/dinhDang'
 import { NHAN_PHUONG_THUC } from './thanhToan'
+import { chuyenSangCong, layUrlThanhToan } from './thanhToanOnline'
 
 /**
  * Kết quả đặt hàng (KTV02) tại `/thanh-toan/ket-qua?ma=...`: trạng thái luôn đọc lại từ máy chủ, không tin tham số URL
- * ngoài mã đơn. Kết quả cổng thanh toán (KTV03) dùng cùng trang ở T4.5.
+ * ngoài mã đơn. Cũng là nơi cổng thanh toán (KTV03) đưa khách về: đơn còn chờ thanh toán thì hỏi lại mỗi 3 giây (IPN
+ * có thể đến sau khi khách được chuyển về) và cho phép thanh toán lại bằng giao dịch mới.
  */
 export default function TrangKetQuaDatHang() {
+  const { message } = App.useApp()
+  const [dangMo, datDangMo] = useState(false)
   const [tham] = useSearchParams()
   const ma = tham.get('ma') ?? ''
   const q = useQuery({
     queryKey: ['don-hang', ma],
     enabled: ma !== '',
     retry: false,
+    refetchInterval: (query) => (query.state.data?.trang_thai === 'cho_thanh_toan' ? 3000 : false),
     queryFn: async () => (await api.GET('/api/v1/toi/don-hang/{ma_don}', { params: { path: { ma_don: ma } } })).data ?? null,
   })
   if (ma === '' || (!q.isLoading && !q.data)) {
@@ -24,18 +31,51 @@ export default function TrangKetQuaDatHang() {
   if (q.isLoading || !q.data) return <Spin />
   const don = q.data
   const choThanhToan = don.trang_thai === 'cho_thanh_toan'
+  const daHuy = don.trang_thai === 'da_huy'
+  const choHoan = don.trang_thai_tt === 'cho_hoan_tien'
+
+  async function thanhToanLai() {
+    datDangMo(true)
+    const r = await layUrlThanhToan(don.ma_don)
+    datDangMo(false)
+    if (r.ok) chuyenSangCong.di(r.data.url_thanh_toan)
+    else void message.error(thongDiepChung(r.loi))
+  }
+
+  const dau = daHuy
+    ? { status: 'warning' as const, title: 'Đơn hàng đã bị hủy', sub: 'Đơn đã hủy (quá hạn thanh toán hoặc theo yêu cầu), hàng đã được nhả về kho.' }
+    : choThanhToan
+      ? {
+          status: 'info' as const,
+          title: 'Đơn hàng đang chờ thanh toán',
+          sub: `Vui lòng thanh toán trước ${dinhDangNgay(don.han_thanh_toan, 'ngayGio')}, quá hạn đơn sẽ tự hủy.`,
+        }
+      : don.trang_thai_tt === 'da_thanh_toan'
+        ? { status: 'success' as const, title: 'Thanh toán thành công', sub: 'Nhà thuốc sẽ sớm xác nhận đơn của bạn.' }
+        : { status: 'success' as const, title: 'Đặt hàng thành công', sub: 'Nhà thuốc sẽ sớm xác nhận đơn của bạn.' }
   return (
     <>
       <Result
-        status={choThanhToan ? 'info' : 'success'}
-        title={choThanhToan ? 'Đơn hàng đang chờ thanh toán' : 'Đặt hàng thành công'}
-        subTitle={
-          choThanhToan
-            ? `Vui lòng thanh toán trước ${dinhDangNgay(don.han_thanh_toan, 'ngayGio')}, quá hạn đơn sẽ tự hủy.`
-            : 'Nhà thuốc sẽ sớm xác nhận đơn của bạn.'
-        }
-        extra={<Link to="/"><Button type="primary">Tiếp tục mua sắm</Button></Link>}
+        status={dau.status}
+        title={dau.title}
+        subTitle={dau.sub}
+        extra={[
+          choThanhToan && (
+            <Button key="tt" type="primary" loading={dangMo} onClick={thanhToanLai}>
+              Thanh toán lại
+            </Button>
+          ),
+          <Link key="mua" to="/"><Button type={choThanhToan ? 'default' : 'primary'}>Tiếp tục mua sắm</Button></Link>,
+        ]}
       />
+      {choHoan && (
+        <Alert
+          style={{ marginBottom: 16 }}
+          type="info"
+          showIcon
+          message="Khoản thanh toán của đơn này đang chờ hoàn tiền. Nhà thuốc sẽ xác nhận và hoàn lại cho bạn."
+        />
+      )}
       <Typography.Title level={4}>Đơn {don.ma_don}</Typography.Title>
       <Descriptions
         bordered

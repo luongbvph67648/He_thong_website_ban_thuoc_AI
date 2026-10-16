@@ -38,6 +38,9 @@ from app.modules.tai_khoan.router_cong_khai import router as tai_khoan_cong_khai
 from app.modules.tai_khoan.router_khach import router as tai_khoan_khach_router
 from app.modules.tai_khoan.router_quan_tri_khach import router as khach_hang_quan_tri_router
 from app.modules.tep.router_cong_khai import router as tep_router
+from app.modules.thanh_toan.router_khach import router as thanh_toan_khach_router
+from app.modules.thanh_toan.router_webhook import router as webhook_router
+from app.modules.thanh_toan.router_webhook import router_gia as webhook_gia_router
 from app.modules.thong_bao.router_noi_bo import router as thong_bao_noi_bo_router
 from app.modules.vai_tro.router_noi_bo import router as vai_tro_noi_bo_router
 
@@ -121,6 +124,10 @@ def create_app() -> FastAPI:
     app.include_router(gio_hang_router, prefix="/api/v1")
     app.include_router(khuyen_mai_router, prefix="/api/v1")
     app.include_router(don_hang_khach_router, prefix="/api/v1")
+    app.include_router(thanh_toan_khach_router, prefix="/api/v1")
+    app.include_router(webhook_router, prefix="/api/v1")
+    if settings.THANH_TOAN_CHE_DO == "gia":
+        app.include_router(webhook_gia_router, prefix="/api/v1")
     app.include_router(dia_chi_router, prefix="/api/v1")
     app.include_router(kiem_ke_router, prefix="/api/v1")
     app.include_router(phieu_huy_xuat_tra_router, prefix="/api/v1")

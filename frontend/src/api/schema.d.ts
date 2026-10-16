@@ -1874,6 +1874,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/toi/don-hang/{ma_don}/thanh-toan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tạo giao dịch thanh toán online (KTV03) */
+        post: operations["tao_api_v1_toi_don_hang__ma_don__thanh_toan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhook/vnpay-ipn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** IPN VNPay (HT04) */
+        get: operations["vnpay_ipn_api_v1_webhook_vnpay_ipn_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhook/momo-ipn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** IPN MoMo (HT04) */
+        post: operations["momo_ipn_api_v1_webhook_momo_ipn_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/webhook/gia-ipn": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * IPN của cổng giả (chỉ khi THANH_TOAN_CHE_DO=gia)
+         * @description Dựng IPN ký bằng khóa giả cho giao dịch này rồi đi qua đúng hàm xử lý IPN như cổng thật.
+         */
+        post: operations["gia_ipn_api_v1_webhook_gia_ipn_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/toi/dia-chi": {
         parameters: {
             query?: never;
@@ -3376,6 +3447,13 @@ export interface components {
         DuyetBaiViet: {
             /** Phien Ban */
             phien_ban: string;
+        };
+        /** GiaIpnVao */
+        GiaIpnVao: {
+            /** Giao Dich */
+            giao_dich: string;
+            /** Thanh Cong */
+            thanh_cong: boolean;
         };
         /** GiaTriLocNhatKy */
         GiaTriLocNhatKy: {
@@ -4932,6 +5010,13 @@ export interface components {
             hoat_chat_id: number;
             /** Ham Luong */
             ham_luong?: string | null;
+        };
+        /** ThanhToanRa */
+        ThanhToanRa: {
+            /** Url Thanh Toan */
+            url_thanh_toan: string;
+            /** Han Thanh Toan */
+            han_thanh_toan: string | null;
         };
         /** ThayDonVi */
         ThayDonVi: {
@@ -10029,6 +10114,112 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DonHangRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tao_api_v1_toi_don_hang__ma_don__thanh_toan_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                ma_don: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThanhToanRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    vnpay_ipn_api_v1_webhook_vnpay_ipn_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    momo_ipn_api_v1_webhook_momo_ipn_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    gia_ipn_api_v1_webhook_gia_ipn_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GiaIpnVao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
