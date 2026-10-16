@@ -15,6 +15,7 @@ export default function TrangTaiKhoan() {
       <Typography.Title level={2} style={{ margin: 0 }}>Tài khoản của tôi</Typography.Title>
       <Descriptions bordered size="small" column={1} items={[{ key: 'ten', label: 'Họ tên', children: hoSo?.hoTen }]} />
       <Link to="/tai-khoan/don-hang">Đơn hàng của tôi</Link>
+      <Link to="/tai-khoan/doi-tra">Đổi trả của tôi</Link>
       <Link to="/tai-khoan/don-thuoc">Đơn thuốc của tôi</Link>
       <Link to="/tai-khoan/suc-khoe">Hồ sơ sức khỏe</Link>
       <SoDiaChi />

@@ -10,6 +10,7 @@ import { nhanTrangThai } from '../../../lib/trangThai'
 import { usePhien } from '../../../stores/phien'
 import { NHAN_PHUONG_THUC } from '../gio-hang/thanhToan'
 import LichSuTrangThai from './LichSuTrangThai'
+import DoiTraNut from '../doi-tra/DoiTraNut'
 import XacNhanDonThanhVien from '../don-thuoc/XacNhanDonThanhVien'
 import MuaLaiNut from './MuaLaiNut'
 
@@ -54,6 +55,7 @@ export default function TrangChiTietDonCuaToi() {
         <Tag color={tt.mau}>{tt.nhan}</Tag>
         <Tag color={ttThanhToan.mau}>{ttThanhToan.nhan}</Tag>
         <MuaLaiNut maDon={don.ma_don} tenTheoId={Object.fromEntries(don.dong.map((d) => [d.san_pham_id, d.ten_san_pham]))} />
+        {don.trang_thai === 'da_giao' && <DoiTraNut maDon={don.ma_don} dong={don.dong} />}
         {khachHuyDuoc(don.trang_thai) && <Button danger onClick={() => setMoHuy(true)}>Hủy đơn</Button>}
       </Space>
       {don.trang_thai_tt === 'cho_hoan_tien' && (

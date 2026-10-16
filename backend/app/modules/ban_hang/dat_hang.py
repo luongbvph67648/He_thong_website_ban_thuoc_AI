@@ -88,6 +88,7 @@ def don_ra(don: DonHang, ma_text: str | None, lich_su: Sequence[LichSuTrangThai]
         ],
         dong=[
             DongDonRa(
+                id=c.id,
                 san_pham_id=c.san_pham_id,
                 ten_san_pham=c.ten_san_pham,
                 ten_don_vi=c.ten_don_vi,

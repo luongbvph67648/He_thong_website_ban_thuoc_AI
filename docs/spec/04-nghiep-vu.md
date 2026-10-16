@@ -44,6 +44,7 @@ Trạng thái kết thúc: Hoàn tất, Đã hủy. Mọi chuyển trạng thái
 | 27 | Hoàn về kho | Kho nhận và kiểm hàng hoàn | Đã hủy | Nhân viên kho | KHO10 |  | Nguyên niêm phong: hoàn nhập đúng lô (hoan_nhap). Hư hỏng: so_luong_biet_tru (nhan_tra_ve). Đã thanh toán: tạo hoàn tiền |
 | 28 | Đã giao | Khách gửi yêu cầu đổi trả | (giữ Đã giao) | Khách | KTV09 | Trong thời hạn đổi trả | Tạo yeu_cau_doi_tra (xem mục 3) |
 | 29 | Đã giao | Hết thời hạn đổi trả, không còn yêu cầu mở | Hoàn tất | Hệ thống | HT08 |  | Chốt doanh thu |
+| 30 | (tạo mới) | Tạo đơn thay thế khi đổi trả hướng gửi hàng thay thế | Đã xác nhận | Dược sĩ | DS09 | Yêu cầu đổi trả `kho_da_nhan`, hướng `gui_hang_thay_the` | `tong_tien = 0`, `don_hang_goc_id` trỏ đơn gốc, giữ hàng FEFO; đi luồng soạn hàng từ dòng 16 |
 
 **Cài đặt (T4.2, `modules/ban_hang/trang_thai.py`).**
 - Hai điểm vào duy nhất: `khoi_tao_trang_thai` (dòng 1 đến 6, tạo đơn) và `chuyen_trang_thai(db, don, den, tac_nhan, nguon, ghi_chu)`. Bảng `BANG_CHUYEN` là dữ liệu, mỗi dòng ghi số dòng spec, trạng thái nguồn, đích, tác nhân và điều kiện. Dòng 28 (đổi trả) không đổi trạng thái đơn nên không có trong bảng.

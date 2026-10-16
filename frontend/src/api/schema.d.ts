@@ -2483,6 +2483,176 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/toi/don-hang/{ma_don}/doi-tra": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Gửi yêu cầu đổi trả kèm ảnh/video (KTV09) */
+        post: operations["gui_api_v1_toi_don_hang__ma_don__doi_tra_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/toi/doi-tra": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Yêu cầu đổi trả của tôi (KTV09) */
+        get: operations["danh_sach_khach_api_v1_toi_doi_tra_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/toi/doi-tra/{ma_yeu_cau}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chi tiết đổi trả (KTV09) */
+        get: operations["chi_tiet_khach_api_v1_toi_doi_tra__ma_yeu_cau__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/toi/doi-tra/{ma_yeu_cau}/tai-khoan-nhan-hoan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Nhập tài khoản nhận hoàn tiền (đơn COD/tiền mặt) (KTV09) */
+        put: operations["tai_khoan_hoan_api_v1_toi_doi_tra__ma_yeu_cau__tai_khoan_nhan_hoan_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/doi-tra": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Yêu cầu đổi trả cần xử lý (DS09) */
+        get: operations["danh_sach_api_v1_noi_bo_doi_tra_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/doi-tra/{yc_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chi tiết đổi trả (DS09) */
+        get: operations["chi_tiet_api_v1_noi_bo_doi_tra__yc_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/doi-tra/{yc_id}/duyet": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Duyệt, tạo vận đơn trả (DS09) */
+        post: operations["duyet_api_v1_noi_bo_doi_tra__yc_id__duyet_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/doi-tra/{yc_id}/tu-choi": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Từ chối đổi trả (DS09) */
+        post: operations["tu_choi_api_v1_noi_bo_doi_tra__yc_id__tu_choi_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/doi-tra/{yc_id}/hoan-tien": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tạo giao dịch hoàn tiền (DS09) */
+        post: operations["hoan_tien_api_v1_noi_bo_doi_tra__yc_id__hoan_tien_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/doi-tra/{yc_id}/thay-the": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Gửi hàng thay thế (DS09) */
+        post: operations["thay_the_api_v1_noi_bo_doi_tra__yc_id__thay_the_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/noi-bo/don-thuoc": {
         parameters: {
             query?: never;
@@ -3327,6 +3497,22 @@ export interface components {
             /** Otp */
             otp?: string | null;
         };
+        /** Body_gui_api_v1_toi_don_hang__ma_don__doi_tra_post */
+        Body_gui_api_v1_toi_don_hang__ma_don__doi_tra_post: {
+            /**
+             * Dong
+             * @description JSON: [{"ct_don_hang_id": 1, "so_luong": 1}]
+             */
+            dong: string;
+            ly_do: components["schemas"]["LyDoDoiTra"];
+            /**
+             * Tep
+             * @description Ảnh jpeg/png/webp (5 MB) hoặc video mp4 (30 MB), tối đa 8 tệp
+             */
+            tep: string[];
+            /** Mo Ta */
+            mo_ta?: string | null;
+        };
         /** Body_lap_yeu_cau_api_v1_noi_bo_pos_don_thuoc_post */
         Body_lap_yeu_cau_api_v1_noi_bo_pos_don_thuoc_post: {
             /**
@@ -3926,6 +4112,122 @@ export interface components {
             /** Mat Khau Moi */
             mat_khau_moi: string;
         };
+        /** DoiTraChiTietKhach */
+        DoiTraChiTietKhach: {
+            /** Ma Yeu Cau */
+            ma_yeu_cau: string;
+            /** Ma Don */
+            ma_don: string;
+            trang_thai: components["schemas"]["TrangThaiDoiTra"];
+            ly_do: components["schemas"]["LyDoDoiTra"];
+            huong_xu_ly: components["schemas"]["HuongXuLyDoiTra"] | null;
+            /** So Tien Hoan */
+            so_tien_hoan: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Mo Ta */
+            mo_ta: string | null;
+            /** Ly Do Tu Choi */
+            ly_do_tu_choi: string | null;
+            /** Ma Van Don */
+            ma_van_don: string | null;
+            /** Dong */
+            dong: components["schemas"]["DongTraRa"][];
+            /** Anh */
+            anh: string[];
+            /** Can Nhap Tai Khoan Hoan */
+            can_nhap_tai_khoan_hoan: boolean;
+            /** Da Nhap Tai Khoan Hoan */
+            da_nhap_tai_khoan_hoan: boolean;
+        };
+        /** DoiTraNoiBoChiTiet */
+        DoiTraNoiBoChiTiet: {
+            /** Ma Yeu Cau */
+            ma_yeu_cau: string;
+            /** Ma Don */
+            ma_don: string;
+            trang_thai: components["schemas"]["TrangThaiDoiTra"];
+            ly_do: components["schemas"]["LyDoDoiTra"];
+            huong_xu_ly: components["schemas"]["HuongXuLyDoiTra"] | null;
+            /** So Tien Hoan */
+            so_tien_hoan: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Mo Ta */
+            mo_ta: string | null;
+            /** Ly Do Tu Choi */
+            ly_do_tu_choi: string | null;
+            /** Ma Van Don */
+            ma_van_don: string | null;
+            /** Dong */
+            dong: components["schemas"]["DongTraRa"][];
+            /** Anh */
+            anh: string[];
+            /** Can Nhap Tai Khoan Hoan */
+            can_nhap_tai_khoan_hoan: boolean;
+            /** Da Nhap Tai Khoan Hoan */
+            da_nhap_tai_khoan_hoan: boolean;
+            /** Id */
+            id: number;
+            /** Ten Khach */
+            ten_khach: string;
+            /** So Dien Thoai Khach */
+            so_dien_thoai_khach: string | null;
+            /** Ket Qua Kiem Hang */
+            ket_qua_kiem_hang: string | null;
+            /** Tong Da Thanh Toan */
+            tong_da_thanh_toan: string;
+            /** Da Co Giao Dich Hoan */
+            da_co_giao_dich_hoan: boolean;
+        };
+        /** DoiTraNoiBoTom */
+        DoiTraNoiBoTom: {
+            /** Ma Yeu Cau */
+            ma_yeu_cau: string;
+            /** Ma Don */
+            ma_don: string;
+            trang_thai: components["schemas"]["TrangThaiDoiTra"];
+            ly_do: components["schemas"]["LyDoDoiTra"];
+            huong_xu_ly: components["schemas"]["HuongXuLyDoiTra"] | null;
+            /** So Tien Hoan */
+            so_tien_hoan: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: number;
+            /** Ten Khach */
+            ten_khach: string;
+            /** So Dien Thoai Khach */
+            so_dien_thoai_khach: string | null;
+            /** Duoc Si Duyet Toi */
+            duoc_si_duyet_toi: boolean;
+        };
+        /** DoiTraTom */
+        DoiTraTom: {
+            /** Ma Yeu Cau */
+            ma_yeu_cau: string;
+            /** Ma Don */
+            ma_don: string;
+            trang_thai: components["schemas"]["TrangThaiDoiTra"];
+            ly_do: components["schemas"]["LyDoDoiTra"];
+            huong_xu_ly: components["schemas"]["HuongXuLyDoiTra"] | null;
+            /** So Tien Hoan */
+            so_tien_hoan: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
         /**
          * DonHangCuaKhach
          * @description Một dòng lịch sử mua. Không có địa chỉ giao, người nhận, ghi chú hay token truy cập.
@@ -4341,6 +4643,8 @@ export interface components {
         };
         /** DongDonRa */
         DongDonRa: {
+            /** Id */
+            id?: number | null;
             /** San Pham Id */
             san_pham_id: number;
             /** Ten San Pham */
@@ -4586,6 +4890,23 @@ export interface components {
             /** So Luong */
             so_luong: number;
         };
+        /** DongTraRa */
+        DongTraRa: {
+            /** Ct Don Hang Id */
+            ct_don_hang_id: number;
+            /** Ten San Pham */
+            ten_san_pham: string;
+            /** Ten Don Vi */
+            ten_don_vi: string;
+            /** So Luong Mua */
+            so_luong_mua: number;
+            /** So Luong Tra */
+            so_luong_tra: number;
+            /** Thanh Tien */
+            thanh_tien: string;
+            /** So Luong Nhan */
+            so_luong_nhan: number | null;
+        };
         /** DongVao */
         DongVao: {
             /** San Pham Id */
@@ -4630,6 +4951,10 @@ export interface components {
         DuyetBaiViet: {
             /** Phien Ban */
             phien_ban: string;
+        };
+        /** DuyetVao */
+        DuyetVao: {
+            huong_xu_ly: components["schemas"]["HuongXuLyDoiTra"];
         };
         /** GiaIpnVao */
         GiaIpnVao: {
@@ -4851,6 +5176,11 @@ export interface components {
             /** Mo Ta */
             mo_ta?: string | null;
         };
+        /**
+         * HuongXuLyDoiTra
+         * @enum {string}
+         */
+        HuongXuLyDoiTra: "hoan_tien" | "gui_hang_thay_the";
         /**
          * HuyNoiBoVao
          * @description Dược sĩ hủy đơn: bắt buộc lý do (DS03).
@@ -5289,6 +5619,11 @@ export interface components {
          * @enum {string}
          */
         LoaiSanPham: "thuoc_ke_don" | "thuoc_khong_ke_don" | "thuc_pham_chuc_nang" | "duoc_my_pham" | "thiet_bi_y_te";
+        /**
+         * LyDoDoiTra
+         * @enum {string}
+         */
+        LyDoDoiTra: "giao_sai_san_pham" | "sai_so_luong" | "hu_hong" | "het_han_can_han" | "khac";
         /**
          * LyDoHuyHang
          * @enum {string}
@@ -6460,6 +6795,15 @@ export interface components {
              */
             db: "ok" | "loi";
         };
+        /** TaiKhoanNhanHoanVao */
+        TaiKhoanNhanHoanVao: {
+            /** Ngan Hang */
+            ngan_hang: string;
+            /** So Tai Khoan */
+            so_tai_khoan: string;
+            /** Chu Tai Khoan */
+            chu_tai_khoan: string;
+        };
         /** TaoDonRa */
         TaoDonRa: {
             don: components["schemas"]["DonHangRa"];
@@ -6674,6 +7018,11 @@ export interface components {
             /** Ban Chay */
             ban_chay: components["schemas"]["SanPhamThe"][];
         };
+        /**
+         * TrangThaiDoiTra
+         * @enum {string}
+         */
+        TrangThaiDoiTra: "cho_duyet" | "da_duyet" | "tu_choi" | "kho_da_nhan" | "hoan_tat";
         /**
          * TrangThaiDon
          * @enum {string}
@@ -7054,6 +7403,11 @@ export interface components {
         };
         /** TuChoi */
         TuChoi: {
+            /** Ly Do */
+            ly_do: string;
+        };
+        /** TuChoiDoiTraVao */
+        TuChoiDoiTraVao: {
             /** Ly Do */
             ly_do: string;
         };
@@ -12986,6 +13340,321 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HoaDonRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    gui_api_v1_toi_don_hang__ma_don__doi_tra_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ma_don: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_gui_api_v1_toi_don_hang__ma_don__doi_tra_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoiTraChiTietKhach"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    danh_sach_khach_api_v1_toi_doi_tra_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoiTraTom"][];
+                };
+            };
+        };
+    };
+    chi_tiet_khach_api_v1_toi_doi_tra__ma_yeu_cau__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ma_yeu_cau: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoiTraChiTietKhach"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tai_khoan_hoan_api_v1_toi_doi_tra__ma_yeu_cau__tai_khoan_nhan_hoan_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ma_yeu_cau: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TaiKhoanNhanHoanVao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoiTraChiTietKhach"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    danh_sach_api_v1_noi_bo_doi_tra_get: {
+        parameters: {
+            query?: {
+                trang_thai?: components["schemas"]["TrangThaiDoiTra"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoiTraNoiBoTom"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chi_tiet_api_v1_noi_bo_doi_tra__yc_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoiTraNoiBoChiTiet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    duyet_api_v1_noi_bo_doi_tra__yc_id__duyet_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DuyetVao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoiTraNoiBoChiTiet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tu_choi_api_v1_noi_bo_doi_tra__yc_id__tu_choi_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TuChoiDoiTraVao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoiTraNoiBoChiTiet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hoan_tien_api_v1_noi_bo_doi_tra__yc_id__hoan_tien_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoiTraNoiBoChiTiet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    thay_the_api_v1_noi_bo_doi_tra__yc_id__thay_the_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DoiTraNoiBoChiTiet"];
                 };
             };
             /** @description Validation Error */

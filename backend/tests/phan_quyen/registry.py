@@ -59,6 +59,13 @@ REGISTRY: dict[tuple[str, str], tuple[str, str]] = {
     ("POST", f"{TIEN_TO_NOI_BO}/pos/don-thuoc"): ("pos.sell", "day_du"),
     ("POST", f"{TIEN_TO_NOI_BO}/pos/don"): ("pos.sell", "day_du"),
     ("GET", f"{TIEN_TO_NOI_BO}/pos/don/{{don_id}}/hoa-don"): ("pos.sell", "day_du"),
+    # DS09 (chỉ dược sĩ; Admin xác nhận chuyển tiền ở AD17).
+    ("GET", f"{TIEN_TO_NOI_BO}/doi-tra"): ("return.review", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/doi-tra/{{yc_id}}"): ("return.review", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/doi-tra/{{yc_id}}/duyet"): ("return.review", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/doi-tra/{{yc_id}}/tu-choi"): ("return.review", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/doi-tra/{{yc_id}}/hoan-tien"): ("return.review", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/doi-tra/{{yc_id}}/thay-the"): ("return.review", "day_du"),
     ("GET", f"{TIEN_TO_NOI_BO}/giao-tai-quay"): ("order.pickup_handover", "day_du"),
     ("POST", f"{TIEN_TO_NOI_BO}/giao-tai-quay/{{don_id}}"): ("order.pickup_handover", "day_du"),
     # KHO09, KHO11 (kho lập, Admin không lập) và AD12 (Admin duyệt/từ chối; kho không duyệt).

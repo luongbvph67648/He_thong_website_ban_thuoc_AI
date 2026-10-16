@@ -30,6 +30,8 @@ class DatHangVao(BaseModel):
 
 
 class DongDonRa(BaseModel):
+    id: int | None = None
+    """Id dòng đơn (`ct_don_hang`), để chọn dòng khi yêu cầu đổi trả."""
     san_pham_id: int
     ten_san_pham: str
     ten_don_vi: str

@@ -179,6 +179,7 @@ BANG_CHUYEN: tuple[Chuyen, ...] = (
     Chuyen((26,), _t(TT.giao_that_bai), TT.hoan_ve_kho, TD({H}), frozenset({NGUON_VAN_CHUYEN})),
     Chuyen((27,), _t(TT.hoan_ve_kho), TT.da_huy, TD({N})),
     Chuyen((29,), _t(TT.da_giao), TT.hoan_tat, TD({H})),
+    Chuyen((30,), None, TT.da_xac_nhan, TD({D}), dieu_kien=("co_nhan_vien_tao", "don_thay_the")),
 )
 """Spec 04 mục 1.1. Dòng 28 (yêu cầu đổi trả) không đổi trạng thái đơn nên không có ở đây."""
 
@@ -251,6 +252,9 @@ async def _kiem_tra_dieu_kien(
                 loi = None if don.nhan_vien_tao_id is None else "Đơn do dược sĩ tạo"
             case "duoc_si_tao":
                 loi = None if don.nhan_vien_tao_id is not None else "Đơn do khách tự đặt"
+            case "don_thay_the":
+                ok = don.don_hang_goc_id is not None and don.tong_tien == 0
+                loi = None if ok else "Đơn thay thế phải trỏ về đơn gốc và có tổng tiền 0"
             case "nhan_tai_nha_thuoc":
                 ok = don.hinh_thuc_nhan == HinhThucNhan.nhan_tai_nha_thuoc
                 loi = None if ok else "Chỉ áp dụng cho đơn nhận tại nhà thuốc"
@@ -396,8 +400,12 @@ for _so in (19, 21):
 # --- Điểm vào duy nhất ---
 
 
-def _tim_dong(tu: TT | None, den: TT, tac_nhan: TacNhan, nguon: str) -> Chuyen:
-    ung_vien = [c for c in BANG_CHUYEN if c.den == den and (tu is None if c.tu is None else tu in c.tu)]
+def _tim_dong(tu: TT | None, den: TT, tac_nhan: TacNhan, nguon: str, so_dong: int | None = None) -> Chuyen:
+    ung_vien = [
+        c
+        for c in BANG_CHUYEN
+        if c.den == den and (tu is None if c.tu is None else tu in c.tu) and (so_dong is None or so_dong in c.so)
+    ]
     if not ung_vien:
         tu_ten = "tạo mới" if tu is None else tu.value
         raise _loi_trang_thai(f"Không thể chuyển đơn từ {tu_ten} sang {den.value}", tu=tu and tu.value, den=den.value)
@@ -503,10 +511,11 @@ async def khoi_tao_trang_thai(
     tac_nhan: TacNhan,
     nguon: str,
     ghi_chu: str | None = None,
+    so_dong: int | None = None,
 ) -> LichSuTrangThai:
-    """Tạo đơn mới (dòng "tạo mới" 1 đến 6). `don` là `DonHang` chưa có `trang_thai` và chưa add vào phiên,
+    """Tạo đơn mới (dòng "tạo mới" 1 đến 6 và 30; `so_dong` chọn dòng khi nhiều dòng cùng đích, như 4 và 30). `don` là `DonHang` chưa có `trang_thai` và chưa add vào phiên,
     các dòng hàng gắn qua `don.chi_tiet`; hàm lưu đơn cùng dòng hàng rồi kiểm tra "không thuốc kê đơn" bằng SQL."""
-    chuyen = _tim_dong(None, den, tac_nhan, nguon)
+    chuyen = _tim_dong(None, den, tac_nhan, nguon, so_dong)
     _kiem_tra_tac_nhan_khach(None, chuyen, tac_nhan)
     if tac_nhan.loai == LoaiTacNhan.khach and don.khach_hang_id != tac_nhan.khach_hang_id:
         raise LoiNghiepVu("KHONG_CO_QUYEN", "Đơn phải thuộc về chính khách đặt hàng")

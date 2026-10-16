@@ -125,7 +125,13 @@ async def test_moi_dong_tao_moi_chay_duoc(db, chuyen):
     thuoc_tinh = thuoc_tinh_cho(chuyen, loai, nv.id)
     thuoc_tinh.pop("nhan_vien_tao_id", None)
     don = await don_chua_luu(db, khach if loai == LoaiTacNhan.khach else None, **thuoc_tinh)
-    ls = await mt.khoi_tao_trang_thai(db, don, chuyen.den, tn, "nguoi_dung")
+    if "don_thay_the" in chuyen.dieu_kien:
+        goc = await tao_don(db, khach, "da_giao")
+        don.don_hang_goc_id = goc.id
+        don.tam_tinh = don.tong_tien = Decimal(0)
+        for c in don.chi_tiet:
+            c.don_gia = c.thanh_tien = Decimal(0)
+    ls = await mt.khoi_tao_trang_thai(db, don, chuyen.den, tn, "nguoi_dung", so_dong=chuyen.so[0])
     assert don.id and don.trang_thai == chuyen.den and ls.tu_trang_thai is None
     assert (
         await db.scalar(select(func.count()).select_from(LichSuTrangThai).where(LichSuTrangThai.don_hang_id == don.id))

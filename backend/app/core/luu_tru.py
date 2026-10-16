@@ -31,11 +31,14 @@ TOI_DA_ANH_BYTE = 5 * 1024 * 1024
 """Ảnh tối đa 5 MB (spec 06 mục 7)."""
 
 KIEU_ANH = {"image/jpeg": ".jpg", "image/png": ".png", "image/webp": ".webp"}
-KIEU_THEO_DUOI = {duoi: kieu for kieu, duoi in KIEU_ANH.items()}
+KIEU_TEP = {**KIEU_ANH, "video/mp4": ".mp4"}
+"""Ảnh cộng video mp4 (video chỉ cho vùng riêng tư: bằng chứng đổi trả)."""
+KIEU_THEO_DUOI = {duoi: kieu for kieu, duoi in KIEU_TEP.items()}
+TOI_DA_VIDEO_BYTE = 30 * 1024 * 1024
 
 TIEN_TO_URL_CONG_KHAI = "/api/v1/tep/"
 
-_KHOA_HOP_LE = re.compile(r"^[a-z0-9][a-z0-9-]*(/[a-z0-9][a-z0-9-]*)*\.(jpg|png|webp)$")
+_KHOA_HOP_LE = re.compile(r"^[a-z0-9][a-z0-9-]*(/[a-z0-9][a-z0-9-]*)*\.(jpg|png|webp|mp4)$")
 
 
 def nhan_dang_anh(noi_dung: bytes) -> str | None:
@@ -47,6 +50,13 @@ def nhan_dang_anh(noi_dung: bytes) -> str | None:
     if noi_dung[:4] == b"RIFF" and noi_dung[8:12] == b"WEBP":
         return "image/webp"
     return None
+
+
+def nhan_dang_tep(noi_dung: bytes) -> str | None:
+    """Như `nhan_dang_anh` nhưng nhận thêm video mp4 (hộp `ftyp` ở byte 4-8)."""
+    if noi_dung[4:8] == b"ftyp":
+        return "video/mp4"
+    return nhan_dang_anh(noi_dung)
 
 
 def khoa_hop_le(khoa: str) -> bool:
@@ -84,7 +94,7 @@ class LuuTruCucBo:
 
     async def luu(self, thu_muc: str, noi_dung: bytes, kieu_mime: str, vung: str = "cong_khai") -> str:
         """Ghi file mới, trả khóa (`<thu_muc>/<uuid><đuôi>`). `kieu_mime` phải là kiểu đã nhận dạng từ nội dung."""
-        khoa = f"{thu_muc}/{uuid.uuid4().hex}{KIEU_ANH[kieu_mime]}"
+        khoa = f"{thu_muc}/{uuid.uuid4().hex}{KIEU_TEP[kieu_mime]}"
         duong_dan = self._duong_dan(khoa, vung)
 
         def ghi() -> None:
