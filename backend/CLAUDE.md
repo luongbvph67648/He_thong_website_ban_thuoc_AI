@@ -177,4 +177,5 @@ async def don_cua_toi(ma_don: str, kh: Annotated[KhachHang, Depends(khach_hien_t
 - **Tra cứu thuốc bằng ảnh** (`ai/{anh,doc_anh}.py`, `modules/tra_cuu_anh/`, T7.5, QĐ-46): ảnh luôn đi qua `chuan_bi_anh` (thu nhỏ, bỏ EXIF) trước khi gửi Claude; kết quả AI chỉ là chuỗi đã cắt độ dài, khớp sản phẩm bằng SQL (SĐK rồi tên); router mở hai phiên DB riêng quanh lời gọi AI.
 - **Đọc ảnh đơn thuốc** (`ai/doc_don_thuoc.py`, `modules/don_thuoc/doc_anh_ai.py`, T7.6, QĐ-47): chạy bằng job nền, không trong request; chỉ ghi `ct_yeu_cau_don_thuoc` khi yêu cầu chưa có dòng; AI không bao giờ tạo đơn hay chọn sản phẩm bán, dược sĩ chốt qua `duyet.luu_thuoc_tren_don`.
 - **Gợi ý sản phẩm** (`cua_hang/goi_y.py`, `cua_hang/loc_an_toan.py`, `gio_hang/luat_mua_kem.py`, T7.7, QĐ-48): mọi nơi gợi ý sản phẩm (chatbot, tương tự, dành cho bạn) phải lấy thẻ qua `loc_an_toan.the_hop_le` (không kê đơn, hiển thị, không dị ứng); không tự viết lại bộ lọc.
+- **Giám sát/đánh giá AI** (`modules/giam_sat_ai/`, `core/an_danh.py`, T7.8, QĐ-49): mọi nội dung hội thoại cho nhân viên xem phải đi qua `che_thong_tin` và không kèm `khach_hang_id`/`ma_phien`/`ip_hash`; dược sĩ chỉ đọc hội thoại bị gắn cờ.
 

@@ -126,6 +126,9 @@ async def chuyen_cho_duoc_si(
     h.tong_token += su_dung.tong_token
     h.chi_phi += su_dung.chi_phi_usd()
     h.trang_thai = TT.cho_duoc_si if trong_gio else TT.cho_goi_lai
+    h.loai = (
+        "duoc_si"  # từ lúc khách chuyển: dùng để thống kê tỉ lệ chuyển dược sĩ (AD11), kể cả phiên đóng sau khi gọi lại
+    )
     h.so_dien_thoai_goi_lai = sdt
     db.add(
         TinNhan(

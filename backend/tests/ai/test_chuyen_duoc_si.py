@@ -56,6 +56,7 @@ async def test_chuyen_trong_gio_co_tom_tat_ai_va_bao_duoc_si(client, db, clients
     assert r.status_code == 200, r.text
     assert r.json()["trang_thai"] == "cho_duoc_si" and r.json()["trong_gio"] is True
     await db.refresh(h)
+    assert h.loai == "duoc_si"  # đánh dấu ngay lúc chuyển để thống kê tỉ lệ chuyển dược sĩ (AD11)
     assert h.trang_thai == "cho_duoc_si" and "ho kéo dài" in h.tom_tat and "Cần tư vấn ho kéo dài" in h.tom_tat
     assert (await db.execute(select(ThongBao).where(ThongBao.loai == "chat_cho_duoc_si"))).scalars().first() is not None
     lai = await client.post(GAP, json={"ma_phien": str(h.ma_phien)})  # bấm lại không tạo thêm

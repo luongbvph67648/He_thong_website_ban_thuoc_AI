@@ -453,3 +453,10 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **Chuyển bộ lọc kê đơn/dị ứng ra `cua_hang/loc_an_toan.py`** để chatbot và gợi ý dùng chung một cài đặt, tránh hai bản lệch nhau.
 - **"Dành cho bạn" không có dự phòng bán chạy chung** khi chưa có lịch sử: khu này ẩn (trang chủ đã có "Bán chạy").
 
+## QĐ-49 · Đánh giá và giám sát hội thoại AI (T7.8)
+- **Cả dược sĩ (DS12) lẫn Admin (AD11) chỉ thấy bản đã ẩn danh**, không có id khách, mã phiên hay IP; dược sĩ đánh giá chất lượng câu trả lời chứ không cần biết khách là ai. Việc che là best-effort (regex), nên giao diện ghi rõ "đã che SĐT, email, tên" thay vì hứa tuyệt đối. Hội thoại có dược sĩ trực tiếp trả lời (T7.4) cũng hiện trong giám sát, nội dung cũng được che.
+- **Dược sĩ chỉ đọc hội thoại BỊ GẮN CỜ** (không phải mọi hội thoại): đúng phạm vi DS12 và giảm lượng nội dung nhạy cảm mà nhân viên đọc.
+- **Gắn cờ tính lúc truy vấn** (`bi_gan_co` hoặc khách báo "không hữu ích"), không thêm cột: tránh đổi schema và đồng bộ hai nơi.
+- **`loai = duoc_si` đặt ngay khi khách yêu cầu gặp dược sĩ** (trước đó chỉ đặt khi dược sĩ nhận phiên), để tỉ lệ chuyển dược sĩ không bỏ sót phiên chờ gọi lại/đã đóng. Hội thoại cũ trước T7.8 đã đóng chưa được điền ngược.
+- **Chi phí hiển thị bằng USD, cộng từ `hoi_thoai.chi_phi`**; chi phí tra ảnh, đọc đơn thuốc chưa có trong số này (QĐ-46, QĐ-47).
+

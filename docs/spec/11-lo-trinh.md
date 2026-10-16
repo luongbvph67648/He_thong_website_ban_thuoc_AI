@@ -888,16 +888,16 @@ _Kho tri thức, tìm kiếm lai, chatbot RAG, chuyển dược sĩ, đọc ản
   - [x] AI08 job hằng tuần: luật kết hợp từ `ct_don_hang` đơn `hoan_tat` 180 ngày (support ≥ 0.005, confidence ≥ 0.1, lift > 1), ghi đè `luat_mua_kem`.
 - **Ghi chú triển khai:** `cua_hang/goi_y.py` (AI07: `san_pham_tuong_tu` thay bản trong `chi_tiet.py`, `danh_cho_ban`), `cua_hang/loc_an_toan.py` (bộ lọc kê đơn/dị ứng chuyển từ `ai/chatbot.py`), `gio_hang/luat_mua_kem.py` + job `ai08_luat_mua_kem` (Chủ nhật 03:00, `LICH_TUAN`), `GET /goi-y/danh-cho-ban`. API spec 06 mục 3.45; QĐ-48. Giao diện: khu "Dành cho bạn" ở trang chủ (ẩn khi rỗng). LỆCH nhỏ: "tương tự" đổi từ "chung một hoạt chất" sang đúng spec (cùng TẬP hoạt chất), test T1.3 đã cập nhật. Test `tests/ai/test_goi_y.py` (13), `TrangChu.test.tsx`.
 
-### [ ] T7.8 · Đánh giá và giám sát AI
+### [x] T7.8 · Đánh giá và giám sát AI
 - **Chức năng:** DS12 (Đánh giá câu trả lời AI), AD11 (Giám sát hội thoại AI)
 - **Phụ thuộc:** T7.3
 - **Bảng:** `danh_gia_cau_tra_loi`, `tin_nhan`, `hoi_thoai`, `lich_su_tim_kiem`
 - **Tiêu chí chấp nhận:**
-  - [ ] Dược sĩ xem hội thoại bị gắn cờ, đánh dấu đúng/sai, ghi chú nội dung đúng.
-  - [ ] Admin xem hội thoại đã ẩn danh (che SĐT, email, tên), thống kê câu hỏi phổ biến (theo `y_dinh`), tỉ lệ chuyển dược sĩ, chi phí token, truy vấn tìm kiếm không có kết quả.
+  - [x] Dược sĩ xem hội thoại bị gắn cờ, đánh dấu đúng/sai, ghi chú nội dung đúng.
+  - [x] Admin xem hội thoại đã ẩn danh (che SĐT, email, tên), thống kê câu hỏi phổ biến (theo `y_dinh`), tỉ lệ chuyển dược sĩ, chi phí token, truy vấn tìm kiếm không có kết quả.
 - **Giao diện:**
-  - [ ] Màn đánh giá câu trả lời; dashboard AI cho Admin.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Màn đánh giá câu trả lời; dashboard AI cho Admin.
+- **Ghi chú triển khai:** `core/an_danh.py` (che SĐT/email/số dài/tên), `modules/giam_sat_ai/{dich_vu,router_noi_bo,schemas}.py` (7 route vào registry phân quyền), `chuyen_cho_duoc_si` đặt `loai = duoc_si` ngay lúc chuyển. API spec 06 mục 3.46; QĐ-49. Giao diện: `components/HoiThoaiAnDanh.tsx`, `/nhan-vien/danh-gia-ai` (danh sách gắn cờ, ngăn kéo hội thoại, nút Đúng/Sai + ghi chú) và `/quan-tri/giam-sat-ai` (thống kê, hội thoại, từ khóa không ra kết quả). Test `tests/ai/test_giam_sat_ai.py` (21), `TrangDanhGiaAi.test.tsx`, `TrangGiamSatAi.test.tsx`. Việc che tên là best-effort (xem QĐ-49).
 
 ### [ ] T7.9 · Dự báo nhu cầu và đề xuất nhập hàng
 - **Chức năng:** AI09 (Dự báo nhu cầu, đề xuất nhập hàng), KHO14 (Xem đề xuất nhập hàng từ AI)
