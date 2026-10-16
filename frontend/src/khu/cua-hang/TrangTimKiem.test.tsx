@@ -127,6 +127,8 @@ describe('OTimKiem (ô tìm kiếm ở header)', () => {
     await u.click(await screen.findByText('Hoạt chất'))
     await waitFor(() => expect(router.state.location.pathname).toBe('/tim-kiem'))
     expect(router.state.location.search).toBe('?q=Paracetamol')
+    // Ô giữ đúng tên đã chọn (không có hậu tố nội bộ), nên Enter tiếp theo tìm đúng từ khóa
+    expect(screen.getByLabelText('Tìm kiếm')).toHaveValue('Paracetamol')
   })
 
   it('Enter chạy tìm kiếm đầy đủ; từ khóa 1 ký tự thì không điều hướng', async () => {

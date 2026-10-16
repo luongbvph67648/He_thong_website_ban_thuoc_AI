@@ -43,6 +43,8 @@ async def hoat_chat(db, ten, ten_khac=None) -> HoatChat:
         ("bo phe", "Thuốc ho Bổ phế"),  # không dấu
         ("Bổ phế", "Thuốc ho Bổ phế"),  # có dấu
         ("thuoc ho", "Thuốc ho Bổ phế"),
+        ("para 5", "Paracetamol 500mg"),  # từ cuối đang gõ dở
+        ("para 500", "Paracetamol 500mg"),
     ],
 )
 async def test_tim_khong_dau_sai_chinh_ta_theo_tien_to(client, db, q, ten_mong_doi):
@@ -53,6 +55,15 @@ async def test_tim_khong_dau_sai_chinh_ta_theo_tien_to(client, db, q, ten_mong_d
     assert phan_hoi.status_code == 200, phan_hoi.text
     assert ten_mong_doi in ten_the(phan_hoi), ten_the(phan_hoi)
     assert "Vitamin C 1000mg" not in ten_the(phan_hoi)
+
+
+async def test_nhieu_tu_tu_cuoi_dang_go_do_van_ra_nhung_khong_khop_qua_long(client, db):
+    await sp_ban_duoc(db, "Vitamin C 1000mg")
+    await sp_ban_duoc(db, "Vitamin B1")
+    ten = ten_the(await tim(client, "vit c"))
+    assert "Vitamin C 1000mg" in ten
+    assert ten_the(await tim(client, "vit zzzz")) == []  # một từ không khớp tên nào thì cả cụm không khớp
+    assert any(g["ten"] == "Vitamin C 1000mg" for g in (await goi_y(client, "vit c")).json())
 
 
 async def test_tim_theo_hoat_chat_va_ten_khac(client, db):
@@ -256,6 +267,29 @@ async def test_chi_ghi_o_trang_1_va_cung_tu_khoa_trong_30_phut_chi_mot_dong(clie
     await db.flush()
     await client.get(f"{GOC}/tim-kiem", params={"q": "vitamin"}, headers=dau)
     assert len(await lich_su(db)) == 3
+
+
+async def test_khach_vang_lai_khong_ma_phien_khong_bi_dedupe_nham_voi_khach_dang_nhap(dang_nhap_khach, client, db):
+    await sp_ban_duoc(db, "Paracetamol 500mg")
+    await dang_nhap_khach.get(f"{GOC}/tim-kiem", params={"q": "para"})  # khách đăng nhập tìm "para"
+    await client.get(f"{GOC}/tim-kiem", params={"q": "para"})  # vãng lai không mã phiên tìm cùng từ khóa
+    dong = await lich_su(db)
+    assert sorted((d.khach_hang_id is not None) for d in dong) == [False, True]
+
+
+async def test_goi_y_qua_gioi_han_theo_ip_la_429_con_tim_day_du_van_dung_duoc(client, app, db):
+    from app.core.gioi_han import lay_bo_gioi_han_goi_y
+
+    await sp_ban_duoc(db, "Paracetamol 500mg")
+    bo = GioiHanCuaSoTruot()
+    app.dependency_overrides[lay_bo_gioi_han_goi_y] = lambda: bo
+    for _ in range(router_cua_hang.GOI_Y_TOI_DA_MOI_IP):
+        assert (await goi_y(client, "para")).status_code == 200
+    qua = await goi_y(client, "para")
+    assert qua.status_code == 429 and qua.json()["ma_loi"] == "QUA_GIOI_HAN"
+    assert qua.json()["chi_tiet"]["thu_lai_sau_giay"] >= 1
+    assert (await tim(client, "para")).status_code == 200  # tìm đầy đủ không bị ảnh hưởng
+    assert (await goi_y(client, "p")).status_code == 200  # từ khóa quá ngắn không tốn lượt
 
 
 async def test_goi_y_khong_ghi_lich_su(client, db):

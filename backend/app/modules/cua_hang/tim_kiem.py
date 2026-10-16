@@ -11,11 +11,12 @@ bán chạy 30 ngày, rồi độ khớp thô và id (thứ tự ổn định gi
 import re
 from datetime import timedelta
 
-from sqlalchemy import ColumnElement, Numeric, Text, func, literal, or_, select
+from sqlalchemy import ColumnElement, CompoundSelect, Numeric, Text, and_, func, literal, or_, select, union
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.phan_trang import ThamSoPhanTrang, Trang, tao_trang
 from app.core.thoi_gian import bay_gio_utc, hom_nay_vn
+from app.core.tim_kiem import mau_tim_like
 from app.models.ai import LichSuTimKiem
 from app.models.khach_hang import KhachHang
 from app.models.san_pham import HoatChat, SanPham, ThanhPhan
@@ -33,6 +34,7 @@ TOI_THIEU_KY_TU = 2
 TOI_DA_KY_TU = 100
 TOI_DA_GOI_Y = 8
 TOI_DA_GOI_Y_HOAT_CHAT = 2
+TOI_DA_TU = 6
 CUA_SO_GHI_TRUNG = timedelta(minutes=30)
 _KHOANG_TRANG = re.compile(r"\s+")
 
@@ -46,13 +48,48 @@ def _chuan(cot: ColumnElement) -> ColumnElement:
     return func.f_unaccent(func.lower(cot))
 
 
-def _bo_dieu_kien(q: str) -> tuple[ColumnElement[bool], ColumnElement[float], ColumnElement[bool]]:
-    """(điều kiện khớp sản phẩm, điểm khớp, điều kiện khớp hoạt chất) cho từ khóa đã chuẩn hóa."""
+def _cac_tu(q: str) -> list[str]:
+    return q.split()[:TOI_DA_TU]
+
+
+def _khop_hoat_chat(qn: ColumnElement) -> ColumnElement[bool]:
+    return or_(
+        qn.op("<%")(_chuan(HoatChat.ten)),
+        qn.op("<%")(_chuan(func.coalesce(HoatChat.ten_khac, ""))),
+    )
+
+
+def _id_khop(q: str) -> CompoundSelect:
+    """Id sản phẩm khớp từ khóa, gộp bằng UNION: mỗi nhánh được lập kế hoạch riêng nên dùng được index GIN (một `OR`
+    giữa điều kiện có index và `IN (subquery)` làm PostgreSQL quét tuần tự cả bảng).
+
+    1. cả cụm từ khớp tên sản phẩm (`word_similarity`);
+    2. nhiều từ: MỖI từ khớp tên (gần đúng hoặc chứa), để "para 5", "vit c" (từ cuối đang gõ dở) vẫn ra kết quả;
+    3. sản phẩm chứa hoạt chất khớp tên hoặc tên khác.
+    """
     qn = _chuan(literal(q, type_=Text))
     ten_sp = _chuan(SanPham.ten)
+    nhanh = [select(SanPham.id).where(qn.op("<%")(ten_sp))]
+    tu = _cac_tu(q)
+    if len(tu) > 1:
+        dieu_kien = [
+            or_(
+                _chuan(literal(t, type_=Text)).op("<%")(ten_sp),
+                ten_sp.like(_chuan(literal(mau_tim_like(t), type_=Text)), escape="\\"),
+            )
+            for t in tu
+        ]
+        nhanh.append(select(SanPham.id).where(and_(*dieu_kien)))
+    hoat_chat_khop = select(HoatChat.id).where(_khop_hoat_chat(qn))
+    nhanh.append(select(ThanhPhan.san_pham_id).where(ThanhPhan.hoat_chat_id.in_(hoat_chat_khop)))
+    return union(*nhanh)
+
+
+def _diem(q: str) -> ColumnElement[float]:
+    """Điểm khớp thô của một sản phẩm: tốt nhất giữa tên sản phẩm và hoạt chất (kể cả tên khác) của nó."""
+    qn = _chuan(literal(q, type_=Text))
     ten_hc = _chuan(HoatChat.ten)
     ten_khac = _chuan(func.coalesce(HoatChat.ten_khac, ""))
-    khop_hc = or_(qn.op("<%")(ten_hc), qn.op("<%")(ten_khac))
     diem_hc = (
         select(func.max(func.greatest(func.word_similarity(qn, ten_hc), func.word_similarity(qn, ten_khac))))
         .select_from(ThanhPhan)
@@ -61,25 +98,19 @@ def _bo_dieu_kien(q: str) -> tuple[ColumnElement[bool], ColumnElement[float], Co
         .correlate(SanPham)
         .scalar_subquery()
     )
-    hc_khop_ids = select(HoatChat.id).where(khop_hc)
-    khop_sp = or_(
-        qn.op("<%")(ten_sp),
-        SanPham.id.in_(select(ThanhPhan.san_pham_id).where(ThanhPhan.hoat_chat_id.in_(hc_khop_ids))),
-    )
-    diem = func.greatest(func.word_similarity(qn, ten_sp), func.coalesce(diem_hc, 0.0))
-    return khop_sp, diem, khop_hc
+    return func.greatest(func.word_similarity(qn, _chuan(SanPham.ten)), func.coalesce(diem_hc, 0.0))
 
 
 async def tim_san_pham(
-    db: AsyncSession, q: str, tp: ThamSoPhanTrang, cay: CayHienThi | None = None
+    db: AsyncSession, q: str, tp: ThamSoPhanTrang, cay: CayHienThi | None = None, *, dem_tong: bool = True
 ) -> Trang[SanPhamThe]:
     """Trang kết quả cho từ khóa đã chuẩn hóa (`chuan_hoa_tu_khoa`); từ khóa quá ngắn thì rỗng."""
     if len(q) < TOI_THIEU_KY_TU:
         return tao_trang([], 0, tp)
     cay = cay or await nap_cay_hien_thi(db)
-    khop, diem, _ = _bo_dieu_kien(q)
-    dieu_kien = [la_hien_thi(cay.ids), khop]
-    tong = await db.scalar(select(func.count()).select_from(SanPham).where(*dieu_kien)) or 0
+    diem = _diem(q)
+    dieu_kien = [la_hien_thi(cay.ids), SanPham.id.in_(_id_khop(q))]
+    tong = (await db.scalar(select(func.count()).select_from(SanPham).where(*dieu_kien)) or 0) if dem_tong else 0
     ban_chay = ban_chay_30_ngay()
     ton = ton_kha_dung(hom_nay_vn())
     dong = (
@@ -106,13 +137,13 @@ async def goi_y(db: AsyncSession, q: str) -> list[GoiYTimKiem]:
     if len(q) < TOI_THIEU_KY_TU:
         return []
     cay = await nap_cay_hien_thi(db)
-    trang = await tim_san_pham(db, q, ThamSoPhanTrang(1, TOI_DA_GOI_Y - TOI_DA_GOI_Y_HOAT_CHAT), cay)
+    trang = await tim_san_pham(db, q, ThamSoPhanTrang(1, TOI_DA_GOI_Y - TOI_DA_GOI_Y_HOAT_CHAT), cay, dem_tong=False)
     ket: list[GoiYTimKiem] = [
         GoiYTimKiem(kieu="san_pham", ten=t.ten, slug=t.slug, loai_san_pham=t.loai_san_pham, can_tu_van=t.can_tu_van)
         for t in trang.du_lieu
     ]
-    _, _, khop_hc = _bo_dieu_kien(q)
     qn = _chuan(literal(q, type_=Text))
+    khop_hc = _khop_hoat_chat(qn)
     diem_hc = func.greatest(
         func.word_similarity(qn, _chuan(HoatChat.ten)),
         func.word_similarity(qn, _chuan(func.coalesce(HoatChat.ten_khac, ""))),
@@ -149,7 +180,10 @@ async def ghi_lich_su_tim_kiem(
     nguoi = (
         LichSuTimKiem.khach_hang_id == khach.id
         if khach is not None
-        else (LichSuTimKiem.ma_phien == ma_phien if ma_phien is not None else LichSuTimKiem.ma_phien.is_(None))
+        else and_(
+            LichSuTimKiem.khach_hang_id.is_(None),
+            LichSuTimKiem.ma_phien == ma_phien if ma_phien is not None else LichSuTimKiem.ma_phien.is_(None),
+        )
     )
     da_co = await db.scalar(
         select(LichSuTimKiem.id)

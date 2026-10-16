@@ -22,5 +22,5 @@ export function duongDanTimKiem(q: string): string {
 
 /** Đích khi chọn một gợi ý: sản phẩm mở thẳng chi tiết, hoạt chất chạy tìm kiếm theo tên đó. */
 export function duongDanGoiY(g: GoiY): string {
-  return g.kieu === 'san_pham' && g.slug ? `/san-pham/${g.slug}?nguon=tim_kiem` : duongDanTimKiem(g.ten)
+  return g.kieu === 'san_pham' && g.slug ? `/san-pham/${encodeURIComponent(g.slug)}?nguon=tim_kiem` : duongDanTimKiem(g.ten)
 }

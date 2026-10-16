@@ -6,7 +6,13 @@ from fastapi import APIRouter, Depends, Header, Path, Query, Request
 from pydantic import Field
 
 from app.core.db import Db
-from app.core.gioi_han import GioiHanCuaSoTruot, lay_bo_gioi_han_lich_su_xem, lay_bo_gioi_han_tim_kiem
+from app.core.gioi_han import (
+    GioiHanCuaSoTruot,
+    lay_bo_gioi_han_goi_y,
+    lay_bo_gioi_han_lich_su_xem,
+    lay_bo_gioi_han_tim_kiem,
+)
+from app.core.loi import LoiNghiepVu
 from app.core.phan_quyen import khach_tuy_chon
 from app.core.phan_trang import PhanTrang, Trang
 from app.core.tham_so import KHONG_NUL
@@ -114,13 +120,27 @@ async def tim_kiem(
 
 
 @router.get("/tim-kiem/goi-y", response_model=list[GoiYTimKiem], summary="Gợi ý khi đang gõ (KVL04)")
-async def goi_y_tim_kiem(db: Db, q: TuKhoa = ""):
+async def goi_y_tim_kiem(
+    request: Request,
+    db: Db,
+    bo_gioi_han: Annotated[GioiHanCuaSoTruot, Depends(lay_bo_gioi_han_goi_y)],
+    q: TuKhoa = "",
+):
+    tu_khoa = dich_vu_tim_kiem.chuan_hoa_tu_khoa(q)
+    if len(tu_khoa) >= dich_vu_tim_kiem.TOI_THIEU_KY_TU:
+        cho = bo_gioi_han.thu(f"goi-y:{dia_chi_ip(request)}", GOI_Y_TOI_DA_MOI_IP, GOI_Y_CUA_SO_GIAY)
+        if cho is not None:
+            raise LoiNghiepVu(
+                "QUA_GIOI_HAN", "Bạn gõ quá nhanh, vui lòng thử lại sau", chi_tiet={"thu_lai_sau_giay": int(cho) + 1}
+            )
     return await dich_vu_tim_kiem.goi_y(db, dich_vu_tim_kiem.chuan_hoa_tu_khoa(q))
 
 
 GHI_XEM_TOI_DA_MOI_IP = 120
 GHI_XEM_CUA_SO_GIAY = 600
 GHI_TIM_TOI_DA_MOI_IP = 120
+GOI_Y_TOI_DA_MOI_IP = 240  # bằng 4 lượt/giây liên tục trong một phút (trễ gõ 250 ms)
+GOI_Y_CUA_SO_GIAY = 60
 GHI_TIM_CUA_SO_GIAY = 600
 
 

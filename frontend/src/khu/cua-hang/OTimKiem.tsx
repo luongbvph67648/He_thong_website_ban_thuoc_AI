@@ -1,17 +1,20 @@
 import { SearchOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
 import { AutoComplete, Input, Tag } from 'antd'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../api/client'
 import { KHOA_QUERY_CUA_HANG } from './cuaHang'
 import { chuanHoaTuKhoa, duDieuKienTim, duongDanGoiY, duongDanTimKiem, TRE_GOI_Y_MS, type GoiY } from './timKiem'
+
+const KHOA_GOI_Y = /^(san_pham|hoat_chat):\d+$/
 
 /** Ô tìm kiếm ở header: gợi ý khi gõ (trễ 250 ms, từ 2 ký tự); Enter hoặc nút tìm chạy tìm kiếm đầy đủ. */
 export function OTimKiem() {
   const [go, datGo] = useState('')
   const [daTre, datDaTre] = useState('')
   const dieuHuong = useNavigate()
+  const choTim = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     const h = setTimeout(() => datDaTre(chuanHoaTuKhoa(go)), TRE_GOI_Y_MS)
@@ -27,22 +30,34 @@ export function OTimKiem() {
     },
     enabled: duDieuKienTim(daTre),
     staleTime: 60_000,
+    placeholderData: (truoc) => truoc, // gõ tiếp thì giữ danh sách cũ tới khi có danh sách mới, không nháy trống
   })
   const danhSach: GoiY[] = duDieuKienTim(daTre) ? (goiY.data ?? []) : []
 
+  useEffect(() => () => {
+    if (choTim.current) clearTimeout(choTim.current)
+  }, [])
+
+  // Nhấn Enter khi đang tô sáng một gợi ý làm cả `onSelect` lẫn `onSearch` chạy (thứ tự tùy trình duyệt): hoãn tìm đầy đủ
+  // một nhịp để `onSelect` hủy nó, nếu không khách bị đưa tới trang kết quả thay vì sản phẩm đã chọn.
   const timDayDu = (q: string) => {
-    if (duDieuKienTim(q)) dieuHuong(duongDanTimKiem(q))
+    if (!duDieuKienTim(q)) return
+    if (choTim.current) clearTimeout(choTim.current)
+    choTim.current = setTimeout(() => dieuHuong(duongDanTimKiem(q)), 0)
   }
 
   return (
     <AutoComplete
       style={{ flex: '1 1 240px', maxWidth: 560 }}
       value={go}
-      onChange={datGo}
+      onChange={(v) => {
+        // Chọn một gợi ý cũng phát `onChange` với giá trị của gợi ý đó (khóa nội bộ): bỏ qua, ô vẫn giữ chữ người dùng gõ.
+        if (!KHOA_GOI_Y.test(v)) datGo(v)
+      }}
       popupMatchSelectWidth
       options={danhSach.map((g, i) => ({
-        // Giá trị phải duy nhất (sản phẩm và hoạt chất có thể trùng tên) nên hoạt chất mang hậu tố; đích đi theo `goiY`.
-        value: g.kieu === 'hoat_chat' ? `${g.ten} (hoạt chất)` : g.ten,
+        // Giá trị phải duy nhất (sản phẩm và hoạt chất có thể trùng tên): dùng khóa nội bộ, đích đi theo `goiY`.
+        value: `${g.kieu}:${i}`,
         key: `${g.kieu}-${i}`,
         goiY: g,
         label: (
@@ -52,7 +67,12 @@ export function OTimKiem() {
           </span>
         ),
       }))}
-      onSelect={(_, opt) => dieuHuong(duongDanGoiY((opt as { goiY: GoiY }).goiY))}
+      onSelect={(_, opt) => {
+        if (choTim.current) clearTimeout(choTim.current)
+        const g = (opt as { goiY: GoiY }).goiY
+        datGo(g.ten)
+        dieuHuong(duongDanGoiY(g))
+      }}
     >
       <Input.Search
         placeholder="Tìm thuốc, thực phẩm chức năng, thiết bị y tế…"
