@@ -402,6 +402,18 @@ Khách đăng nhập, `khach_hang_id` lấy từ token. Nhân viên (kể cả A
 - `GET /toi/ho-so-suc-khoe/hoat-chat?q=`: gợi ý tối đa 20 hoạt chất theo tên hoặc tên khác, không phân biệt hoa thường và dấu; chỉ trả `{id, ten}`.
 - Dược sĩ không có route riêng ở T5.1: đọc qua hàm cổng `suc_khoe.dich_vu.duoc_doc_ho_so_suc_khoe` / `doc_ho_so_cho_duoc_si` (spec 03 mục 5.1) để T5.3 và T7.x gọi.
 
+### 3.29 Yêu cầu tư vấn đơn thuốc phía khách (KVL08, KTV07, T5.2)
+- `POST /auth/otp` nhận thêm `muc_dich = "don_thuoc_khach"` (số nào cũng nhận mã; cùng giới hạn tần suất như mục 3.1).
+- `POST /don-thuoc` (`multipart/form-data`, công khai nhưng nhận token nếu có): `anh` (1-5 tệp jpeg/png/webp, mỗi tệp tối đa 5 MB, kiểm theo nội dung), `ho_ten`, `so_dien_thoai`, `ghi_chu?`, `otp?`.
+  - Thành viên đã đăng nhập: gắn `khach_hang_id` từ token, họ tên và SĐT lấy từ tài khoản nếu bỏ trống, không cần OTP.
+  - Khách vãng lai: bắt buộc `so_dien_thoai` và `otp` (`OTP_SAI`/`OTP_HET_HAN` 422; thiếu OTP là 400). Ảnh được kiểm trước khi đốt lần thử OTP.
+  - Tối đa 5 yêu cầu cho mỗi SĐT trong 24 giờ, vượt là `429 QUA_GIOI_HAN`.
+  - 201 `{ma_yeu_cau, trang_thai: "cho_duyet", created_at}`. Ảnh lưu ở vùng riêng tư, `hash_anh` là SHA-256 của ảnh (nhiều ảnh: SHA-256 của các hash đã sắp xếp).
+- `GET /toi/don-thuoc` (mới nhất trước, tối đa 100): `[{ma_yeu_cau, trang_thai, ho_ten, so_anh, ghi_chu, ly_do_tu_choi, ma_don, created_at}]`; `ma_don` là đơn hàng gần nhất tạo từ yêu cầu.
+- `GET /toi/don-thuoc/{ma_yeu_cau}`: thêm `so_dien_thoai` và `anh: [url]` là URL ký 10 phút. Yêu cầu của người khác hoặc không có là `404`.
+- `POST /toi/don-thuoc/{ma_yeu_cau}/huy`: chuyển `khach_huy` khi còn `cho_duyet` hoặc `dang_tu_van` (nhả khóa dược sĩ); trạng thái khác là `409 CHUYEN_TRANG_THAI_KHONG_HOP_LE`.
+- `GET /tep-rieng/{thu_muc}/{tep}?het_han=&ky=`: đọc file riêng tư bằng URL ký (HMAC-SHA256 trên `khoa|het_han`, khóa con của `JWT_SECRET`, hạn 10 phút). Chữ ký sai, hết hạn hoặc khóa lạ là `404`; không cần token vì quyền được kiểm lúc cấp URL (chủ yêu cầu; dược sĩ đang xử lý ở T5.3). Phản hồi `Cache-Control: private, no-store`.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

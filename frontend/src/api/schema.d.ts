@@ -1113,6 +1113,27 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tep-rieng/{thu_muc}/{ten_tep}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Tải file riêng tư bằng URL ký có hạn
+         * @description Không cần token: quyền đã được kiểm khi cấp URL (chủ yêu cầu hoặc dược sĩ đang xử lý). Chữ ký sai, hết hạn hoặc
+         *     khóa lạ đều là 404 để không lộ file có tồn tại hay không.
+         */
+        get: operations["tai_tep_rieng_api_v1_tep_rieng__thu_muc___ten_tep__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/danh-muc": {
         parameters: {
             query?: never;
@@ -2305,6 +2326,78 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/don-thuoc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Gửi ảnh đơn thuốc nhờ dược sĩ tư vấn (KVL08, KTV07)
+         * @description Thành viên đã đăng nhập: gắn vào tài khoản, không cần OTP. Khách vãng lai: bắt buộc `so_dien_thoai` và `otp`
+         *     (mục đích `don_thuoc_khach`).
+         */
+        post: operations["gui_api_v1_don_thuoc_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/toi/don-thuoc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Đơn thuốc của tôi (KTV07) */
+        get: operations["danh_sach_api_v1_toi_don_thuoc_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/toi/don-thuoc/{ma_yeu_cau}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chi tiết yêu cầu (KTV07) */
+        get: operations["chi_tiet_api_v1_toi_don_thuoc__ma_yeu_cau__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/toi/don-thuoc/{ma_yeu_cau}/huy": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hủy yêu cầu (KTV07) */
+        post: operations["huy_api_v1_toi_don_thuoc__ma_yeu_cau__huy_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/toi/ho-so-suc-khoe": {
         parameters: {
             query?: never;
@@ -2893,6 +2986,22 @@ export interface components {
             gia_thap_nhat: string | null;
             /** Gia Cao Nhat */
             gia_cao_nhat: string | null;
+        };
+        /** Body_gui_api_v1_don_thuoc_post */
+        Body_gui_api_v1_don_thuoc_post: {
+            /**
+             * Anh
+             * @description 1 đến 5 ảnh jpeg/png/webp, mỗi ảnh tối đa 5 MB
+             */
+            anh: string[];
+            /** Ho Ten */
+            ho_ten?: string | null;
+            /** So Dien Thoai */
+            so_dien_thoai?: string | null;
+            /** Ghi Chu */
+            ghi_chu?: string | null;
+            /** Otp */
+            otp?: string | null;
         };
         /** Body_tai_anh_bai_viet_api_v1_noi_bo_bai_viet_anh_post */
         Body_tai_anh_bai_viet_api_v1_noi_bo_bai_viet_anh_post: {
@@ -5045,7 +5154,7 @@ export interface components {
              * Muc Dich
              * @enum {string}
              */
-            muc_dich: "dang_ky" | "quen_mat_khau";
+            muc_dich: "dang_ky" | "quen_mat_khau" | "don_thuoc_khach";
             /**
              * Kenh
              * @default sms
@@ -5955,6 +6064,11 @@ export interface components {
          * @enum {string}
          */
         TrangThaiThanhToan: "chua_thanh_toan" | "da_thanh_toan" | "cho_hoan_tien" | "hoan_tien_mot_phan" | "da_hoan_tien";
+        /**
+         * TrangThaiYeuCauDonThuoc
+         * @enum {string}
+         */
+        TrangThaiYeuCauDonThuoc: "cho_duyet" | "dang_tu_van" | "da_tao_don" | "tu_choi" | "khach_huy";
         /** Trang[BaiVietCongKhaiTomTat] */
         Trang_BaiVietCongKhaiTomTat_: {
             /** Du Lieu */
@@ -6409,6 +6523,66 @@ export interface components {
             tong_tien: string;
             /** Ma Giam Gia */
             ma_giam_gia: string | null;
+        };
+        /** YeuCauDonThuocChiTiet */
+        YeuCauDonThuocChiTiet: {
+            /** Ma Yeu Cau */
+            ma_yeu_cau: string;
+            trang_thai: components["schemas"]["TrangThaiYeuCauDonThuoc"];
+            /** Ho Ten */
+            ho_ten: string;
+            /** So Anh */
+            so_anh: number;
+            /** Ghi Chu */
+            ghi_chu: string | null;
+            /** Ly Do Tu Choi */
+            ly_do_tu_choi: string | null;
+            /** Ma Don */
+            ma_don: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** So Dien Thoai */
+            so_dien_thoai: string;
+            /** Anh */
+            anh: string[];
+        };
+        /**
+         * YeuCauDonThuocTao
+         * @description Phản hồi sau khi gửi: khách vãng lai chỉ biết mã yêu cầu (kết quả gửi qua SMS).
+         */
+        YeuCauDonThuocTao: {
+            /** Ma Yeu Cau */
+            ma_yeu_cau: string;
+            trang_thai: components["schemas"]["TrangThaiYeuCauDonThuoc"];
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** YeuCauDonThuocTom */
+        YeuCauDonThuocTom: {
+            /** Ma Yeu Cau */
+            ma_yeu_cau: string;
+            trang_thai: components["schemas"]["TrangThaiYeuCauDonThuoc"];
+            /** Ho Ten */
+            ho_ten: string;
+            /** So Anh */
+            so_anh: number;
+            /** Ghi Chu */
+            ghi_chu: string | null;
+            /** Ly Do Tu Choi */
+            ly_do_tu_choi: string | null;
+            /** Ma Don */
+            ma_don: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /** SanPhamRut */
         app__modules__chuyen_mon__schemas_noi_dung__SanPhamRut: {
@@ -9055,6 +9229,39 @@ export interface operations {
     tai_tep_api_v1_tep__thu_muc___ten_tep__get: {
         parameters: {
             query?: never;
+            header?: never;
+            path: {
+                thu_muc: string;
+                ten_tep: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tai_tep_rieng_api_v1_tep_rieng__thu_muc___ten_tep__get: {
+        parameters: {
+            query: {
+                het_han: number;
+                ky: string;
+            };
             header?: never;
             path: {
                 thu_muc: string;
@@ -11761,6 +11968,121 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DonViHanhChinh"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    gui_api_v1_don_thuoc_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_gui_api_v1_don_thuoc_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YeuCauDonThuocTao"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    danh_sach_api_v1_toi_don_thuoc_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YeuCauDonThuocTom"][];
+                };
+            };
+        };
+    };
+    chi_tiet_api_v1_toi_don_thuoc__ma_yeu_cau__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ma_yeu_cau: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YeuCauDonThuocChiTiet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    huy_api_v1_toi_don_thuoc__ma_yeu_cau__huy_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ma_yeu_cau: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YeuCauDonThuocTom"];
                 };
             };
             /** @description Validation Error */

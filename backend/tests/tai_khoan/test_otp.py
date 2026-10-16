@@ -68,8 +68,8 @@ async def test_so_dien_thoai_sai_tra_400_dung_truong(client, kenh_tin_nhan, sdt)
     assert kenh_tin_nhan.sms == []
 
 
-@pytest.mark.parametrize("muc_dich", ["don_thuoc_khach", "khac", ""])
-async def test_t1_1_chi_ho_tro_muc_dich_da_lam(client, kenh_tin_nhan, muc_dich):
+@pytest.mark.parametrize("muc_dich", ["khac", ""])
+async def test_chi_ho_tro_muc_dich_hop_le(client, kenh_tin_nhan, muc_dich):
     phan_hoi = await xin_otp(client, muc_dich=muc_dich)
     assert phan_hoi.status_code == 400 and phan_hoi.json()["chi_tiet"][0]["truong"] == "muc_dich"
     assert kenh_tin_nhan.sms == []
@@ -178,3 +178,10 @@ def test_bam_mat_khau_khong_dung_cho_otp():
     """Hash OTP là HMAC nhanh có khóa, không phải Argon2 (mã 6 số chỉ sống 5 phút; Argon2 chỉ làm chậm server)."""
     assert not bam_otp(SDT, "dang_ky", "123456").startswith("$argon2")
     assert bam_mat_khau("123456").startswith("$argon2")
+
+
+async def test_otp_don_thuoc_khach_hop_le_voi_moi_so(client, kenh_tin_nhan):
+    """Khách vãng lai xin OTP gửi đơn thuốc: số nào cũng nhận mã (không cần tài khoản)."""
+    phan_hoi = await xin_otp(client, muc_dich="don_thuoc_khach")
+    assert phan_hoi.status_code == 200
+    assert len(kenh_tin_nhan.ma_otp_cuoi()) == 6

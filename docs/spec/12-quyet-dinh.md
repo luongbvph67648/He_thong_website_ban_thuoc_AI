@@ -338,3 +338,10 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **Khóa `KHOA_MA_HOA`**: thiếu, sai định dạng hoặc còn giá trị mẫu `doi-...` thì mã hóa/giải mã báo lỗi hệ thống; đổi khóa làm hồ sơ cũ không giải được (cần giữ khóa; xoay khóa chưa làm).
 - Ghi chú dị ứng (`di_ung.ghi_chu`) có trong API nhưng giao diện T5.1 chưa cho nhập.
 
+## QĐ-33: Gửi đơn thuốc và lưu trữ riêng tư (2026-10-16, task T5.2)
+- **Vùng riêng tư** của `core/luu_tru.py` là thư mục `rieng_tu/` (tách khỏi `cong_khai/`, không route tĩnh nào phục vụ). **URL ký** dùng khóa con `khoa_hmac("url_ky_tep_rieng_tu")` suy ra từ `JWT_SECRET`, nên biến `LUU_TRU_KHOA_KY` trong `.env.example` không còn dùng.
+- **Quyền ở lúc cấp URL, không ở lúc đọc:** thẻ `<img>` không gửi được token, nên file riêng tư đọc bằng URL ký (hạn 10 phút) và chỉ chủ yêu cầu (hoặc dược sĩ đang xử lý, T5.3) được nhận URL. Frontend không giữ lại URL cũ.
+- **Giới hạn spam:** 5 yêu cầu mỗi SĐT mỗi 24 giờ (hằng số trong mã, chưa đưa vào cấu hình Admin).
+- **`hash_anh`:** SHA-256 nội dung ảnh; nhiều ảnh thì băm các hash đã sắp xếp (cùng bộ ảnh, khác thứ tự vẫn trùng). Chỉ dùng để cảnh báo ở T5.3, không phải khóa duy nhất.
+- **Khách vãng lai** không có API xem lại yêu cầu; kết quả và link xác nhận gửi qua SMS ở T5.3. AI06 đọc ảnh (`ket_qua_ai`, `ct_yeu_cau_don_thuoc`) làm ở T7.6.
+

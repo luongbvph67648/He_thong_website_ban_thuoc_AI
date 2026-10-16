@@ -1,7 +1,8 @@
 """Lưu file (spec 08 mục 6): vùng CÔNG KHAI cho ảnh sản phẩm, banner, bài viết.
 
 Bản dev ghi vào thư mục `LUU_TRU_THU_MUC`; thay bằng S3/MinIO sau này qua cùng giao diện (`luu`, `doc`, `xoa`).
-Vùng riêng tư (ảnh đơn thuốc, chứng từ hoàn tiền, URL ký) làm ở các task dùng đến nó.
+Vùng RIÊNG TƯ (`vung="rieng_tu"`: ảnh đơn thuốc, ảnh đổi trả) không phục vụ tĩnh; chỉ đọc qua URL ký có hạn
+(`url_ky`, `kiem_tra_ky`) do service cấp cho chủ yêu cầu hoặc dược sĩ đang xử lý.
 
 - Kiểu file được nhận dạng theo NỘI DUNG (magic bytes), không tin tên file hay `Content-Type` của client.
 - Tên file lưu là UUID + đuôi theo kiểu đã nhận dạng; khóa (`san-pham/<uuid>.jpg`) chỉ gồm ký tự an toàn, nên không thể
@@ -11,13 +12,17 @@ Vùng riêng tư (ảnh đơn thuốc, chứng từ hoàn tiền, URL ký) làm 
 """
 
 import asyncio
+import hashlib
+import hmac
 import logging
 import re
+import time
 import uuid
 from pathlib import Path
 
 from sqlalchemy import event
 
+from app.core.bao_mat import khoa_hmac
 from app.core.config import BACKEND_DIR, settings
 
 logger = logging.getLogger(__name__)
@@ -66,21 +71,21 @@ class LuuTruCucBo:
     def __init__(self, goc: Path) -> None:
         self.goc = goc.resolve()
 
-    def _duong_dan(self, khoa: str) -> Path:
+    def _duong_dan(self, khoa: str, vung_luu: str = "cong_khai") -> Path:
         if not khoa_hop_le(khoa):
             raise ValueError(f"Khóa file không hợp lệ: {khoa!r}")
-        vung = (self.goc / "cong_khai").resolve()
+        vung = (self.goc / vung_luu).resolve()
         duong_dan = (vung / khoa).resolve()
         # Phải nằm trong VÙNG CÔNG KHAI chứ không chỉ trong thư mục lưu trữ: symlink từ `cong_khai/` sang `rieng_tu/`
         # (ảnh đơn thuốc) vẫn ở trong thư mục lưu trữ. Khóa đã qua regex nên chỉ symlink mới có thể làm ra ngoài.
         if not duong_dan.is_relative_to(vung):
-            raise ValueError(f"Khóa file trỏ ra ngoài vùng công khai: {khoa!r}")
+            raise ValueError(f"Khóa file trỏ ra ngoài vùng {vung_luu}: {khoa!r}")
         return duong_dan
 
-    async def luu(self, thu_muc: str, noi_dung: bytes, kieu_mime: str) -> str:
+    async def luu(self, thu_muc: str, noi_dung: bytes, kieu_mime: str, vung: str = "cong_khai") -> str:
         """Ghi file mới, trả khóa (`<thu_muc>/<uuid><đuôi>`). `kieu_mime` phải là kiểu đã nhận dạng từ nội dung."""
         khoa = f"{thu_muc}/{uuid.uuid4().hex}{KIEU_ANH[kieu_mime]}"
-        duong_dan = self._duong_dan(khoa)
+        duong_dan = self._duong_dan(khoa, vung)
 
         def ghi() -> None:
             duong_dan.parent.mkdir(parents=True, exist_ok=True)
@@ -89,8 +94,8 @@ class LuuTruCucBo:
         await asyncio.to_thread(ghi)
         return khoa
 
-    async def doc(self, khoa: str) -> bytes | None:
-        duong_dan = self._duong_dan(khoa)
+    async def doc(self, khoa: str, vung: str = "cong_khai") -> bytes | None:
+        duong_dan = self._duong_dan(khoa, vung)
 
         def doc_file() -> bytes | None:
             try:
@@ -100,8 +105,8 @@ class LuuTruCucBo:
 
         return await asyncio.to_thread(doc_file)
 
-    async def xoa(self, khoa: str) -> None:
-        duong_dan = self._duong_dan(khoa)
+    async def xoa(self, khoa: str, vung: str = "cong_khai") -> None:
+        duong_dan = self._duong_dan(khoa, vung)
         await asyncio.to_thread(lambda: duong_dan.unlink(missing_ok=True))
 
 
@@ -111,19 +116,19 @@ def luu_tru() -> LuuTruCucBo:
     return LuuTruCucBo(goc if goc.is_absolute() else BACKEND_DIR / goc)
 
 
-def _xoa_dong_bo(khoa: str) -> None:
+def _xoa_dong_bo(khoa: str, vung: str = "cong_khai") -> None:
     try:
-        luu_tru()._duong_dan(khoa).unlink(missing_ok=True)
+        luu_tru()._duong_dan(khoa, vung).unlink(missing_ok=True)
     except (OSError, ValueError):  # dọn dẹp tốt nhất có thể, không phá việc đã xong; để lại dấu vết cho ai dọn tay
         logger.warning("Không xóa được tệp công khai %s", khoa, exc_info=True)
 
 
-def xoa_sau_commit(db, khoa: str) -> None:
+def xoa_sau_commit(db, khoa: str, vung: str = "cong_khai") -> None:
     """Xóa file CHỈ KHI giao dịch của `db` commit (xóa bản ghi xong mới xóa file thật)."""
-    event.listen(db.sync_session, "after_commit", lambda _phien: _xoa_dong_bo(khoa), once=True)
+    event.listen(db.sync_session, "after_commit", lambda _phien: _xoa_dong_bo(khoa, vung), once=True)
 
 
-def xoa_neu_hoan_tac(db, khoa: str) -> None:
+def xoa_neu_hoan_tac(db, khoa: str, vung: str = "cong_khai") -> None:
     """Xóa file nếu giao dịch của `db` bị hủy (file vừa ghi mà bản ghi trỏ tới nó không được lưu).
 
     Chỉ tính hủy giao dịch ngoài cùng: rollback một savepoint (ví dụ bắt lỗi trùng rồi đi tiếp) không được xóa file.
@@ -131,6 +136,26 @@ def xoa_neu_hoan_tac(db, khoa: str) -> None:
 
     def khi_rollback(_phien, giao_dich) -> None:
         if giao_dich.parent is None:
-            _xoa_dong_bo(khoa)
+            _xoa_dong_bo(khoa, vung)
 
     event.listen(db.sync_session, "after_soft_rollback", khi_rollback)
+
+
+HAN_URL_KY_GIAY = 10 * 60
+"""URL ký của file riêng tư hết hạn sau 10 phút (spec 08 mục 6)."""
+TIEN_TO_URL_RIENG_TU = "/api/v1/tep-rieng/"
+
+
+def _chu_ky(khoa: str, het_han: int) -> str:
+    return hmac.new(khoa_hmac("url_ky_tep_rieng_tu"), f"{khoa}|{het_han}".encode(), hashlib.sha256).hexdigest()
+
+
+def url_ky(khoa: str, giay: int = HAN_URL_KY_GIAY) -> str:
+    """URL đọc file riêng tư có hạn. Chỉ gọi sau khi service đã kiểm quyền của người nhận URL."""
+    het_han = int(time.time()) + giay
+    return f"{TIEN_TO_URL_RIENG_TU}{khoa}?het_han={het_han}&ky={_chu_ky(khoa, het_han)}"
+
+
+def kiem_tra_ky(khoa: str, het_han: int, ky: str) -> bool:
+    """Chữ ký đúng và chưa hết hạn. So sánh chữ ký bằng hằng thời gian."""
+    return het_han > time.time() and hmac.compare_digest(_chu_ky(khoa, het_han), ky)

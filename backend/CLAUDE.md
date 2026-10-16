@@ -162,3 +162,4 @@ async def don_cua_toi(ma_don: str, kh: Annotated[KhachHang, Depends(khach_hien_t
 - Docstring tiếng Việt một dòng cho service public.
 - Không dùng `print`; dùng `logging.getLogger(__name__)`.
 - **Hồ sơ sức khỏe** (`modules/suc_khoe`, T5.1, QĐ-32): chỉ dược sĩ đọc qua `duoc_doc_ho_so_suc_khoe` / `doc_ho_so_cho_duoc_si` (ghi `doc_suc_khoe`, không ghi nội dung); `benh_nen` qua `core/ma_hoa.py` (Fernet). Thu hồi đồng ý = xóa hồ sơ, DB luôn có `dong_y_su_dung = true`. Test cần `KHOA_MA_HOA` (conftest đã đặt).
+- **Đơn thuốc phía khách** (`modules/don_thuoc`, T5.2, QĐ-33): ảnh ở vùng `rieng_tu`, chỉ đọc qua `luu_tru.url_ky` (cấp sau khi kiểm quyền); API khách lấy `khach_hang_id` từ token, yêu cầu của người khác là 404.

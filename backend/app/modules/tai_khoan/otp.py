@@ -108,7 +108,8 @@ async def gui_otp(
     ).first()
     # Đăng ký cần số CHƯA có tài khoản; lấy lại mật khẩu cần số ĐÃ có. Số không hợp lệ cho mục đích đó nhận tin báo thay
     # cho mã và một dòng giữ chỗ không khớp được.
-    hop_le = (tai_khoan is not None) == (muc_dich == "quen_mat_khau")
+    # Đơn thuốc của khách vãng lai: số nào cũng hợp lệ (chỉ cần chứng minh sở hữu số).
+    hop_le = muc_dich == "don_thuoc_khach" or (tai_khoan is not None) == (muc_dich == "quen_mat_khau")
     ma = f"{secrets.randbelow(10**6):06d}" if hop_le else None
 
     # Vô hiệu mã cũ chưa dùng: chỉ mã mới nhất có hiệu lực.

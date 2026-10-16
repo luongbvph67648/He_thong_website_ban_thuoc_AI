@@ -689,17 +689,17 @@ _Hồ sơ sức khỏe, gửi và duyệt đơn thuốc, tạo đơn từ đơn 
   - [x] Trang hồ sơ sức khỏe có màn đồng ý, chọn hoạt chất dị ứng.
 - **Ghi chú triển khai:** Module mới `modules/suc_khoe` (`dich_vu`, `router`, `schemas`) và `core/ma_hoa.py` (Fernet, khóa `KHOA_MA_HOA`, thêm phụ thuộc `cryptography`). API ở spec 06 mục 3.28: xem/lưu/xóa hồ sơ, gợi ý hoạt chất. Thu hồi đồng ý = xóa hồ sơ (QĐ-32). Hàm cổng `duoc_doc_ho_so_suc_khoe` kèm `doc_ho_so_cho_duoc_si`, chưa có route nội bộ (T5.3 và T7.x sẽ gọi). Giao diện `/tai-khoan/suc-khoe` (màn đồng ý, chọn hoạt chất dị ứng, xóa). Ghi chú từng dị ứng có ở API nhưng chưa có ô nhập trên giao diện. Test `tests/suc_khoe` (15) và `TrangSucKhoe.test.tsx` (4). `/review-nghiep-vu` gộp theo pha P5.
 
-### [ ] T5.2 · Gửi yêu cầu tư vấn đơn thuốc
+### [x] T5.2 · Gửi yêu cầu tư vấn đơn thuốc
 - **Chức năng:** KVL08 (Gửi yêu cầu tư vấn đơn thuốc), KTV07 (Gửi yêu cầu tư vấn đơn thuốc)
 - **Phụ thuộc:** T5.1
 - **Bảng:** `yeu_cau_don_thuoc`, `ct_yeu_cau_don_thuoc`, `ma_otp`, `don_hang`
 - **Tiêu chí chấp nhận:**
-  - [ ] Upload ảnh đơn vào lưu trữ riêng tư (spec 08), tính `hash_anh`; khách vãng lai xác thực SĐT bằng OTP (`don_thuoc_khach`).
-  - [ ] Khách thành viên xem danh sách/trạng thái yêu cầu của mình, hủy khi còn `cho_duyet`/`dang_tu_van`.
-  - [ ] Ảnh chỉ xem được qua URL ký có hạn bởi chủ yêu cầu hoặc dược sĩ đang xử lý.
+  - [x] Upload ảnh đơn vào lưu trữ riêng tư (spec 08), tính `hash_anh`; khách vãng lai xác thực SĐT bằng OTP (`don_thuoc_khach`).
+  - [x] Khách thành viên xem danh sách/trạng thái yêu cầu của mình, hủy khi còn `cho_duyet`/`dang_tu_van`.
+  - [x] Ảnh chỉ xem được qua URL ký có hạn bởi chủ yêu cầu hoặc dược sĩ đang xử lý.
 - **Giao diện:**
-  - [ ] Trang gửi đơn thuốc (chụp/tải ảnh), trang "Đơn thuốc của tôi".
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Trang gửi đơn thuốc (chụp/tải ảnh), trang "Đơn thuốc của tôi".
+- **Ghi chú triển khai:** Module `modules/don_thuoc` (`dich_vu`, `router`, `schemas`); vùng riêng tư và URL ký trong `core/luu_tru.py`, endpoint `GET /tep-rieng/...` ở `modules/tep`. API ở spec 06 mục 3.29, quyết định ở QĐ-33. OTP thêm mục đích `don_thuoc_khach`. Trang `/gui-don-thuoc` (OTP cho khách vãng lai) và `/tai-khoan/don-thuoc` (danh sách, xem ảnh, hủy). SMS kết quả và AI06 đọc ảnh làm ở T5.3 và T7.6. Test `tests/don_thuoc` (15), `DonThuoc.test.tsx` (5).
 
 ### [ ] T5.3 · Duyệt đơn thuốc và tạo đơn từ đơn thuốc
 - **Chức năng:** DS04 (Duyệt yêu cầu đơn thuốc), DS05 (Tạo đơn hàng từ đơn thuốc)

@@ -52,8 +52,8 @@ EmailBatBuoc = Annotated[str, BeforeValidator(_email_bat_buoc)]
 
 class OtpYeuCau(BaseModel):
     so_dien_thoai: SoDienThoai
-    # `don_thuoc_khach` thêm khi làm đơn thuốc của khách vãng lai (T5.x)
-    muc_dich: Literal["dang_ky", "quen_mat_khau"]
+    # `don_thuoc_khach`: khách vãng lai xác thực SĐT trước khi gửi ảnh đơn thuốc (KVL08)
+    muc_dich: Literal["dang_ky", "quen_mat_khau", "don_thuoc_khach"]
     # Gửi mã qua email của tài khoản (chỉ để lấy lại mật khẩu). Tài khoản chưa có email thì tự gửi SMS.
     kenh: Literal["sms", "email"] = "sms"
 
