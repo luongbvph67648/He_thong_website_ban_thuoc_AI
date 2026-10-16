@@ -11,6 +11,7 @@ from app.modules.ban_hang.het_han import KetQuaHt03, huy_don_qua_han
 from app.modules.ban_hang.tu_hoan_tat import KetQuaHt08Don, tu_hoan_tat_don
 from app.modules.kho.canh_bao import gui_thong_bao_ht02, nhan_vien_kho
 from app.modules.kho.lo_hang_ngay import KetQuaHt01, cap_nhat_trang_thai_lo
+from app.modules.thong_bao.nhac_mua_lai import KetQuaHt07, nhac_mua_lai
 from app.modules.thong_bao.service import gui_cho_nhan_vien
 
 GIU_LICH_SU_NGAY = 90
@@ -37,6 +38,10 @@ async def ht02_canh_bao_kho(db: AsyncSession) -> int:
 
 async def ht03_huy_qua_han(db: AsyncSession) -> KetQuaHt03:
     return await huy_don_qua_han(db)
+
+
+async def ht07_nhac_mua_lai(db: AsyncSession) -> KetQuaHt07:
+    return await nhac_mua_lai(db)
 
 
 async def ht08_tu_hoan_tat(db: AsyncSession) -> KetQuaHt08Don:

@@ -33,6 +33,7 @@ from app.models.he_thong import NhanVien
 from app.models.san_pham import SanPham
 from app.modules.kho import ton_kho
 from app.modules.khuyen_mai.ap_dung import tra_luot_khi_huy
+from app.modules.thong_bao import service as thong_bao
 
 TT = TrangThaiDon
 
@@ -467,8 +468,33 @@ async def _ghi(
     for so in chuyen.so:
         for hook in HOOK_THEO_DONG.get(so, []):
             await hook(db, don, tac_nhan)
+    if tu is not None:  # đơn mới tạo đã có thông báo riêng ở nơi tạo
+        await _bao_khach_trang_thai_don(db, don, chuyen.den, tac_nhan)
     await db.flush()
     return ls
+
+
+TIN_NHAN_TRANG_THAI: dict[TT, str] = {
+    TT.da_xac_nhan: "đã được nhà thuốc xác nhận",
+    TT.cho_lay_hang: "đã sẵn sàng để bạn đến nhận",
+    TT.dang_giao: "đang được giao",
+    TT.da_giao: "đã giao thành công",
+    TT.giao_that_bai: "giao không thành công",
+    TT.da_huy: "đã bị hủy",
+}
+
+
+async def _bao_khach_trang_thai_don(db: AsyncSession, don: DonHang, den: TT, tac_nhan: TacNhan) -> None:
+    """KTV13: báo khách có tài khoản khi đơn đổi trạng thái đáng chú ý (trừ thay đổi do chính khách làm)."""
+    if don.khach_hang_id is None or tac_nhan.loai == LoaiTacNhan.khach or den not in TIN_NHAN_TRANG_THAI:
+        return
+    await thong_bao.gui_cho_khach(
+        db,
+        don.khach_hang_id,
+        loai="don_hang",
+        tieu_de=f"Đơn {don.ma_don} {TIN_NHAN_TRANG_THAI[den]}",
+        lien_ket=f"/tai-khoan/don-hang/{don.ma_don}",
+    )
 
 
 def _chuan_ghi_chu(chuyen: Chuyen, ghi_chu: str | None) -> str | None:

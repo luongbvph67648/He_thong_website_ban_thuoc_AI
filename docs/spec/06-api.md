@@ -482,6 +482,12 @@ Dược sĩ (service chốt vai trò `PHARMACIST`):
 - `qa.answer`: `GET /noi-bo/kiem-duyet/hoi-dap?chua_tra_loi=`, `POST .../{id}/tra-loi {tra_loi}` (lần đầu thông báo khách, nội dung trả lời không nằm trong thông báo), `PUT .../{id}/hien-thi {dang_hien}`.
 - Chi tiết sản phẩm: `danh_gia.moi_nhat[].anh` là URL ảnh khách đính kèm.
 
+### 3.36 Thông báo của khách và nhắc mua lại (KTV13, KTV14, HT07, T6.5)
+- `GET /toi/thong-bao?da_doc=&trang=`, `GET /toi/thong-bao/so-chua-doc`, `POST /toi/thong-bao/{id}/da-doc`, `POST /toi/thong-bao/da-doc-tat-ca`: `khach_hang_id` lấy từ token; thông báo của người khác `404`.
+- Dịch vụ `thong_bao.service.gui_cho_khach`: ghi `thong_bao` rồi gửi SMS/email qua `KenhTinNhan` theo loại (`KENH_THEO_LOAI`: `don_hang` email; `don_thuoc`, `thu_hoi` SMS và email; `doi_tra`, `hoan_tien`, `nhac_mua_lai` email; `hoi_dap` chỉ trong ứng dụng). SMS chỉ có tiêu đề không dấu; lỗi nhà cung cấp chỉ ghi log.
+- Đơn đổi sang `da_xac_nhan`, `cho_lay_hang`, `dang_giao`, `da_giao`, `giao_that_bai`, `da_huy` thì báo khách có tài khoản (trừ thay đổi do chính khách làm), ở `ban_hang/trang_thai.py::_ghi`.
+- HT07 (`ht07_nhac_mua_lai`, 08:00 giờ VN): sản phẩm `dung_dinh_ky` có `so_ngay_dung_moi_don_vi`; ngày hết dự kiến = ngày giao + số lượng cơ sở x số ngày; nhắc khi còn <= 3 ngày và chưa quá 30 ngày sau ngày hết; chỉ xét lần mua gần nhất của mỗi cặp (khách, sản phẩm); dedupe bằng `thong_bao.lien_ket = /san-pham/{slug}?nhac={ct_don_hang_id}`.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

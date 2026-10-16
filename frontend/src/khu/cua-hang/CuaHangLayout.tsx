@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Button, Layout, Skeleton, Space } from 'antd'
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { dangXuatKhach } from '../../api/dangXuat'
+import { ChuongThongBao } from '../../components/ChuongThongBao'
 import { usePhien } from '../../stores/phien'
 import { ChanTrang } from './ChanTrang'
 import { MiniGioHang } from './gio-hang/MiniGioHang'
@@ -56,6 +57,7 @@ export default function CuaHangLayout() {
             </span>
           ) : khachDaDangNhap ? (
             <Space>
+              <ChuongThongBao phamVi="khach" />
               <Link to="/tai-khoan">
                 <UserOutlined /> {hoTen ?? 'Tài khoản'}
               </Link>

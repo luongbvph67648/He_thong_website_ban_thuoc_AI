@@ -129,8 +129,8 @@ describe('khu cửa hàng', () => {
   })
 
   it('các trang trong spec 2.1 có route (đang xây dựng) kèm mã chức năng', async () => {
-    renderTai('/tai-khoan/thong-bao')
-    expect(await screen.findByText(/KTV13/)).toBeInTheDocument()
+    renderTai('/tra-cuu-anh')
+    expect(await screen.findByText(/KTV|KVL/)).toBeInTheDocument()
   })
 
   it('/403 hiện trang không có quyền', async () => {

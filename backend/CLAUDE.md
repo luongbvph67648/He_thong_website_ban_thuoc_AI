@@ -169,3 +169,4 @@ async def don_cua_toi(ma_don: str, kh: Annotated[KhachHang, Depends(khach_hien_t
 - **Nhận hàng trả/hoàn** (`doi_tra/kho.py`, T6.2, QĐ-37): hàng khách trả vào biệt trữ qua `ton_kho.vao_biet_tru`; hàng hoàn nguyên niêm phong `hoan_nhap`, rồi `chuyen_trang_thai` dòng 27; hoàn tiền theo số thực nhận.
 - **Xác nhận hoàn tiền** (`hoan_tien/`, T6.3, QĐ-38): chỉ Admin; online qua `CongThanhToan.hoan_tien`, thủ công kèm chứng từ `rieng_tu`; người xác nhận ≠ `yeu_cau_doi_tra.duoc_si_id`; ẩn danh hóa tài khoản sau khi xong.
 - **Đánh giá/hỏi đáp** (`danh_gia/`, T6.4, QĐ-39): đánh giá khóa dòng `ct_don_hang` rồi kiểm trùng; kiểm duyệt chỉ dược sĩ (`dam_bao_la_duoc_si`).
+- **Thông báo khách** (`thong_bao/`, T6.5, QĐ-40): luôn qua `gui_cho_khach` (tự gửi SMS/email theo `KENH_THEO_LOAI`); đổi trạng thái đơn tự báo khách trong `_ghi`; job HT07 `nhac_mua_lai`.

@@ -124,7 +124,9 @@ describe('OTimKiem (ô tìm kiếm ở header)', () => {
     const o2 = await screen.findByLabelText('Tìm kiếm')
     await u.clear(o2)
     await u.type(o2, 'para')
-    await u.click(await screen.findByText('Hoạt chất'))
+    // danh sách gợi ý cũ có thể còn chạy hiệu ứng đóng (pointer-events: none): lấy phần tử cuối
+    await waitFor(async () => expect((await screen.findAllByText('Hoạt chất')).length).toBeGreaterThan(0))
+    await u.click((await screen.findAllByText('Hoạt chất')).at(-1)!)
     await waitFor(() => expect(router.state.location.pathname).toBe('/tim-kiem'))
     expect(router.state.location.search).toBe('?q=Paracetamol')
     // Ô giữ đúng tên đã chọn (không có hậu tố nội bộ), nên Enter tiếp theo tìm đúng từ khóa

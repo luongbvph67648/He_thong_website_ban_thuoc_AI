@@ -378,3 +378,11 @@ async def clients_theo_vai_tro(app, db):
     yield clients
     for c in clients.values():
         await c.aclose()
+
+
+@pytest.fixture(autouse=True)
+def thong_bao_dung_kenh_ghi_nho(monkeypatch, kenh_tin_nhan):
+    """Thông báo gửi cho khách (SMS/email ngoài ứng dụng) đi qua kênh ghi nhớ của test, không chạm SMTP thật."""
+    from app.modules.thong_bao import service as thong_bao_service
+
+    monkeypatch.setattr(thong_bao_service, "lay_kenh_tin_nhan", lambda: kenh_tin_nhan)

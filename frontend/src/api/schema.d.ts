@@ -2721,6 +2721,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/toi/thong-bao": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Thông báo của tôi (KTV13) */
+        get: operations["danh_sach_api_v1_toi_thong_bao_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/toi/thong-bao/so-chua-doc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Số thông báo chưa đọc */
+        get: operations["so_chua_doc_api_v1_toi_thong_bao_so_chua_doc_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/toi/thong-bao/da-doc-tat-ca": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Đánh dấu tất cả đã đọc */
+        post: operations["da_doc_tat_ca_api_v1_toi_thong_bao_da_doc_tat_ca_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/toi/thong-bao/{thong_bao_id}/da-doc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Đánh dấu một thông báo đã đọc */
+        post: operations["da_doc_api_v1_toi_thong_bao__thong_bao_id__da_doc_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/toi/danh-gia/cho": {
         parameters: {
             query?: never;
@@ -14413,6 +14481,113 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KetQuaKiemHoan"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    danh_sach_api_v1_toi_thong_bao_get: {
+        parameters: {
+            query?: {
+                /** @description true/false/bỏ trống */
+                da_doc?: boolean | null;
+                /** @description Số trang, bắt đầu từ 1 */
+                trang?: number;
+                /** @description Số dòng mỗi trang */
+                kich_thuoc?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Trang_ThongBaoDoc_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    so_chua_doc_api_v1_toi_thong_bao_so_chua_doc_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SoChuaDoc"];
+                };
+            };
+        };
+    };
+    da_doc_tat_ca_api_v1_toi_thong_bao_da_doc_tat_ca_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DaDocTatCa"];
+                };
+            };
+        };
+    };
+    da_doc_api_v1_toi_thong_bao__thong_bao_id__da_doc_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                thong_bao_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ThongBaoDoc"];
                 };
             };
             /** @description Validation Error */

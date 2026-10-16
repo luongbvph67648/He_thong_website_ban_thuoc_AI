@@ -52,6 +52,7 @@ from app.modules.tep.router_cong_khai import router as tep_router
 from app.modules.thanh_toan.router_khach import router as thanh_toan_khach_router
 from app.modules.thanh_toan.router_webhook import router as webhook_router
 from app.modules.thanh_toan.router_webhook import router_gia as webhook_gia_router
+from app.modules.thong_bao.router_khach import router as thong_bao_khach_router
 from app.modules.thong_bao.router_noi_bo import router as thong_bao_noi_bo_router
 from app.modules.vai_tro.router_noi_bo import router as vai_tro_noi_bo_router
 from app.modules.van_chuyen.router_webhook import router as webhook_van_chuyen_router
@@ -186,6 +187,7 @@ def create_app() -> FastAPI:
     app.include_router(don_thuoc_router, prefix="/api/v1")
     app.include_router(pos_router, prefix="/api/v1")
     app.include_router(doi_tra_router, prefix="/api/v1")
+    app.include_router(thong_bao_khach_router, prefix="/api/v1")
     app.include_router(danh_gia_router, prefix="/api/v1")
     app.include_router(hoan_tien_router, prefix="/api/v1")
     app.include_router(don_thuoc_noi_bo_router, prefix="/api/v1")

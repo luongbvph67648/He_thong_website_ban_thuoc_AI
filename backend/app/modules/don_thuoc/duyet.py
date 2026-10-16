@@ -412,7 +412,7 @@ async def tao_don(db: AsyncSession, nv: NhanVien, yc_id: int, vao: TaoDonVao, ke
         await thong_bao.gui_cho_khach(
             db,
             yc.khach_hang_id,
-            loai="don_thuoc",
+            loai="don_hang",  # thành viên không nhận SMS ở bước này (QĐ-34), chỉ thông báo trong ứng dụng và email
             tieu_de=f"Đơn {don.ma_don} từ đơn thuốc đã sẵn sàng, vui lòng xác nhận",
             lien_ket=f"/tai-khoan/don-hang/{don.ma_don}",
         )

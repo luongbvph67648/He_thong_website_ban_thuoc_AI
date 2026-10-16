@@ -390,3 +390,10 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **Giới hạn:** 10 câu hỏi/khách/24 giờ; ảnh đánh giá 3 ảnh, 5 MB, công khai.
 - **Chỉ dược sĩ** kiểm duyệt (Admin có mã quyền cũng bị chặn ở service, spec 03 mục 7).
 
+## QĐ-40: Thông báo của khách và nhắc mua lại (2026-10-16, task T6.5)
+- **Kênh theo loại sự kiện** là bảng cố định trong code (`KENH_THEO_LOAI`), chưa có tùy chọn bật/tắt của khách (spec không có).
+- **Không đưa nội dung nhạy cảm ra ngoài:** SMS chỉ gồm tiêu đề không dấu; email escape HTML; thông báo hỏi đáp không chứa nội dung trả lời.
+- **Dedupe nhắc mua lại** nhờ `lien_ket` chứa id dòng đơn, không thêm cột/bảng. Mua lại sản phẩm làm lần mua mới thành mốc tính, nhắc cũ không lặp.
+- **Ngày giao** lấy từ mốc `da_giao` mới nhất trong `lich_su_trang_thai`.
+- Tắt `gui_ngoai` trong test bằng kênh ghi nhớ (fixture autouse), test không chạm SMTP.
+

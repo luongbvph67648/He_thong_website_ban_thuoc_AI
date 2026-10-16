@@ -775,16 +775,16 @@ _Đổi trả, biệt trữ, hoàn tiền, đánh giá, hỏi đáp, thông báo
   - [x] Khối đánh giá và hỏi đáp trên trang chi tiết; màn kiểm duyệt cho dược sĩ.
 - **Ghi chú triển khai:** `modules/danh_gia/`; API spec 06 mục 3.35; QĐ-39 (hậu kiểm, giới hạn 10 câu hỏi/ngày, chỉ dược sĩ kiểm duyệt). Giao diện: tab Hỏi đáp và ảnh đánh giá ở trang sản phẩm, `/tai-khoan/danh-gia`, `/nhan-vien/kiem-duyet`. Test `tests/danh_gia` (7), `TrangKiemDuyet.test.tsx` (2).
 
-### [ ] T6.5 · Thông báo và nhắc mua lại
+### [x] T6.5 · Thông báo và nhắc mua lại
 - **Chức năng:** KTV13 (Nhận thông báo), HT07 (Gửi thông báo, nhắc mua lại), KTV14 (Nhắc mua lại)
 - **Phụ thuộc:** T4.9
 - **Bảng:** `thong_bao`, `ct_don_hang`, `san_pham`
 - **Tiêu chí chấp nhận:**
-  - [ ] Dịch vụ `thong_bao.gui(...)`: ghi bảng `thong_bao` + gửi email/SMS qua adapter theo loại sự kiện (đơn hàng, đơn thuốc, đổi trả, thu hồi).
-  - [ ] HT07 hằng ngày 08:00: với sản phẩm `dung_dinh_ky`, ngày hết dự kiến = ngày giao + số lượng cơ sở × `so_ngay_dung_moi_don_vi`; nhắc trước 3 ngày, không nhắc trùng.
+  - [x] Dịch vụ `thong_bao.gui(...)`: ghi bảng `thong_bao` + gửi email/SMS qua adapter theo loại sự kiện (đơn hàng, đơn thuốc, đổi trả, thu hồi).
+  - [x] HT07 hằng ngày 08:00: với sản phẩm `dung_dinh_ky`, ngày hết dự kiến = ngày giao + số lượng cơ sở × `so_ngay_dung_moi_don_vi`; nhắc trước 3 ngày, không nhắc trùng.
 - **Giao diện:**
-  - [ ] Chuông thông báo và trang thông báo của khách.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Chuông thông báo và trang thông báo của khách.
+- **Ghi chú triển khai:** `thong_bao/service.gui_cho_khach` (+SMS/email theo loại), `router_khach.py`, `nhac_mua_lai.py`; hook báo khách đổi trạng thái đơn trong `trang_thai._ghi`; job `ht07_nhac_mua_lai` 08:00; API spec 06 mục 3.36; QĐ-40. Giao diện: chuông thông báo của khách ở header (dùng lại `ChuongThongBao`), trang `/tai-khoan/thong-bao`. Test `tests/thong_bao/test_thong_bao_khach.py` (6), `TrangThongBao.test.tsx`.
 
 ### [ ] T6.6 · Thu hồi lô
 - **Chức năng:** AD13 (Khởi tạo lệnh thu hồi lô), KHO12 (Thực hiện thu hồi lô), DS13 (Liên hệ khách khi thu hồi lô)
