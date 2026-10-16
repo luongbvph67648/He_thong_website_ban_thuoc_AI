@@ -6,6 +6,8 @@ from app.core.log import cau_hinh_log
 from app.core.loi import dang_ky_xu_ly_loi
 from app.core.middleware import HEADER_REQUEST_ID, RequestIdMiddleware
 from app.health import router as health_router
+from app.modules.he_thong.router_cau_hinh import router as cau_hinh_router
+from app.modules.he_thong.router_nhat_ky import router as nhat_ky_router
 from app.modules.nhan_vien.router_auth import router as nhan_vien_auth_router
 from app.modules.nhan_vien.router_noi_bo import router as nhan_vien_noi_bo_router
 from app.modules.nhan_vien.router_quan_tri import router as nhan_vien_quan_tri_router
@@ -39,6 +41,8 @@ def create_app() -> FastAPI:
     app.include_router(nhan_vien_quan_tri_router, prefix="/api/v1")
     app.include_router(vai_tro_noi_bo_router, prefix="/api/v1")
     app.include_router(khach_hang_quan_tri_router, prefix="/api/v1")
+    app.include_router(cau_hinh_router, prefix="/api/v1")
+    app.include_router(nhat_ky_router, prefix="/api/v1")
     return app
 
 

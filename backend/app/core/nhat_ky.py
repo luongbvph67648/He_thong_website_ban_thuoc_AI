@@ -1,7 +1,9 @@
 """Nhật ký hệ thống (`nhat_ky_he_thong`, chỉ INSERT): ai làm gì, trên bản ghi nào, lúc nào, từ IP nào.
 
 Không bao giờ ghi mật khẩu, OTP, token hay dữ liệu sức khỏe dạng rõ (CLAUDE.md quy tắc 7, spec 03 mục 5.1): mọi giá trị
-cũ/mới đi qua `che_du_lieu_nhay_cam`: giá trị của các khóa nhạy cảm bị thay bằng `"***"` dù người gọi có quên.
+cũ/mới đi qua `che_du_lieu_nhay_cam`: giá trị của các khóa nhạy cảm bị thay bằng `"***"` dù người gọi có quên. Với bảng
+sức khỏe (`BANG_DU_LIEU_SUC_KHOE`) chỉ ghi bảng và id bản ghi, mọi giá trị bị bỏ. AD15 (xem nhật ký) áp lại cùng
+các quy tắc này lúc ĐỌC (`che_khi_doc`) phòng dòng cũ ghi trước khi có quy tắc.
 Hàm không commit; nhật ký nằm trong cùng transaction với thao tác được ghi.
 """
 
@@ -26,7 +28,14 @@ DOAN_KHOA_NHAY_CAM = (
     "di_ung",
     "suc_khoe",
     "khoa_ma_hoa",
+    "dang_mang_thai",
+    "dang_cho_con_bu",
+    "nam_sinh",
+    "thong_tin_nhan_hoan",
 )
+
+# Bảng chứa dữ liệu sức khỏe: nhật ký chỉ có `bang` và `ban_ghi_id`, không bao giờ có giá trị (spec 03 mục 5.1).
+BANG_DU_LIEU_SUC_KHOE = frozenset({"ho_so_suc_khoe", "di_ung"})
 
 
 def la_khoa_nhay_cam(khoa: str) -> bool:
@@ -43,9 +52,16 @@ def che_du_lieu_nhay_cam(gia_tri: Any) -> Any:
     return gia_tri
 
 
-def _chuan_bi(gia_tri: Any) -> Any:
+def che_khi_doc(bang: str, gia_tri: Any) -> Any:
+    """Giá trị nhật ký an toàn để trả cho người xem: bảng sức khỏe luôn `None`, còn lại che khóa nhạy cảm."""
+    return None if bang in BANG_DU_LIEU_SUC_KHOE else che_du_lieu_nhay_cam(gia_tri)
+
+
+def _chuan_bi(bang: str, gia_tri: Any) -> Any:
+    if gia_tri is None or bang in BANG_DU_LIEU_SUC_KHOE:
+        return None
     # `to_jsonable_python` đổi Decimal sang chuỗi (không qua float), nên tiền không mất độ chính xác trong nhật ký.
-    return None if gia_tri is None else che_du_lieu_nhay_cam(to_jsonable_python(gia_tri))
+    return che_du_lieu_nhay_cam(to_jsonable_python(gia_tri))
 
 
 async def ghi_nhat_ky(
@@ -62,15 +78,15 @@ async def ghi_nhat_ky(
     """Ghi một dòng nhật ký. `nhan_vien_id = None` là hệ thống hoặc người chưa xác định (đăng nhập thất bại).
 
     `hanh_dong`: `tao`, `sua`, `xoa`, `duyet`, `dang_nhap`, `khoa_tam`, `doi_mat_khau`, `doc_suc_khoe`...
-    Với dữ liệu sức khỏe chỉ ghi `bang` và `ban_ghi_id`, không truyền giá trị.
+    Với dữ liệu sức khỏe chỉ ghi `bang` và `ban_ghi_id`: giá trị truyền vào (nếu có) bị bỏ.
     """
     dong = NhatKyHeThong(
         nhan_vien_id=nhan_vien_id,
         hanh_dong=hanh_dong,
         bang=bang,
         ban_ghi_id=None if ban_ghi_id is None else str(ban_ghi_id),
-        gia_tri_cu=_chuan_bi(gia_tri_cu),
-        gia_tri_moi=_chuan_bi(gia_tri_moi),
+        gia_tri_cu=_chuan_bi(bang, gia_tri_cu),
+        gia_tri_moi=_chuan_bi(bang, gia_tri_moi),
         ip=ip,
     )
     db.add(dong)

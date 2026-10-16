@@ -78,7 +78,9 @@ async def test_quyen_luu_nhom_va_mo_ta(db):
 def doc_bang_cau_hinh_tu_spec() -> dict:
     """Đọc bảng `cau_hinh` ở spec 02 mục 6: spec là nguồn sự thật nên seed phải khớp từng khóa."""
     noi_dung = SPEC_DATABASE.read_text(encoding="utf-8")
-    phan = noi_dung.split("- **`cau_hinh`:**", 1)[1].split("- **Dữ liệu mẫu", 1)[0]
+    phan = noi_dung.split("- **`cau_hinh`:**", 1)[1].split("- **Kiểu và giới hạn", 1)[
+        0
+    ]  # trước bảng kiểu/giới hạn của AD08
     ket_qua: dict = {}
     for dong in phan.splitlines():
         o = [c.strip() for c in dong.strip().strip("|").split("|")]

@@ -20,7 +20,7 @@ export function dinhDangTien(gia: string | number | null | undefined): string {
   return `${dong === 0n ? '' : dau}${nhom}${NBSP}₫`
 }
 
-export type KieuNgay = 'ngay' | 'gio' | 'ngayGio'
+export type KieuNgay = 'ngay' | 'gio' | 'ngayGio' | 'ngayGioGiay'
 
 function hopLeNgayThuan(nam: number, thang: number, ngay: number): boolean {
   const d = new Date(Date.UTC(nam, thang - 1, ngay))
@@ -55,6 +55,7 @@ export function dinhDangNgay(gia: string | Date | null | undefined, kieu: KieuNg
       day: '2-digit',
       hour: '2-digit',
       minute: '2-digit',
+      second: '2-digit',
       hourCycle: 'h23',
     })
       .formatToParts(thoiDiem)
@@ -62,5 +63,7 @@ export function dinhDangNgay(gia: string | Date | null | undefined, kieu: KieuNg
   )
   const ngayStr = `${phan.day}/${phan.month}/${phan.year}`
   const gioStr = `${phan.hour}:${phan.minute}`
-  return kieu === 'ngay' ? ngayStr : kieu === 'gio' ? gioStr : `${ngayStr} ${gioStr}`
+  if (kieu === 'ngay') return ngayStr
+  if (kieu === 'gio') return gioStr
+  return `${ngayStr} ${gioStr}${kieu === 'ngayGioGiay' ? `:${phan.second}` : ''}`
 }

@@ -560,6 +560,77 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/noi-bo/cau-hinh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Danh sách cấu hình hệ thống (AD08) */
+        get: operations["danh_sach_api_v1_noi_bo_cau_hinh_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/cau-hinh/{khoa}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * Đặt giá trị của một khóa cấu hình (AD08)
+         * @description Giá trị được kiểm tra kiểu và khoảng theo từng khóa; `phien_ban` phải là bản vừa đọc, nếu không là 409.
+         */
+        put: operations["cap_nhat_api_v1_noi_bo_cau_hinh__khoa__put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/nhat-ky": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tra cứu nhật ký hệ thống (AD15) */
+        get: operations["tra_cuu_api_v1_noi_bo_nhat_ky_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/nhat-ky/gia-tri-loc": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Các bảng và hành động đang có trong nhật ký (AD15) */
+        get: operations["gia_tri_loc_api_v1_noi_bo_nhat_ky_gia_tri_loc_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -602,6 +673,44 @@ export interface components {
             token_type: "bearer";
             /** Het Han Giay */
             het_han_giay: number;
+        };
+        /** CauHinhCapNhat */
+        CauHinhCapNhat: {
+            /** Gia Tri */
+            gia_tri: unknown;
+            /** Phien Ban */
+            phien_ban: string;
+        };
+        /** CauHinhDoc */
+        CauHinhDoc: {
+            /** Khoa */
+            khoa: string;
+            /** Nhom */
+            nhom: string;
+            /** Nhan */
+            nhan: string;
+            /** Mo Ta */
+            mo_ta: string | null;
+            /**
+             * Kieu
+             * @enum {string}
+             */
+            kieu: "so" | "tien" | "nhom_so" | "gio_lam_viec";
+            /** Don Vi */
+            don_vi: string | null;
+            /** Toi Thieu */
+            toi_thieu: number | null;
+            /** Toi Da */
+            toi_da: number | null;
+            /** Truong */
+            truong: components["schemas"]["TruongSoDoc"][];
+            /** Gia Tri */
+            gia_tri: unknown;
+            /** Phien Ban */
+            phien_ban: string;
+            nhan_vien_cap_nhat: components["schemas"]["NhanVienTomTat"] | null;
+            /** Updated At */
+            updated_at: string | null;
         };
         /** DaDocTatCa */
         DaDocTatCa: {
@@ -694,6 +803,13 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** GiaTriLocNhatKy */
+        GiaTriLocNhatKy: {
+            /** Bang */
+            bang: string[];
+            /** Hanh Dong */
+            hanh_dong: string[];
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -881,6 +997,41 @@ export interface components {
                 [key: string]: "day_du" | "chi_xem";
             };
         };
+        /**
+         * NhanVienTomTat
+         * @description Người thực hiện: chỉ id, mã và tên (không email, không số điện thoại).
+         */
+        NhanVienTomTat: {
+            /** Id */
+            id: number;
+            /** Ma Nhan Vien */
+            ma_nhan_vien: string;
+            /** Ho Ten */
+            ho_ten: string;
+        };
+        /** NhatKyDoc */
+        NhatKyDoc: {
+            /** Id */
+            id: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            nhan_vien: components["schemas"]["NhanVienTomTat"] | null;
+            /** Hanh Dong */
+            hanh_dong: string;
+            /** Bang */
+            bang: string;
+            /** Ban Ghi Id */
+            ban_ghi_id: string | null;
+            /** Gia Tri Cu */
+            gia_tri_cu: unknown;
+            /** Gia Tri Moi */
+            gia_tri_moi: unknown;
+            /** Ip */
+            ip: string | null;
+        };
         /** OtpPhanHoi */
         OtpPhanHoi: {
             /** Da Gui */
@@ -1025,6 +1176,17 @@ export interface components {
             /** Kich Thuoc */
             kich_thuoc: number;
         };
+        /** Trang[NhatKyDoc] */
+        Trang_NhatKyDoc_: {
+            /** Du Lieu */
+            du_lieu: components["schemas"]["NhatKyDoc"][];
+            /** Tong */
+            tong: number;
+            /** Trang */
+            trang: number;
+            /** Kich Thuoc */
+            kich_thuoc: number;
+        };
         /** Trang[ThongBaoDoc] */
         Trang_ThongBaoDoc_: {
             /** Du Lieu */
@@ -1035,6 +1197,19 @@ export interface components {
             trang: number;
             /** Kich Thuoc */
             kich_thuoc: number;
+        };
+        /** TruongSoDoc */
+        TruongSoDoc: {
+            /** Ten */
+            ten: string;
+            /** Nhan */
+            nhan: string;
+            /** Don Vi */
+            don_vi: string | null;
+            /** Toi Thieu */
+            toi_thieu: number;
+            /** Toi Da */
+            toi_da: number;
         };
         /** VaiTroChiTiet */
         VaiTroChiTiet: {
@@ -2140,6 +2315,127 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    danh_sach_api_v1_noi_bo_cau_hinh_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CauHinhDoc"][];
+                };
+            };
+        };
+    };
+    cap_nhat_api_v1_noi_bo_cau_hinh__khoa__put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                khoa: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CauHinhCapNhat"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CauHinhDoc"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tra_cuu_api_v1_noi_bo_nhat_ky_get: {
+        parameters: {
+            query?: {
+                /** @description Tên bảng, khớp chính xác */
+                bang?: string | null;
+                /** @description Id bản ghi, khớp chính xác */
+                ban_ghi_id?: string | null;
+                /** @description Người thực hiện */
+                nhan_vien_id?: number | null;
+                /** @description Hành động, khớp chính xác */
+                hanh_dong?: string | null;
+                /** @description Từ ngày (giờ Việt Nam), gồm cả ngày này */
+                tu_ngay?: string | null;
+                /** @description Đến ngày (giờ Việt Nam), gồm cả ngày này */
+                den_ngay?: string | null;
+                /** @description Số trang, bắt đầu từ 1 */
+                trang?: number;
+                /** @description Số dòng mỗi trang */
+                kich_thuoc?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Trang_NhatKyDoc_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    gia_tri_loc_api_v1_noi_bo_nhat_ky_gia_tri_loc_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GiaTriLocNhatKy"];
                 };
             };
         };

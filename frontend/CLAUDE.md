@@ -41,6 +41,8 @@ src/
 - **Đồng bộ phiên nội bộ:** `KhungNoiBo` gọi `useDongBoPhienNoiBo` (`GET /noi-bo/toi` khi focus lại cửa sổ và mỗi 5 phút, cập nhật vai trò/quyền vào store) để Admin đổi phân quyền thì menu của nhân viên đang mở đổi theo. Test sự kiện focus phải phát `visibilitychange` trên `window` (TanStack Query nghe ở `window`, sự kiện phát từ `document` mà không nổi bọt sẽ không tới).
 - **Liên kết trong trang con của khu quản trị/nhân viên** phải giữ tiền tố khu (`/quan-tri`, `/nhan-vien`): dựng từ `useLocation().pathname` hoặc dùng `<Link to=".." relative="path">`, không viết cứng `/khach-hang/1` (sẽ bật ra khu cửa hàng). Test trang con có ca chạy dưới tiền tố (`dung(duong, quyen, '/quan-tri')`).
 - **Trạng thái đơn, thanh toán, kênh bán:** dùng `<NhanTrangThai loai=... giaTri=...>` (`lib/trangThai.ts`); thêm giá trị enum ở backend thì test `trangThai.test.ts` (đối chiếu `schema.d.ts`) báo thiếu nhãn.
+- **Ô số có khoảng giá trị** (AD08...): không đặt `min`/`max` cho `InputNumber` của antd (nó âm thầm ép giá trị về khoảng); kiểm tra bằng hàm riêng (`lib/cauHinh.ts`), báo lỗi và tắt nút Lưu. Lưu cấu hình/phân quyền gửi kèm `phien_ban`; gặp 409 thì tải lại bản mới nhưng giữ giá trị người dùng đang gõ.
+- **Giờ đến giây** (nhật ký): `dinhDangNgay(x, 'ngayGioGiay')`.
 - **Mật khẩu tạm** (AD01) chỉ nằm trong state của một Modal mount có điều kiện: đóng là biến khỏi DOM, không lưu ở store/cache/URL.
 - **Thông báo nội bộ:** `components/ChuongThongBao.tsx` (query key `['noi-bo', 'thong-bao', ...]`, làm mới mỗi phút). Chỉ điều hướng tới `lien_ket` khi là đường dẫn nội bộ. Không dùng antd `List` (deprecated từ 6.6): dùng phần tử tự dựng hoặc `<button>`.
 - **Hiển thị**

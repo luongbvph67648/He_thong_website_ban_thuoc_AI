@@ -136,4 +136,24 @@ Ràng buộc "mỗi đơn có tối đa 1 vận đơn `giao_hang` còn hiệu l�
 | `ai_nguong_chuyen_duoc_si` | `0.6` | AI04 |
 | `ai_loi_nhac_bo_sung` | `""` | AD09 (nối vào cuối system prompt khi mở phiên chat mới) |
 
+- **Kiểu và giới hạn (AD08 kiểm tra khi Admin sửa, `core/cau_hinh_khoa.py`):** giá trị là số nguyên thật (không nhận `5.0`, `"5"`, `true`) trong khoảng dưới đây; giá trị tiền là số đồng nguyên. Mọi giá trị mặc định ở bảng trên phải hợp lệ (có test). Bốn khóa `ai_module`, `ai_dau_hieu_nguy_hiem`, `ai_nguong_chuyen_duoc_si`, `ai_loi_nhac_bo_sung` thuộc AD09 (mã quyền `ai.config`): AD08 không liệt kê và không sửa chúng.
+
+| Khóa | Nhóm (chủ đề hiển thị) | Kiểu | Giới hạn |
+|---|---|---|---|
+| `nguong_can_han_ngay` | Hàng và hạn dùng | số nguyên, ngày | 1 đến 730 |
+| `han_su_dung_toi_thieu_nhap_ngay` | Hàng và hạn dùng | số nguyên, ngày | 1 đến 1095 |
+| `thoi_han_thanh_toan_phut` | Đơn hàng và thanh toán | số nguyên, phút | 5 đến 1440 |
+| `thoi_han_khach_xac_nhan_gio` | Đơn hàng và thanh toán | số nguyên, giờ | 1 đến 168 |
+| `thoi_han_doi_tra_ngay` | Đơn hàng và thanh toán | số nguyên, ngày | 1 đến 365 |
+| `thoi_han_nhan_tai_quay_ngay` | Đơn hàng và thanh toán | số nguyên, ngày | 1 đến 30 |
+| `thoi_gian_khoa_don_thuoc_phut` | Đơn thuốc | số nguyên, phút | 5 đến 240 |
+| `hieu_luc_don_thuoc_ngay` | Đơn thuốc | số nguyên, ngày | 1 đến 365 |
+| `phi_ship_mac_dinh` | Vận chuyển | tiền (đồng nguyên) | 0 đến 1.000.000 |
+| `mien_phi_ship_tu` | Vận chuyển | tiền (đồng nguyên) | 0 đến 100.000.000 (0 là luôn miễn phí) |
+| `so_lan_dang_nhap_sai_toi_da` | Bảo mật đăng nhập | số nguyên, lần | 3 đến 20 (dưới 3 thì ai cũng khóa tạm được tài khoản người khác chỉ bằng vài lần thử) |
+| `thoi_gian_khoa_dang_nhap_phut` | Bảo mật đăng nhập | số nguyên, phút | 1 đến 1440 |
+| `gioi_han_otp` | Bảo mật đăng nhập | đối tượng đúng hai trường | `moi_sdt_moi_gio` 1 đến 20; `moi_ip_moi_gio` 1 đến 200 |
+| `gioi_han_ai` | Giới hạn dùng AI | đối tượng đúng ba trường | `chat_moi_phien` 1 đến 500; `chat_moi_ip_moi_ngay` 1 đến 5000; `tra_anh_moi_ip_moi_ngay` 1 đến 500 |
+| `gio_lam_viec_duoc_si` | Giờ làm việc | đối tượng `{bat_dau, ket_thuc, ngay_trong_tuan}` | `bat_dau`, `ket_thuc` dạng `HH:MM` (00:00 đến 23:59), `bat_dau` < `ket_thuc` (ca qua nửa đêm chưa hỗ trợ); `ngay_trong_tuan` là danh sách không rỗng, không trùng, mỗi phần tử 1 (thứ hai) đến 7 (chủ nhật) |
+
 - **Dữ liệu mẫu (`--mau`):** xem tiêu chí T0.5 trong lộ trình. Mọi giá trị mẫu phải hợp lệ với mục 4.

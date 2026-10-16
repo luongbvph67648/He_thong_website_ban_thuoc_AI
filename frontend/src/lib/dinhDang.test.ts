@@ -43,6 +43,9 @@ describe('dinhDangNgay (múi giờ Asia/Ho_Chi_Minh)', () => {
     expect(dinhDangNgay('2026-10-15T16:59:59Z')).toBe('15/10/2026')
     expect(dinhDangNgay('2026-10-15T17:30:00Z', 'gio')).toBe('00:30')
     expect(dinhDangNgay('2026-10-15T17:30:00Z', 'ngayGio')).toBe('16/10/2026 00:30')
+    expect(dinhDangNgay('2026-10-15T17:30:45Z', 'ngayGioGiay')).toBe('16/10/2026 00:30:45') // nhật ký cần đến giây
+    expect(dinhDangNgay('2026-10-15T16:59:59Z', 'ngayGioGiay')).toBe('15/10/2026 23:59:59')
+    expect(dinhDangNgay('2026-12-31', 'ngayGioGiay')).toBe('31/12/2026') // ngày thuần không có giờ
   })
 
   it('hiểu cả chuỗi có offset và đối tượng Date', () => {

@@ -114,6 +114,22 @@ Mọi route dưới `/api/v1/noi-bo/khach-hang`; đọc cần mức `xem`, ghi c
 - `POST /noi-bo/khach-hang/{khach_id}/mo-khoa` -> chi tiết: `trang_thai = hoat_dong`, xóa `khoa_den` (khóa tạm do đoán mật khẩu) và bộ đếm đăng nhập sai. Đã bình thường thì gọi lại vẫn 200, không ghi nhật ký. Lưu ý (giới hạn đã chấp nhận, QĐ-14): access token cấp TRƯỚC lúc khóa dùng lại được nếu mở khóa trước khi nó hết hạn (tối đa `JWT_ACCESS_PHUT` = 15 phút), vì token không tra DB phiên; refresh token đã thu hồi thì vẫn chết.
 - Nhật ký `khoa`, `mo_khoa` (bảng `khach_hang`, `ban_ghi_id` = id khách): `gia_tri_moi = {ly_do}` nếu có. Hệ thống không tự ghi số điện thoại, email hay dữ liệu sức khỏe của khách; riêng `ly_do` là văn bản Admin tự nhập nên KHÔNG được kiểm tra nội dung (giao diện nhắc không nhập thông tin cá nhân hay sức khỏe).
 
+### 3.7 Cấu hình hệ thống (AD08, `config.manage`)
+Mọi route dưới `/api/v1/noi-bo/cau-hinh`; đọc cần mức `xem`, ghi cần `day_du` VÀ người thực hiện thuộc vai trò ADMIN (`dam_bao_la_admin`, như mục 3.4). Danh sách khóa, kiểu và giới hạn: spec 02 mục 6. Bốn khóa `ai_*` thuộc AD09 nên không có ở đây (`PUT` vào chúng là `404`).
+- `GET /noi-bo/cau-hinh` -> `[{khoa, nhom, nhan, mo_ta, kieu, don_vi, toi_thieu, toi_da, truong, gia_tri, phien_ban, nhan_vien_cap_nhat: {id, ma_nhan_vien, ho_ten} | null, updated_at}]`, đã xếp theo nhóm (chủ đề) rồi theo thứ tự hiển thị. `kieu` là `so`, `tien`, `nhom_so` (đối tượng gồm các số, mô tả ở `truong: [{ten, nhan, don_vi, toi_thieu, toi_da}]`) hoặc `gio_lam_viec`. Giao diện dựng ô nhập từ các trường này, backend vẫn kiểm tra lại toàn bộ. Khóa chưa có trong bảng (chưa seed) vẫn được liệt kê với `gia_tri = null`.
+- `PUT /noi-bo/cau-hinh/{khoa}` `{gia_tri, phien_ban}` -> một phần tử như trên. Đặt đúng giá trị mới của khóa; ghi `nhan_vien_cap_nhat_id`, `updated_at`; có hiệu lực ngay vì mọi nơi đọc `cau_hinh` mỗi lần dùng.
+  - `400 DU_LIEU_KHONG_HOP_LE` (kèm `chi_tiet: [{truong, loi}]`, `truong` dạng `gia_tri` hoặc `gia_tri.<tên trường>`) khi sai kiểu, ngoài khoảng, thiếu hoặc thừa trường, hoặc `phien_ban` sai định dạng.
+  - `409 DU_LIEU_DA_THAY_DOI` khi `phien_ban` (dấu vân tay nội dung 16 ký tự hex của giá trị hiện tại, đọc ở `GET`) không còn khớp: Admin khác vừa sửa khóa này. Không ghi gì.
+  - Đặt đúng giá trị hiện tại thì trả 200 và không ghi nhật ký. Khóa dòng `cau_hinh` `FOR UPDATE` nên hai Admin sửa cùng khóa được tuần tự hóa.
+  - Nhật ký `sua` (bảng `cau_hinh`, `ban_ghi_id` = khóa) với giá trị cũ và mới.
+
+### 3.8 Nhật ký hệ thống (AD15, `audit.view`)
+Chỉ đọc; mọi route dưới `/api/v1/noi-bo/nhat-ky`, mức `xem`.
+- `GET /noi-bo/nhat-ky?bang=&ban_ghi_id=&nhan_vien_id=&hanh_dong=&tu_ngay=&den_ngay=&trang=&kich_thuoc=` -> trang `{id, created_at, nhan_vien: {id, ma_nhan_vien, ho_ten} | null, hanh_dong, bang, ban_ghi_id, gia_tri_cu, gia_tri_moi, ip}`, mới nhất trước (`created_at`, rồi `id` giảm dần). `bang`, `ban_ghi_id`, `hanh_dong` khớp chính xác; `tu_ngay`, `den_ngay` là ngày theo giờ Việt Nam, gồm cả hai đầu (`tu_ngay` lớn hơn `den_ngay` là `400`); các bộ lọc kết hợp bằng AND. `nhan_vien = null` là hệ thống hoặc người chưa xác định (đăng nhập thất bại). Không có email hay số điện thoại của nhân viên.
+- `GET /noi-bo/nhat-ky/gia-tri-loc` -> `{bang: [...], hanh_dong: [...]}`: các giá trị đang có trong nhật ký (tối đa 200 mỗi loại), để giao diện dựng ô lọc.
+- **Dữ liệu sức khỏe không bao giờ ra khỏi nhật ký (spec 03 mục 5.1, CLAUDE.md quy tắc 7):** với bảng `ho_so_suc_khoe`, `di_ung` chỉ có `bang`, `ban_ghi_id`, hành động, người và thời gian; `gia_tri_cu`, `gia_tri_moi` luôn `null` (bị bỏ ngay lúc ghi, và che lại lần nữa lúc đọc nếu dữ liệu cũ có sót). Mọi giá trị còn lại cũng được che theo tên khóa nhạy cảm lúc đọc (mật khẩu, OTP, token, hash, bệnh nền, thai kỳ, năm sinh, thông tin nhận hoàn tiền...).
+- Nhật ký chỉ INSERT: không có route sửa hay xóa.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

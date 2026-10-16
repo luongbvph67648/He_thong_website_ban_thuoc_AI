@@ -280,16 +280,22 @@ _Đăng ký/đăng nhập 2 loại tài khoản, RBAC, nhật ký, cấu hình._
   - **Rà soát nghiệp vụ (agent `nghiep-vu-reviewer`): không có mức Cao; 1 Trung bình đã sửa, 5 Thấp ghi ở "Việc phát sinh" hoặc spec/QĐ.** M1: nút chuyển trang ở danh sách khách không hoạt động (antd gọi `Table.onChange` sau `pagination.onChange` và xử lý sắp xếp xóa mất `trang` vừa đặt; test cũ chỉ mở sẵn `?trang=2`); sửa bằng cách chỉ xử lý khi `extra.action === 'sort'`, có test bấm trang 1, 2, 3 và đổi sắp xếp ở trang 2. L2 (mở khóa làm access token cũ dùng lại được tối đa 15 phút) và L3 (`ly_do` không được kiểm tra nội dung) ghi thành giới hạn ở spec 06 mục 3.6 và QĐ-14.
   - **Việc để task sau:** trang Nhân viên (AD01) chưa có cột bấm sắp xếp dù API hỗ trợ `sap_xep`; làm giống trang Khách hàng (đã ghi ở "Việc phát sinh").
 
-### [ ] T1.6 · Cấu hình hệ thống và nhật ký
+### [x] T1.6 · Cấu hình hệ thống và nhật ký
 - **Chức năng:** AD08 (Cấu hình hệ thống), AD15 (Xem nhật ký hệ thống)
 - **Phụ thuộc:** T1.3
 - **Bảng:** `cau_hinh`, `nhat_ky_he_thong`
 - **Tiêu chí chấp nhận:**
-  - [ ] Đọc/sửa `cau_hinh` với schema kiểm tra kiểu cho từng khóa (spec 02 mục 6); ghi `nhan_vien_cap_nhat_id`.
-  - [ ] Tra cứu nhật ký theo bảng, bản ghi, nhân viên, khoảng thời gian; hiển thị giá trị cũ/mới.
+  - [x] Đọc/sửa `cau_hinh` với schema kiểm tra kiểu cho từng khóa (spec 02 mục 6); ghi `nhan_vien_cap_nhat_id`.
+  - [x] Tra cứu nhật ký theo bảng, bản ghi, nhân viên, khoảng thời gian; hiển thị giá trị cũ/mới.
 - **Giao diện:**
-  - [ ] Trang cấu hình (nhóm theo chủ đề), trang nhật ký.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Trang cấu hình (nhóm theo chủ đề), trang nhật ký.
+- **Ghi chú triển khai:**
+  - **Backend:** `modules/he_thong/{cau_hinh_service,nhat_ky_service,router_cau_hinh,router_nhat_ky,schemas}.py` và `core/cau_hinh_khoa.py`; API ở spec 06 mục 3.7, 3.8; quyết định ở QĐ-15. Spec 02 mục 6 thêm bảng "Kiểu và giới hạn" (trước đó roadmap viết "schema kiểm tra kiểu" nhưng spec chưa nêu kiểu và khoảng từng khóa). AD08: 15 khóa, kiểm tra kiểu và khoảng, khóa lạc quan `phien_ban`, ghi người cập nhật và nhật ký, có hiệu lực ngay; bốn khóa `ai_*` để AD09. AD15: lọc theo bảng, bản ghi, người thực hiện, hành động, khoảng ngày (giờ Việt Nam, gồm hai đầu), phân trang ổn định, danh sách giá trị lọc; chỉ đọc.
+  - **Dữ liệu sức khỏe không lộ qua nhật ký:** `ghi_nhat_ky` bỏ giá trị của `ho_so_suc_khoe`, `di_ung` ngay lúc ghi, AD15 che lại lúc đọc (dòng cũ lỡ có vẫn không hiện), thêm bốn khóa nhạy cảm vào danh sách che. Xử lý xong mục "Việc phát sinh" T1.3-rv về `che_du_lieu_nhay_cam`.
+  - **Phần dùng chung:** `dinhDangNgay(..., 'ngayGioGiay')`; `lib/cauHinh.ts` (kiểm tra giá trị phía client, so sánh nội dung, nhóm theo chủ đề), `lib/nhatKy.ts` (nhãn hành động, so sánh cũ/mới), `khu/quan-tri/{cau-hinh,nhat-ky}/*`. Không đổi schema CSDL.
+  - **Lỗi chỉ lộ khi chạy thật:** `InputNumber` của antd có `min`/`max` âm thầm ép giá trị (gõ 99 thành 20) nên không báo lỗi: bỏ `min`/`max`, tự kiểm tra và tắt nút Lưu.
+  - **Kiểm thử:** backend 160 test riêng (86 test bảng kiểu/giới hạn gồm đối chiếu spec 02 và mọi giá trị mặc định của seed; 74 test API AD08/AD15 gồm hai Admin sửa cùng khóa chỉ một bên thắng, dữ liệu sức khỏe và bí mật không lộ, khoảng ngày biên giờ Việt Nam, NUL trong tham số); frontend 68 test. 22 đột biến backend và 19 đột biến frontend đều bị bắt (một đột biến tương đương: `Checkbox.Group` vốn trả giá trị theo thứ tự lựa chọn). Chromium thật 28/28 (kiểm tra khoảng và định dạng tiền, 409 giữ giá trị đang gõ, nhật ký lọc/mở rộng cũ→mới, dòng sức khỏe và khóa bí mật không lộ).
+  - **Việc để task sau:** index cho truy vấn chỉ lọc theo `created_at`/`hanh_dong` và `DISTINCT` của danh sách giá trị lọc khi nhật ký lớn (ghi ở "Việc phát sinh").
 
 ## P2 · Sản phẩm & nội dung
 
@@ -819,7 +825,8 @@ Lỗi hoặc việc phát hiện trong lúc làm nhưng nằm ngoài phạm vi t
 - [ ] (T0.5) `QUYEN_YAML` nằm ngoài `backend/` (`docs/spec/data/quyen.yaml`): khi đóng image Docker ở T8.3 nếu chỉ copy `backend/` thì `python -m app.seed` lỗi `FileNotFoundError`. Khi đóng gói, copy file này vào image hoặc đặt đường dẫn qua biến môi trường.
 - [ ] (T1.3) Admin duy nhất quên mật khẩu thì không có đường khôi phục (nhân viên không có "quên mật khẩu" tự phục vụ, Admin khác đặt lại ở T1.4): thêm lệnh CLI `python -m app.seed --dat-lai-admin` hoặc tương đương khi làm T1.4/T8.3.
 - [ ] (T1.3) `nhat_ky_he_thong` "chỉ INSERT" mới được bảo đảm bằng việc ứng dụng không có route sửa/xóa; thêm trigger chặn UPDATE/DELETE ở DB qua migration mới (`/doi-schema`) khi rà soát bảo mật T8.2.
-- [ ] (T1.3-rv) `core/nhat_ky.py::che_du_lieu_nhay_cam` còn thiếu khóa `dang_mang_thai`, `dang_cho_con_bu`, `nam_sinh`, `ghi_chu` (của `di_ung`), `hoat_chat_id`, `thong_tin_nhan_hoan`; và `ghi_nhat_ky` nên bỏ hẳn giá trị cũ/mới khi `bang` là `ho_so_suc_khoe`/`di_ung` (spec 03 mục 5.1 chỉ ghi `bang` + `ban_ghi_id`). Chưa có nơi gọi nên chưa rò; làm trước task đầu tiên ghi nhật ký dữ liệu sức khỏe (T4.x/T5.x).
+- [x] (T1.3-rv) `core/nhat_ky.py::che_du_lieu_nhay_cam` còn thiếu khóa `dang_mang_thai`, `dang_cho_con_bu`, `nam_sinh`, `ghi_chu` (của `di_ung`), `hoat_chat_id`, `thong_tin_nhan_hoan`; và `ghi_nhat_ky` nên bỏ hẳn giá trị cũ/mới khi `bang` là `ho_so_suc_khoe`/`di_ung` (spec 03 mục 5.1 chỉ ghi `bang` + `ban_ghi_id`). Chưa có nơi gọi nên chưa rò; làm trước task đầu tiên ghi nhật ký dữ liệu sức khỏe (T4.x/T5.x). **Đã xử lý ở T1.6** (QĐ-15): bảng sức khỏe bỏ giá trị lúc ghi và che lúc đọc; thêm `dang_mang_thai`, `dang_cho_con_bu`, `nam_sinh`, `thong_tin_nhan_hoan` vào danh sách che.
+- [ ] (T1.6) `GET /noi-bo/nhat-ky` sắp theo `created_at` giảm dần và đếm tổng trên cả bảng; index hiện có là `(bang, ban_ghi_id)` và `(nhan_vien_id, created_at)` nên truy vấn chỉ lọc theo khoảng ngày hoặc `hanh_dong` (và `SELECT DISTINCT` của `gia-tri-loc` cho `hanh_dong`) sẽ quét cả bảng khi nhật ký lớn. Đo khi có dữ liệu thật, thêm index `(created_at)` và `(hanh_dong, created_at)` qua `/doi-schema`, hoặc đếm gần đúng.
 - [ ] (T1.5) Trang Nhân viên (AD01) chưa có cột bấm để sắp xếp dù `GET /noi-bo/nhan-vien` đã hỗ trợ `sap_xep` (`created_at`, `ma_nhan_vien`, `ho_ten`, `email`): làm giống `TrangKhachHang.tsx` (sorter trên cột, `sap_xep` trên URL, bỏ giá trị lạ), nhớ chỉ xử lý `Table.onChange` khi `extra.action === 'sort'` (nếu không nút chuyển trang bị vô hiệu, lỗi M1 của T1.5).
 - [ ] (T1.5-rv, Thấp) Ký tự NUL (`\u0000`) trong `q` (`GET /noi-bo/khach-hang?q=a%00b`, `GET /noi-bo/nhan-vien?q=a%00b`) hay `ly_do` khóa khách gây 500 thay vì 400 (asyncpg/JSONB từ chối byte 0x00). Thêm kiểu `Query` dùng chung có `pattern=r"^[^\x00]*$"` cho `q` ở AD01 và AD02, và validator cấm ký tự điều khiển cho `KhoaKhachYeuCau.ly_do`; thêm test.
 - [ ] (T1.5-rv, Thấp) Chặn hẳn access token cũ sau khi khóa rồi mở khóa nhanh: thêm mốc "token hợp lệ từ" (cột mới ở `khach_hang`/`nhan_vien`, qua `/doi-schema`) và so `iat` của token ở guard; đồng thời xử lý cho đổi/đặt lại mật khẩu (QĐ-12). Làm khi rà soát bảo mật T8.2.

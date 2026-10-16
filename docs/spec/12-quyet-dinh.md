@@ -136,3 +136,15 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
   - **Liên kết trong khu quản trị phải giữ tiền tố `/quan-tri`:** trang AD02 từng viết `to="/khach-hang/1"` nên bấm vào bị đưa ra khu cửa hàng; test đơn vị chạy ở gốc `/` không thấy, chỉ lộ khi chạy trên trình duyệt. Từ nay test trang con của khu phải có ca chạy dưới tiền tố.
 - **Hệ quả:** spec 06 mục 3.6; spec 09 mục 2.3; `backend/CLAUDE.md`, `frontend/CLAUDE.md`.
 
+## QĐ-15: Cấu hình hệ thống và nhật ký (2026-10-16, task T1.6)
+- **Quyết định:**
+  - **AD08 quản lý 15 khóa, bốn khóa `ai_*` thuộc AD09** (`ai.config`, T6.x): AD08 không liệt kê và không sửa được chúng (`PUT` là 404), để hai chức năng có hai mã quyền khác nhau không giẫm lên nhau.
+  - **Mỗi khóa có kiểu và khoảng giá trị** (bảng ở spec 02 mục 6, code ở `core/cau_hinh_khoa.py`; test đối chiếu từng con số giữa hai nơi và với mọi giá trị mặc định của seed). Lý do: `dang_nhap`, `otp`, hạn thanh toán... đọc thẳng giá trị rồi `int(...)`, nên giá trị sai (âm, 0, chuỗi) làm đăng nhập hay đặt hàng lỗi hàng loạt. Chọn khoảng chặt có chủ ý: `so_lan_dang_nhap_sai_toi_da` tối thiểu 3 (đặt 1 thì ai cũng khóa tạm được tài khoản người khác bằng một lần thử sai), giới hạn OTP tối đa 20 lần mỗi số mỗi giờ (mỗi tin SMS tốn tiền). Số phải là số nguyên thật: không nhận `5.0`, `"5"`, `true`. Muốn nới khoảng thì sửa bảng ở spec 02 rồi mới sửa code.
+  - **Khóa lạc quan `phien_ban`** (cùng cơ chế với AD18, QĐ-13): dấu vân tay nội dung 16 ký tự hex của giá trị hiện tại; lưu lệch là `409 DU_LIEU_DA_THAY_DOI`. Giao diện tải lại bản mới nhưng GIỮ giá trị người dùng đang gõ và báo giá trị hiện tại trên máy chủ để họ tự quyết định, không bao giờ ghi đè ngầm.
+  - **Khóa chưa có trong bảng** (chưa seed) vẫn được liệt kê với `gia_tri = null` và tạo được bằng `PUT` (nhật ký ghi `tao`); hai Admin tạo cùng lúc thì bên thua nhận 409 nhờ savepoint.
+  - **Có hiệu lực ngay:** mọi nơi dùng đọc `cau_hinh` mỗi lần, không có bộ nhớ đệm nên không phải xóa gì. Thao tác ghi cũng đòi người thực hiện là ADMIN (`dam_bao_la_admin`, QĐ-13).
+  - **Nhật ký không bao giờ cho Admin thấy dữ liệu sức khỏe** (CLAUDE.md quy tắc 7): với `ho_so_suc_khoe`, `di_ung` giá trị bị BỎ ngay lúc ghi (`ghi_nhat_ky`) và che lại lúc ĐỌC (AD15) phòng dòng cũ ghi trước khi có quy tắc; các khóa nhạy cảm còn lại che theo tên khóa ở cả hai chiều, danh sách thêm `dang_mang_thai`, `dang_cho_con_bu`, `nam_sinh`, `thong_tin_nhan_hoan`. Việc này xử lý mục "Việc phát sinh" T1.3-rv.
+  - **Nhật ký chỉ đọc và chỉ hiển thị người thực hiện** bằng id, mã và tên (không email, số điện thoại). Khoảng ngày tính theo giờ Việt Nam và gồm cả hai đầu; bộ lọc kết hợp bằng AND; chuỗi lọc chặn byte NUL từ đầu (PostgreSQL báo 500 với NUL).
+  - **Giao diện:** `InputNumber` của antd không được đặt `min`/`max` vì nó âm thầm ép giá trị về khoảng, người dùng gõ 99 mà thấy 20 và không biết mình nhập sai; thay vào đó báo lỗi ngay và tắt nút Lưu. Ô giờ dùng `<input type="time">`, hiển thị theo ngôn ngữ trình duyệt.
+- **Hệ quả:** spec 02 mục 6; spec 06 mục 3.7, 3.8; spec 09 mục 2.3; `backend/CLAUDE.md`, `frontend/CLAUDE.md`.
+
