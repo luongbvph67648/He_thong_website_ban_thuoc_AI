@@ -42,6 +42,10 @@ REGISTRY: dict[tuple[str, str], tuple[str, str]] = {
     ("POST", f"{TIEN_TO_NOI_BO}/soan-hang/{{don_id}}/doi-lo"): ("order.pick", "day_du"),
     ("POST", f"{TIEN_TO_NOI_BO}/soan-hang/{{don_id}}/bat-dau"): ("order.pick", "day_du"),
     ("POST", f"{TIEN_TO_NOI_BO}/soan-hang/{{don_id}}/dong-goi"): ("shipment.create", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/don-ho/khach"): ("order.create_phone", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/don-ho"): ("order.create_phone", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/giao-tai-quay"): ("order.pickup_handover", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/giao-tai-quay/{{don_id}}"): ("order.pickup_handover", "day_du"),
     # KHO09, KHO11 (kho lập, Admin không lập) và AD12 (Admin duyệt/từ chối; kho không duyệt).
     ("GET", f"{TIEN_TO_NOI_BO}/phieu-huy"): ("disposal.create", "day_du"),
     ("POST", f"{TIEN_TO_NOI_BO}/phieu-huy"): ("disposal.create", "day_du"),

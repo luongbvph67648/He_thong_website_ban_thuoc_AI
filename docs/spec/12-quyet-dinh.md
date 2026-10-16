@@ -317,3 +317,12 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
   - Quét mã vạch là kiểm tra phía giao diện (đếm theo từng dòng, đủ số lượng mới đóng gói); backend không lưu kết quả quét. In phiếu dùng `window.print()` với CSS in.
 - **Hệ quả:** spec 06 mục 3.25; spec 08 mục 5; spec 09 (`/soan-hang/:id`); `tich_hop/van_chuyen/{ghn,gia,anh_xa}.py`, `modules/ban_hang/{soan_hang,router_kho}.py`, `modules/van_chuyen/`, `ton_kho.doi_lo`; `tests/ban_hang/test_soan_hang.py`, `tests/tich_hop/test_van_chuyen.py`; `frontend/src/khu/nhan-vien/kho/{TrangSoanHang,TrangPhieuSoan,soanHang}`.
 
+## QĐ-30: Đơn hộ khách qua điện thoại và giao đơn tại quầy (2026-10-16, task T4.8)
+- **Quyết định:**
+  - Đơn hộ dùng chung bộ tính tiền và giữ hàng với đặt hàng online (`dat_hang.tinh_tien`, `gio_hang.kiem_tra_dong_de_dat`) nên thuốc kê đơn, giới hạn mỗi đơn, giá, mã giảm giá và phí ship giống hệt kênh online; thuốc kê đơn bị chặn ở service, không chỉ ở giao diện.
+  - Khách tra bằng đúng SĐT (không tìm gần đúng) để dược sĩ không dò danh sách khách. Server tự tra `sdt_khach`, client không gửi id khách vào đơn.
+  - Đơn online (VNPay/MoMo) bắt buộc có khách có tài khoản, vì link/IPN gắn với tài khoản khách (`/toi/don-hang/{ma}/thanh-toan`); khách vãng lai chỉ COD cho tới khi có link mã truy cập (T5.3). Mã giảm giá chỉ cho khách có tài khoản (lượt dùng tính theo khách).
+  - Link thanh toán trả về trong phản hồi để dược sĩ đọc/gửi khách; gửi SMS tự động thuộc KTV13. Địa chỉ giao nhập tay được chụp vào đơn, không ghi vào sổ địa chỉ của khách.
+  - Thu tiền tại quầy: đơn chưa thanh toán phải chọn tiền mặt/chuyển khoản, ghi giao dịch cùng transaction với dòng 20. Hết hạn nhận tại quầy (dòng 21) là HT08 ở T4.9.
+- **Hệ quả:** spec 06 mục 3.26; `modules/ban_hang/{dat_ho,giao_tai_quay,router_dat_ho,schemas_dat_ho}.py`; `/don-hang/tao` và `/giao-tai-quay` ở spec 09 đã có sẵn.
+

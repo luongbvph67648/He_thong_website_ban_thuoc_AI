@@ -9,6 +9,7 @@ from app.core.log import cau_hinh_log
 from app.core.loi import dang_ky_xu_ly_loi
 from app.core.middleware import HEADER_REQUEST_ID, GioiHanKichThuocThan, QuyTacThanRequest, RequestIdMiddleware
 from app.health import router as health_router
+from app.modules.ban_hang.router_dat_ho import router as dat_ho_router
 from app.modules.ban_hang.router_khach import router as don_hang_khach_router
 from app.modules.ban_hang.router_kho import router as soan_hang_router
 from app.modules.ban_hang.router_noi_bo import router as don_hang_noi_bo_router
@@ -137,6 +138,7 @@ def create_app() -> FastAPI:
     if settings.VAN_CHUYEN_CHE_DO == "gia":
         app.include_router(webhook_van_chuyen_gia_router, prefix="/api/v1")
     app.include_router(soan_hang_router, prefix="/api/v1")
+    app.include_router(dat_ho_router, prefix="/api/v1")
     app.include_router(dia_chi_router, prefix="/api/v1")
     app.include_router(kiem_ke_router, prefix="/api/v1")
     app.include_router(phieu_huy_xuat_tra_router, prefix="/api/v1")

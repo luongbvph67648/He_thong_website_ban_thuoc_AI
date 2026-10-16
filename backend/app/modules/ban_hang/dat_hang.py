@@ -48,7 +48,7 @@ THOI_HAN_THANH_TOAN_PHUT = 15
 GRAM_MOI_DON_VI_CO_SO = 20  # chưa có khối lượng sản phẩm trong schema: ước lượng để gửi cho adapter vận chuyển
 
 
-def _khong_hop_le(truong: str, loi: str) -> LoiNghiepVu:
+def khong_hop_le(truong: str, loi: str) -> LoiNghiepVu:
     return LoiNghiepVu("DU_LIEU_KHONG_HOP_LE", "Dữ liệu không hợp lệ", chi_tiet=[{"truong": truong, "loi": loi}])
 
 
@@ -100,7 +100,7 @@ def don_ra(don: DonHang, ma_text: str | None, lich_su: Sequence[LichSuTrangThai]
     )
 
 
-async def _phi_van_chuyen(
+async def tinh_phi_van_chuyen(
     db: AsyncSession, dia_chi: DiaChi | None, so_co_so: int, tam_tinh: Decimal, giam: Decimal
 ) -> Decimal:
     if dia_chi is None:  # nhận tại nhà thuốc
@@ -142,22 +142,36 @@ async def _tinh_don(db: AsyncSession, khach: KhachHang, vao: DatHangVao, *, dung
     hàng); `False` chỉ xem trước nên không ghi gì. Giỏ trống là `400`."""
     dong_dat = await dich_vu_gio.lay_dong_de_dat(db, khach)  # đã khóa giỏ: hai lần đặt của một khách nối đuôi nhau
     if not dong_dat:
-        raise _khong_hop_le("gio_hang", "Giỏ hàng trống")
+        raise khong_hop_le("gio_hang", "Giỏ hàng trống")
     dia_chi: DiaChi | None = None
     if vao.hinh_thuc_nhan == HinhThucNhan.giao_tan_noi:
         if vao.dia_chi_id is None:
-            raise _khong_hop_le("dia_chi_id", "Cần chọn địa chỉ giao hàng")
+            raise khong_hop_le("dia_chi_id", "Cần chọn địa chỉ giao hàng")
         dia_chi = (
             await db.execute(select(DiaChi).where(DiaChi.id == vao.dia_chi_id, DiaChi.khach_hang_id == khach.id))
         ).scalar_one_or_none()
         if dia_chi is None:
             raise LoiNghiepVu("KHONG_TIM_THAY", "Không tìm thấy địa chỉ")
+    return await tinh_tien(db, khach.id, dong_dat, dia_chi, vao.ma_giam_gia, dung_luot=dung_luot)
 
+
+async def tinh_tien(
+    db: AsyncSession,
+    khach_id: int | None,
+    dong_dat: list[dich_vu_gio.DongDat],
+    dia_chi: DiaChi | None,
+    ma_giam_gia: str | None,
+    *,
+    dung_luot: bool,
+) -> TinhDon:
+    """Tính tiền các dòng đã kiểm tra (dùng chung đặt hàng online và đơn hộ DS07). Mã giảm giá cần có khách."""
     # Giá luôn lấy lại theo giá hiện tại của đơn vị.
     goc = [lam_tron_vnd(d.dv.gia_ban * d.so_luong) for d in dong_dat]
     tam_tinh = cong(*goc)
     giam, phan_bo, ma_dung = lam_tron_vnd(0), {}, None
-    if vao.ma_giam_gia:
+    if ma_giam_gia:
+        if khach_id is None:
+            raise khong_hop_le("ma_giam_gia", "Mã giảm giá chỉ áp dụng cho khách có tài khoản")
         cay = await nap_cay_hien_thi(db)
         dong_giam = [
             ap_dung.DongGio(
@@ -170,7 +184,7 @@ async def _tinh_don(db: AsyncSession, khach: KhachHang, vao: DatHangVao, *, dung
             for i, d in enumerate(dong_dat)
         ]
         cach = ap_dung.dung_ma if dung_luot else ap_dung.kiem_tra_ma
-        kq = await cach(db, khach.id, vao.ma_giam_gia, dong_giam)
+        kq = await cach(db, khach_id, ma_giam_gia, dong_giam)
         if not kq.hop_le:
             assert kq.ma_ly_do is not None
             raise LoiNghiepVu(
@@ -178,8 +192,32 @@ async def _tinh_don(db: AsyncSession, khach: KhachHang, vao: DatHangVao, *, dung
             )
         giam, phan_bo, ma_dung = kq.giam, kq.phan_bo or {}, kq.ma_giam_gia
     so_co_so = sum(d.so_luong * d.dv.he_so for d in dong_dat)
-    phi = await _phi_van_chuyen(db, dia_chi, so_co_so, tam_tinh, giam)
+    phi = await tinh_phi_van_chuyen(db, dia_chi, so_co_so, tam_tinh, giam)
     return TinhDon(dong_dat, dia_chi, goc, tam_tinh, giam, phan_bo, ma_dung, phi, tam_tinh - giam + phi)
+
+
+def ghi_dia_chi_giao(don: DonHang, dia_chi: DiaChi) -> None:
+    """Chụp địa chỉ giao vào đơn (bản chụp tại thời điểm đặt)."""
+    don.ten_nguoi_nhan, don.sdt_nguoi_nhan = dia_chi.ten_nguoi_nhan, dia_chi.so_dien_thoai
+    don.dia_chi_giao = ", ".join(x for x in (dia_chi.dia_chi_chi_tiet, dia_chi.ten_phuong_xa, dia_chi.ten_tinh) if x)
+    don.ma_tinh, don.ma_quan_huyen, don.ma_phuong_xa = dia_chi.ma_tinh, dia_chi.ma_quan_huyen, dia_chi.ma_phuong_xa
+
+
+def dong_cua_don(t: TinhDon) -> list[CtDonHang]:
+    return [
+        CtDonHang(
+            san_pham_id=d.sp.id,
+            don_vi_id=d.dv.id,
+            ten_san_pham=d.sp.ten,
+            ten_don_vi=d.dv.ten_don_vi,
+            he_so=d.dv.he_so,
+            so_luong=d.so_luong,
+            don_gia=lam_tron_vnd(d.dv.gia_ban),
+            giam_gia_phan_bo=t.phan_bo.get(i, lam_tron_vnd(0)),
+            thanh_tien=t.goc[i] - t.phan_bo.get(i, Decimal(0)),
+        )
+        for i, d in enumerate(t.dong_dat)
+    ]
 
 
 def _gia_da_thay_doi(t: TinhDon) -> LoiNghiepVu:
@@ -229,7 +267,7 @@ async def dat_hang(db: AsyncSession, khach: KhachHang, vao: DatHangVao, khoa: st
         if ton_tai is not None:
             return DonHangRa.model_validate(da_co)
     t = await _tinh_don(db, khach, vao, dung_luot=True)
-    dong_dat, dia_chi, goc, phan_bo, ma_dung = t.dong_dat, t.dia_chi, t.goc, t.phan_bo, t.ma_dung
+    dong_dat, dia_chi, ma_dung = t.dong_dat, t.dia_chi, t.ma_dung
     tam_tinh, giam, phi, tong_tien = t.tam_tinh, t.giam, t.phi, t.tong_tien
     if vao.tong_tien_ky_vong is not None and Decimal(vao.tong_tien_ky_vong) != tong_tien:
         raise _gia_da_thay_doi(t)
@@ -252,27 +290,10 @@ async def dat_hang(db: AsyncSession, khach: KhachHang, vao: DatHangVao, khoa: st
         han_thanh_toan=bay_gio + timedelta(minutes=thoi_han) if truc_tuyen else None,
     )
     if dia_chi is not None:
-        don.ten_nguoi_nhan, don.sdt_nguoi_nhan = dia_chi.ten_nguoi_nhan, dia_chi.so_dien_thoai
-        don.dia_chi_giao = ", ".join(
-            x for x in (dia_chi.dia_chi_chi_tiet, dia_chi.ten_phuong_xa, dia_chi.ten_tinh) if x
-        )
-        don.ma_tinh, don.ma_quan_huyen, don.ma_phuong_xa = dia_chi.ma_tinh, dia_chi.ma_quan_huyen, dia_chi.ma_phuong_xa
+        ghi_dia_chi_giao(don, dia_chi)
     else:
         don.ten_nguoi_nhan, don.sdt_nguoi_nhan = khach.ho_ten, khach.so_dien_thoai
-    don.chi_tiet = [
-        CtDonHang(
-            san_pham_id=d.sp.id,
-            don_vi_id=d.dv.id,
-            ten_san_pham=d.sp.ten,
-            ten_don_vi=d.dv.ten_don_vi,
-            he_so=d.dv.he_so,
-            so_luong=d.so_luong,
-            don_gia=lam_tron_vnd(d.dv.gia_ban),
-            giam_gia_phan_bo=phan_bo.get(i, lam_tron_vnd(0)),
-            thanh_tien=goc[i] - phan_bo.get(i, Decimal(0)),
-        )
-        for i, d in enumerate(dong_dat)
-    ]
+    don.chi_tiet = dong_cua_don(t)
     den = TrangThaiDon.cho_thanh_toan if truc_tuyen else TrangThaiDon.cho_xac_nhan
     ls = await khoi_tao_trang_thai(db, don, den, TacNhan.khach(khach.id), NGUON_NGUOI_DUNG)
 

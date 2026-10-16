@@ -254,18 +254,24 @@ async def lay_dong_de_dat(db: AsyncSession, khach: KhachHang) -> list[DongDat]:
     lệ thì ném đúng lỗi của dòng đó (kê đơn, không còn bán, vượt giới hạn) thay vì lặng lẽ bỏ dòng."""
     gio = await khoa_gio(db, khach)
     dong = await _dong_cua_gio(db, gio)
-    naps = await _nap_san_pham(db, {c.san_pham_id for c in dong})
+    return await kiem_tra_dong_de_dat(db, [(c.id, c.san_pham_id, c.don_vi_id, c.so_luong) for c in dong])
+
+
+async def kiem_tra_dong_de_dat(db: AsyncSession, dong: list[tuple[int, int, int, int]]) -> list[DongDat]:
+    """Kiểm tra các dòng `(dong_id, san_pham_id, don_vi_id, so_luong)` có mua được không, cùng quy tắc với giỏ hàng
+    (kê đơn bị chặn ở đây, đơn vị bán online, giới hạn mỗi đơn). Dùng chung cho đặt hàng online và tạo đơn hộ (DS07)."""
+    naps = await _nap_san_pham(db, {sp_id for _, sp_id, _, _ in dong})
     tong_co_so: dict[int, int] = defaultdict(int)
     ra: list[DongDat] = []
-    for c in dong:
-        nap = naps.get(c.san_pham_id)
-        ly_do = _ly_do_khong_hop_le(nap, c.don_vi_id)
+    for dong_id, sp_id, don_vi_id, so_luong in dong:
+        nap = naps.get(sp_id)
+        ly_do = _ly_do_khong_hop_le(nap, don_vi_id)
         if ly_do is not None:
             raise _nem_loi(ly_do, nap)
         assert nap is not None
-        dv = next(d for d in nap.sp.don_vi_quy_doi if d.id == c.don_vi_id)
-        tong_co_so[nap.sp.id] += c.so_luong * dv.he_so
-        ra.append(DongDat(c.id, nap.sp, dv, c.so_luong))
+        dv = next(d for d in nap.sp.don_vi_quy_doi if d.id == don_vi_id)
+        tong_co_so[nap.sp.id] += so_luong * dv.he_so
+        ra.append(DongDat(dong_id, nap.sp, dv, so_luong))
     for d in ra:
         toi_da = d.sp.so_luong_toi_da_moi_don
         if toi_da is not None and tong_co_so[d.sp.id] > toi_da:

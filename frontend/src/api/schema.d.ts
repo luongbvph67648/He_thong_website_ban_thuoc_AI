@@ -2133,6 +2133,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/noi-bo/don-ho/khach": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tìm khách theo SĐT để tạo đơn hộ (DS07) */
+        get: operations["tim_khach_api_v1_noi_bo_don_ho_khach_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/don-ho": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tạo đơn hộ khách (DS07) */
+        post: operations["tao_api_v1_noi_bo_don_ho_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/giao-tai-quay": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tìm đơn nhận tại quầy (DS15) */
+        get: operations["tim_don_api_v1_noi_bo_giao_tai_quay_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/giao-tai-quay/{don_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Giao đơn tại quầy, thu tiền (DS15) */
+        post: operations["giao_api_v1_noi_bo_giao_tai_quay__don_id__post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/toi/dia-chi": {
         parameters: {
             query?: never;
@@ -3103,6 +3171,18 @@ export interface components {
             /** Ids */
             ids: number[];
         };
+        /**
+         * DiaChiGiaoVao
+         * @description Địa chỉ giao nhập tay khi gọi điện; tên tỉnh/xã do máy chủ điền từ danh mục.
+         */
+        DiaChiGiaoVao: {
+            /** Dia Chi Chi Tiet */
+            dia_chi_chi_tiet: string;
+            /** Ma Tinh */
+            ma_tinh: string;
+            /** Ma Phuong Xa */
+            ma_phuong_xa: string;
+        };
         /** DiaChiRa */
         DiaChiRa: {
             /** Id */
@@ -3302,6 +3382,34 @@ export interface components {
              */
             van_don: components["schemas"]["VanDonRa"][];
         };
+        /** DonHoRa */
+        DonHoRa: {
+            don: components["schemas"]["DonHangRa"];
+            /** Lien Ket Thanh Toan */
+            lien_ket_thanh_toan: string | null;
+        };
+        /** DonHoVao */
+        DonHoVao: {
+            /** Sdt Khach */
+            sdt_khach?: string | null;
+            /** Ten Nguoi Nhan */
+            ten_nguoi_nhan: string;
+            /** Sdt Nguoi Nhan */
+            sdt_nguoi_nhan: string;
+            hinh_thuc_nhan: components["schemas"]["HinhThucNhan"];
+            /**
+             * Phuong Thuc Tt
+             * @enum {string}
+             */
+            phuong_thuc_tt: "cod" | "vnpay" | "momo";
+            dia_chi?: components["schemas"]["DiaChiGiaoVao"] | null;
+            /** Dong */
+            dong: components["schemas"]["DongDonHoVao"][];
+            /** Ma Giam Gia */
+            ma_giam_gia?: string | null;
+            /** Ghi Chu */
+            ghi_chu?: string | null;
+        };
         /** DonNoiBoChiTiet */
         DonNoiBoChiTiet: {
             /** Ma Don */
@@ -3380,6 +3488,23 @@ export interface components {
             ten_nguoi_nhan: string | null;
             /** Sdt Nguoi Nhan */
             sdt_nguoi_nhan: string | null;
+        };
+        /** DonQuayRa */
+        DonQuayRa: {
+            /** Id */
+            id: number;
+            /** Ma Don */
+            ma_don: string;
+            /** Ten Nguoi Nhan */
+            ten_nguoi_nhan: string | null;
+            /** Sdt Nguoi Nhan */
+            sdt_nguoi_nhan: string | null;
+            /** Tong Tien */
+            tong_tien: string;
+            phuong_thuc_tt: components["schemas"]["PhuongThucThanhToan"] | null;
+            trang_thai_tt: components["schemas"]["TrangThaiThanhToan"];
+            /** Dong */
+            dong: components["schemas"]["DongQuayRa"][];
         };
         /**
          * DonTomTat
@@ -3524,6 +3649,15 @@ export interface components {
             lo_id: number;
             /** So Luong Thay Doi */
             so_luong_thay_doi: number;
+        };
+        /** DongDonHoVao */
+        DongDonHoVao: {
+            /** San Pham Id */
+            san_pham_id: number;
+            /** Don Vi Id */
+            don_vi_id: number;
+            /** So Luong */
+            so_luong: number;
         };
         /** DongDonRa */
         DongDonRa: {
@@ -3704,6 +3838,15 @@ export interface components {
             /** So Luong */
             so_luong: number;
         };
+        /** DongQuayRa */
+        DongQuayRa: {
+            /** Ten San Pham */
+            ten_san_pham: string;
+            /** Ten Don Vi */
+            ten_don_vi: string;
+            /** So Luong */
+            so_luong: number;
+        };
         /** DongSoLuong */
         DongSoLuong: {
             /** Lo Id */
@@ -3805,6 +3948,11 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** GiaoQuayVao */
+        GiaoQuayVao: {
+            /** Phuong Thuc Thu */
+            phuong_thuc_thu?: ("tien_mat" | "chuyen_khoan") | null;
         };
         /** GioHangRa */
         GioHangRa: {
@@ -3983,6 +4131,15 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** KhachTimRa */
+        KhachTimRa: {
+            /** Ho Ten */
+            ho_ten: string;
+            /** So Dien Thoai */
+            so_dien_thoai: string;
+            /** Dia Chi */
+            dia_chi: components["schemas"]["DiaChiRa"][];
         };
         /**
          * KhoaKhachYeuCau
@@ -11119,6 +11276,138 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SoanHangRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tim_khach_api_v1_noi_bo_don_ho_khach_get: {
+        parameters: {
+            query: {
+                sdt: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KhachTimRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tao_api_v1_noi_bo_don_ho_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DonHoVao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DonHoRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tim_don_api_v1_noi_bo_giao_tai_quay_get: {
+        parameters: {
+            query: {
+                q: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DonQuayRa"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    giao_api_v1_noi_bo_giao_tai_quay__don_id__post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                don_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GiaoQuayVao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DonQuayRa"];
                 };
             };
             /** @description Validation Error */

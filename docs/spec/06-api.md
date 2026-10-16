@@ -378,6 +378,18 @@ Quyền `report.inventory` (`xem`: kho và Admin). Tính hoàn toàn từ `bien_
   - Xử lý chung: ghi `van_don.trang_thai_doi_tac` và `du_lieu_webhook`, khóa đơn, ánh xạ theo spec 08 mục 5 rồi đi qua `chuyen_trang_thai` (nguồn `webhook_van_chuyen`) từng bước hợp lệ: sự kiện mất (đã giao mà chưa nhận "đã lấy hàng") vẫn đưa đơn tới đúng chỗ, sự kiện cũ so với trạng thái hiện tại bị bỏ qua, sự kiện lặp không đổi gì. Chỉ vận đơn giao hàng mới nhất của đơn được đổi trạng thái đơn.
   - COD giao thành công (dòng 23): hook ghi `thanh_toan` loại `thanh_toan`, cổng `cod`, `thanh_cong`, và `trang_thai_tt = da_thanh_toan` (một lần).
 
+### 3.26 Đơn hộ khách qua điện thoại và giao đơn tại quầy (DS07, DS15, T4.8)
+- **Tạo đơn hộ** (`order.create_phone`, chỉ dược sĩ):
+  - `GET /noi-bo/don-ho/khach?sdt=` -> `{ho_ten, so_dien_thoai, dia_chi: [...]}`: tra đúng SĐT của khách đang hoạt động (không tìm gần đúng, không trả email hay dữ liệu sức khỏe); không có là `404`.
+  - `POST /noi-bo/don-ho` (bắt buộc `Idempotency-Key`) `{sdt_khach?, ten_nguoi_nhan, sdt_nguoi_nhan, hinh_thuc_nhan, phuong_thuc_tt: cod|vnpay|momo, dia_chi?: {dia_chi_chi_tiet, ma_tinh, ma_phuong_xa}, dong: [{san_pham_id, don_vi_id, so_luong}], ma_giam_gia?, ghi_chu?}` -> `201 {don: DonHangRa, lien_ket_thanh_toan}`.
+  - Cùng quy tắc với đặt hàng online: mỗi dòng kiểm như giỏ hàng (thuốc kê đơn bị chặn `THUOC_KE_DON_KHONG_VAO_GIO`, đơn vị bán online, giới hạn mỗi đơn), giá lấy lại theo giá hiện tại, mã giảm giá, phí ship, giữ hàng FEFO (thiếu là `409 HET_HANG`, hoàn tác cả đơn). Dòng trùng sản phẩm và đơn vị được gộp.
+  - `sdt_khach` là SĐT khách có tài khoản (không có là `404`); bỏ trống thì đơn không gắn tài khoản (`khach_hang_id = null`) và chỉ dùng được COD, không dùng mã giảm giá. Thanh toán online bắt buộc có `sdt_khach` (`400`).
+  - `giao_tan_noi` bắt buộc `dia_chi` (tên tỉnh/xã do máy chủ điền từ danh mục, mã sai là `400`); `nhan_tai_nha_thuoc` không được có `dia_chi`.
+  - COD -> dòng 4, "Đã xác nhận"; online -> dòng 5, "Chờ thanh toán" với `han_thanh_toan`, `lien_ket_thanh_toan = /thanh-toan/ket-qua?ma=<ma_don>` để đọc cho khách hoặc gửi SMS (gửi tự động là KTV13). `kenh_ban = dien_thoai`, ghi `nhan_vien_tao_id`. Khách thanh toán như đơn tự đặt; IPN thành công -> dòng 11, "Đã xác nhận".
+- **Giao tại quầy** (`order.pickup_handover`, chỉ dược sĩ):
+  - `GET /noi-bo/giao-tai-quay?q=` (bắt buộc, tối đa 40 ký tự): đơn nhận tại nhà thuốc đang "Chờ lấy hàng" có mã đơn đúng `q` hoặc SĐT người nhận/chủ tài khoản đúng `q`; tối đa 20 đơn, mới nhất trước. Mỗi đơn: `{id, ma_don, ten_nguoi_nhan, sdt_nguoi_nhan, tong_tien, phuong_thuc_tt, trang_thai_tt, dong: [{ten_san_pham, ten_don_vi, so_luong}]}`.
+  - `POST /noi-bo/giao-tai-quay/{don_id}` `{phuong_thuc_thu?: tien_mat|chuyen_khoan}`: dòng 20 sang "Đã giao". Đơn chưa thanh toán bắt buộc `phuong_thuc_thu` (`400`), ghi một `thanh_toan` loại `thanh_toan`, cổng là hình thức thu, `thanh_cong`, `nhan_vien_xu_ly_id`, và `trang_thai_tt = da_thanh_toan`; đơn đã thanh toán thì không thu thêm. Đơn giao tận nơi hoặc không có là `404`; sai trạng thái (kể cả giao lần hai) là `409 CHUYEN_TRANG_THAI_KHONG_HOP_LE`. Đổi trạng thái và thu tiền cùng transaction.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

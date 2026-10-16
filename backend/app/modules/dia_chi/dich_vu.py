@@ -15,7 +15,7 @@ def _khong_hop_le(truong: str, loi: str) -> LoiNghiepVu:
     return LoiNghiepVu("DU_LIEU_KHONG_HOP_LE", "Dữ liệu không hợp lệ", chi_tiet=[{"truong": truong, "loi": loi}])
 
 
-def _ten_dia_gioi(ma_tinh: str, ma_xa: str) -> tuple[str, str]:
+def ten_dia_gioi(ma_tinh: str, ma_xa: str) -> tuple[str, str]:
     """Tên tỉnh/xã từ danh mục (không tin tên do client gửi); mã lạ hoặc xã không thuộc tỉnh là 400."""
     danh_muc = lay_danh_muc_dia_gioi()
     tinh = next((t for t in danh_muc.danh_sach_tinh() if t.ma == ma_tinh), None)
@@ -64,7 +64,7 @@ async def tao(db: AsyncSession, khach: KhachHang, vao: DiaChiVao, la_mac_dinh: b
     hien_co = await danh_sach(db, khach)
     if len(hien_co) >= TOI_DA_DIA_CHI:
         raise _khong_hop_le("dia_chi", f"Mỗi tài khoản tối đa {TOI_DA_DIA_CHI} địa chỉ")
-    ten_tinh, ten_xa = _ten_dia_gioi(vao.ma_tinh, vao.ma_phuong_xa)
+    ten_tinh, ten_xa = ten_dia_gioi(vao.ma_tinh, vao.ma_phuong_xa)
     dc = DiaChi(
         khach_hang_id=khach.id,
         **vao.model_dump(),
@@ -82,7 +82,7 @@ async def tao(db: AsyncSession, khach: KhachHang, vao: DiaChiVao, la_mac_dinh: b
 async def sua(db: AsyncSession, khach: KhachHang, dia_chi_id: int, vao: DiaChiVao) -> DiaChi:
     await _khoa_khach(db, khach)
     dc = await _lay(db, khach, dia_chi_id)
-    dc.ten_tinh, dc.ten_phuong_xa = _ten_dia_gioi(vao.ma_tinh, vao.ma_phuong_xa)
+    dc.ten_tinh, dc.ten_phuong_xa = ten_dia_gioi(vao.ma_tinh, vao.ma_phuong_xa)
     for truong, gia_tri in vao.model_dump().items():
         setattr(dc, truong, gia_tri)
     await db.flush()

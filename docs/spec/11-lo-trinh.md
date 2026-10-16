@@ -642,16 +642,21 @@ _Giỏ hàng, máy trạng thái, đặt hàng giữ hàng FEFO, thanh toán, x�
   - Test: 34 backend (`test_soan_hang.py`, `test_van_chuyen.py`), 8 frontend.
   - Chưa làm: thông báo cho khách ở dòng 18, 24 (hệ thống thông báo khách là KTV13, task sau); tạo lại vận đơn khi giao thất bại (dòng 25 phía kho); báo kho khi GHN hủy vận đơn (hiện chỉ ghi `van_don`); nhãn vận chuyển in từ GHN (hiện in phiếu soạn có mã vận đơn).
 
-### [ ] T4.8 · Đơn qua điện thoại và nhận tại nhà thuốc
+### [x] T4.8 · Đơn qua điện thoại và nhận tại nhà thuốc
 - **Chức năng:** DS07 (Tạo đơn hộ khách), DS15 (Giao đơn nhận tại nhà thuốc)
 - **Phụ thuộc:** T4.7
 - **Bảng:** `don_hang`, `ct_don_hang`, `phan_bo_lo`, `thanh_toan`, `lich_su_trang_thai`
 - **Tiêu chí chấp nhận:**
-  - [ ] Dược sĩ lập đơn cho khách (tìm khách theo SĐT hoặc nhập người nhận), cùng quy tắc với KTV02, chặn thuốc kê đơn; COD → `da_xac_nhan`, online → `cho_thanh_toan` + gửi link.
-  - [ ] Giao đơn nhận tại quầy: tìm theo mã đơn/SĐT, thu tiền nếu chưa thanh toán, chuyển `da_giao`.
+  - [x] Dược sĩ lập đơn cho khách (tìm khách theo SĐT hoặc nhập người nhận), cùng quy tắc với KTV02, chặn thuốc kê đơn; COD → `da_xac_nhan`, online → `cho_thanh_toan` + gửi link.
+  - [x] Giao đơn nhận tại quầy: tìm theo mã đơn/SĐT, thu tiền nếu chưa thanh toán, chuyển `da_giao`.
 - **Giao diện:**
-  - [ ] Màn tạo đơn hộ; màn giao hàng tại quầy.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Màn tạo đơn hộ; màn giao hàng tại quầy.
+- **Ghi chú triển khai:**
+  - API và quyết định: spec 06 mục 3.26, QĐ-30. Đơn hộ dùng chung `tinh_tien` và kiểm dòng của giỏ với KTV02 (đã tách hàm dùng chung), vào máy trạng thái dòng 4/5; giữ hàng FEFO, idempotency theo dược sĩ.
+  - Khách tra bằng đúng SĐT; đơn online bắt buộc khách có tài khoản, khách vãng lai chỉ COD (link mã truy cập là T5.3). Link thanh toán trả trong phản hồi, gửi SMS tự động là KTV13.
+  - Giao tại quầy: tìm theo mã đơn/SĐT, thu tiền mặt/chuyển khoản cùng transaction với dòng 20. Quá hạn nhận tại quầy (dòng 21) là HT08 ở T4.9.
+  - Giao diện: `/don-hang/tao` (tìm khách, tìm sản phẩm qua `/tim-kiem`, chọn đơn vị, địa chỉ tỉnh/xã) và `/giao-tai-quay`.
+  - Chưa làm: đọc sổ địa chỉ của khách để điền sẵn (API đã trả `dia_chi`, giao diện chưa dùng).
 
 ### [ ] T4.9 · Tự hoàn tất đơn và lịch sử mua
 - **Chức năng:** HT08 (Tự hoàn tất đơn, nhả khóa), KTV08 (Lịch sử mua, mua lại)
