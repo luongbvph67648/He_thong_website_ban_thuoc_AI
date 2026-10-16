@@ -7,6 +7,7 @@ from typing import Literal
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core import luu_tru
 from app.core.loi import LoiNghiepVu
 from app.core.thoi_gian import bay_gio_utc, hom_nay_vn
 from app.models.ai import LichSuXem
@@ -112,6 +113,7 @@ async def _danh_gia(db: AsyncSession, san_pham_id: int) -> TongHopDanhGia:
                 noi_dung=d.noi_dung,
                 ten_hien_thi=ten_rut_gon(ho_ten),
                 phan_hoi=d.phan_hoi,
+                anh=[luu_tru.url_cong_khai(k) for k in d.anh or []],
                 created_at=d.created_at,
             )
             for d, ho_ten in moi_nhat

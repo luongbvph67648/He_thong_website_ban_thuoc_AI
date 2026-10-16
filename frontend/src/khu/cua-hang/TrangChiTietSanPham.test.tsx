@@ -179,8 +179,8 @@ describe('TrangChiTietSanPham: đánh giá', () => {
       tong_sao: 16,
       phan_bo: [1, 1, 0, 2, 1],
       moi_nhat: [
-        { so_sao: 5, noi_dung: 'Dùng tốt', ten_hien_thi: 'Nguyễn A.', phan_hoi: 'Cảm ơn bạn', created_at: '2026-10-10T03:00:00Z' },
-        { so_sao: 1, noi_dung: null, ten_hien_thi: 'Trần B.', phan_hoi: null, created_at: '2026-10-09T03:00:00Z' },
+        { so_sao: 5, noi_dung: 'Dùng tốt', ten_hien_thi: 'Nguyễn A.', phan_hoi: 'Cảm ơn bạn', anh: [], created_at: '2026-10-10T03:00:00Z' },
+        { so_sao: 1, noi_dung: null, ten_hien_thi: 'Trần B.', phan_hoi: null, anh: [], created_at: '2026-10-09T03:00:00Z' },
       ],
     }
     dapUng(() => ok(chiTiet({ danh_gia: dg })))

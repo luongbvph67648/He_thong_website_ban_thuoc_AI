@@ -115,6 +115,7 @@ class DanhGiaCongKhai(BaseModel):
     noi_dung: str | None
     ten_hien_thi: str
     phan_hoi: str | None
+    anh: list[str] = []
     created_at: datetime
 
 

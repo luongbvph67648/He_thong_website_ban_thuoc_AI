@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Alert, App, Breadcrumb, Button, Col, Descriptions, Empty, InputNumber, Progress, Rate, Result, Row, Segmented, Skeleton, Space, Table, Tabs, Tag, Typography } from 'antd'
+import { Alert, App, Breadcrumb, Button, Col, Descriptions, Empty, Image, InputNumber, Progress, Rate, Result, Row, Segmented, Skeleton, Space, Table, Tabs, Tag, Typography } from 'antd'
 import { useState } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { api } from '../../api/client'
@@ -18,6 +18,7 @@ import {
 } from './cuaHang'
 import { NhanTrangThai } from '../../components/NhanTrangThai'
 import { usePhien } from '../../stores/phien'
+import HoiDapSanPham from './danh-gia/HoiDapSanPham'
 import { LuoiSanPham } from './TheSanPham'
 import { useGioHang } from './gio-hang/gioHang'
 
@@ -173,6 +174,11 @@ function DanhGia({ dg }: { dg: SanPhamChiTiet['danh_gia'] }) {
             <Typography.Text type="secondary">{dinhDangNgay(d.created_at, 'ngay')}</Typography.Text>
           </Space>
           {d.noi_dung && <Typography.Paragraph style={{ marginTop: 4, marginBottom: 4, whiteSpace: 'pre-wrap' }}>{d.noi_dung}</Typography.Paragraph>}
+          {d.anh && d.anh.length > 0 && (
+            <Space wrap style={{ marginBottom: 4 }}>
+              {d.anh.map((u) => <Image key={u} src={u} width={80} alt="Ảnh khách đánh giá" />)}
+            </Space>
+          )}
           {d.phan_hoi && (
             <Alert type="info" title="Phản hồi từ nhà thuốc" description={d.phan_hoi} />
           )}
@@ -279,6 +285,7 @@ export default function TrangChiTietSanPhamCuaHang() {
           },
           { key: 'chuyen-mon', label: 'Chỉ định, liều dùng', children: <NoiDungChuyenMon nd={sp.noi_dung_chuyen_mon} /> },
           { key: 'danh-gia', label: `Đánh giá (${sp.danh_gia.so_luong})`, children: <DanhGia dg={sp.danh_gia} /> },
+          { key: 'hoi-dap', label: 'Hỏi đáp', children: <HoiDapSanPham slug={sp.slug} /> },
         ]}
       />
       {sp.tuong_tu.length > 0 && (
