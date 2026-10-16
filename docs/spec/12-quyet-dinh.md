@@ -211,3 +211,12 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
   - **Chưa có giỏ hàng:** nút "Thêm vào giỏ" của sản phẩm thường hiện nhưng bị khóa (Tooltip "Giỏ hàng đang được xây dựng"); T4.1 nối vào `KhuMuaHang` trong `TrangChiTietSanPham.tsx`.
 - **Hệ quả:** spec 06 mục 3.13; spec 09 mục 2 (mô tả trang cửa hàng); `modules/cua_hang/`; `frontend/src/khu/cua-hang/`, `lib/lienKet.ts`, `lib/maPhien.ts`; `seed --mau`; `backend/CLAUDE.md`, `frontend/CLAUDE.md`.
 
+## QĐ-20: Tìm kiếm từ khóa (2026-10-16, task T2.5)
+- **Quyết định:**
+  - **Khớp** bằng `word_similarity` trên tên sản phẩm, tên hoạt chất và `ten_khac` (qua `thanh_phan`), đúng biểu thức `f_unaccent(lower(...))` của các index GIN (đã kiểm bằng `EXPLAIN` với `enable_seqscan = off`). Hoạt chất khớp thì mọi sản phẩm hiển thị chứa nó khớp theo. Chưa tìm trong nội dung chuyên môn hay `chi_dinh` (triệu chứng, công dụng): đó là phần ngữ nghĩa của T7.2.
+  - **Xếp hạng** = độ khớp làm tròn 0,1 (để chênh lệch nhỏ như 0,83 và 0,87 không lấn át "còn hàng" và "bán chạy"), rồi còn hàng, rồi bán chạy, rồi độ khớp thô, rồi `id`. Thuốc kê đơn có mặt, kèm "Cần tư vấn" (KVL04, spec 07 mục 271); không có khu quảng bá nên không cần loại.
+  - **Từ khóa dưới 2 ký tự** trả rỗng (không phải 400) để ô gõ tìm kiếm không hiện lỗi giữa chừng; không ghi lịch sử.
+  - **Lịch sử tìm kiếm** ghi cả khi không có người (không `khach_hang_id`, không `ma_phien`) để thống kê từ khóa không kết quả (index `lich_su_tim_kiem_rong`); chỉ trang 1; dedupe 30 phút; giới hạn ghi theo IP như lịch sử xem (QĐ-19). Từ khóa là chuỗi người dùng gõ: không phải dữ liệu sức khỏe của hồ sơ nhưng có thể gợi ý bệnh; chỉ nằm trong bảng này, không đưa vào log ứng dụng hay nhật ký hệ thống.
+  - **Gợi ý** = tối đa 6 sản phẩm + 2 hoạt chất (có sản phẩm hiển thị); không ghi lịch sử; không dùng khóa cache vì rẻ (~30 ms).
+- **Hệ quả:** spec 06 mục 3.13, 09; `modules/cua_hang/tim_kiem.py`; `frontend/src/khu/cua-hang/{OTimKiem,TrangTimKiem,timKiem}`; `backend/CLAUDE.md`.
+

@@ -372,21 +372,26 @@ _Danh mục, sản phẩm, nội dung chuyên môn, trang cửa hàng, tìm ki�
   - **Backend:** `modules/cua_hang/` (`hien_thi.py` điều kiện dùng chung, `danh_muc.py`, `danh_sach.py`, `chi_tiet.py`, `schemas.py`, `router.py`; 7 route công khai, spec 06 mục 3.13). Seed mẫu thêm 4 banner (ảnh SVG ở `frontend/public/banner/`) và nội dung chuyên môn đã duyệt cho 7 sản phẩm (có một thuốc kê đơn), nạp lại an toàn và không đè phiên bản dược sĩ đã soạn.
   - **Frontend:** `khu/cua-hang/` (`TrangChu`, `TrangDanhMuc` + `BoLocSanPham`, `TrangChiTietSanPham`, `TheSanPham`, `MenuDanhMuc`, `cuaHang.ts` logic thuần có test bảng ca), `lib/lienKet.ts` (chỉ `/...` hoặc `http(s)://host` vào href/src), `lib/maPhien.ts`. Nút "Thêm vào giỏ" của sản phẩm thường bị khóa tới T4.1; thuốc kê đơn không bao giờ có nút này.
   - **Đã chạy thật:** backend 1763 test, frontend 686 test (cả `TZ=America/Los_Angeles` cho `lib/` và `khu/cua-hang/`), lint, `tsc`, build; Chromium thật 41/41 trên dữ liệu mẫu (banner tải được, nổi bật không có kê đơn, lọc loại/thương hiệu/giá/sắp xếp trên URL, đổi đơn vị đổi giá, kê đơn không có nút giỏ và có nút tư vấn, TPCN có dòng "không phải là thuốc", ẩn danh mục cha làm sản phẩm con biến mất và bật lại thì hiện lại, lịch sử xem theo mã phiên và theo khách đăng nhập, không tràn ngang ở 360px, không lỗi console). Phát hiện khi chạy thật và đã sửa: trang chi tiết tải khi khách chưa lấy lại xong phiên thì ghi lịch sử xem thành vãng lai (nay chờ `daKhoiPhuc`).
-  - **Chưa làm:** hỏi đáp (KTV15) và tạo đánh giá (KTV10, T5.x); giỏ hàng (T4.1); tìm kiếm (T2.5); số lượng tối đa mỗi đơn hiển thị ở chi tiết (T4.1 cùng giỏ).
+  - **Chưa làm:** hỏi đáp (KTV15) và tạo đánh giá (KTV10, T5.x); giỏ hàng (T4.1); số lượng tối đa mỗi đơn hiển thị ở chi tiết (T4.1 cùng giỏ).
   - **Rà soát nghiệp vụ (agent `nghiep-vu-reviewer`): không có mức Cao; 2 Trung bình và 3 Thấp đã sửa kèm test, 2 Thấp chấp nhận/ghi nhận.** M1: `lich_su_xem` phình khi client quay `X-Ma-Phien`: giới hạn 120 lượt ghi/10 phút/IP (vượt thì vẫn trả sản phẩm, không ghi); index `(ma_phien, san_pham_id, created_at)` ghi vào "Việc phát sinh" vì cần `/doi-schema`. M2: "bán chạy" dùng truy vấn con tương quan (đo ở 20.000 sản phẩm × 300.000 dòng: trang chủ 2,4 s, sắp xếp 5,0 s): nay gộp một lần rồi nối (`ban_chay_30_ngay`). L2: tên người đánh giá một từ hoặc có chữ số/"@" không còn lộ SĐT, email. L3: slug sai mẫu (400) hiện trang 404 thay vì lỗi thử lại. L4: `?trang=` vượt số trang hiện nút "Về trang 1". L1 (kiểm tra rồi ghi, hai request đồng thời có thể ghi hai dòng) và L5 (`con_hang` không xét đơn vị online) ghi vào QĐ-19 là chấp nhận. Backend 1767 test, frontend 689 test xanh.
 
 
-### [ ] T2.5 · Tìm kiếm từ khóa
+### [x] T2.5 · Tìm kiếm từ khóa
 - **Chức năng:** KVL04 (Tìm kiếm thông minh)
 - **Phụ thuộc:** T2.4
 - **Bảng:** `san_pham`, `hoat_chat`, `thanh_phan`, `tai_lieu_tri_thuc`, `lich_su_tim_kiem`
 - **Tiêu chí chấp nhận:**
-  - [ ] Tìm không dấu, sai chính tả, theo tiền tố bằng `word_similarity` (`f_unaccent(lower(:q)) <% f_unaccent(lower(ten))`, spec 02 mục 4.1) trên tên sản phẩm, hoạt chất, tên khác; gợi ý khi gõ (≤ 8 kết quả, < 200 ms trên dữ liệu mẫu). Test: "para" ra Paracetamol, "paracetmol" (gõ sai) ra Paracetamol, "bo phe" ra "Bổ phế".
-  - [ ] Xếp hạng: độ khớp, còn hàng trước, bán chạy; thuốc kê đơn có nhãn "Cần tư vấn".
-  - [ ] Ghi `lich_su_tim_kiem` (`che_do = tu_khoa`). Phần tìm ngữ nghĩa nối vào ở T7.2.
+  - [x] Tìm không dấu, sai chính tả, theo tiền tố bằng `word_similarity` (`f_unaccent(lower(:q)) <% f_unaccent(lower(ten))`, spec 02 mục 4.1) trên tên sản phẩm, hoạt chất, tên khác; gợi ý khi gõ (≤ 8 kết quả, < 200 ms trên dữ liệu mẫu). Test: "para" ra Paracetamol, "paracetmol" (gõ sai) ra Paracetamol, "bo phe" ra "Bổ phế".
+  - [x] Xếp hạng: độ khớp, còn hàng trước, bán chạy; thuốc kê đơn có nhãn "Cần tư vấn".
+  - [x] Ghi `lich_su_tim_kiem` (`che_do = tu_khoa`). Phần tìm ngữ nghĩa nối vào ở T7.2.
 - **Giao diện:**
-  - [ ] Ô tìm kiếm có gợi ý, trang kết quả.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Ô tìm kiếm có gợi ý, trang kết quả.
+- **Ghi chú triển khai:**
+  - **Quyết định ở QĐ-20:** khớp bằng `word_similarity` trên tên sản phẩm, hoạt chất và tên khác (đã kiểm `EXPLAIN`: cả hai index GIN được dùng); xếp hạng độ khớp làm tròn 0,1 → còn hàng → bán chạy; từ khóa dưới 2 ký tự trả rỗng; lịch sử tìm kiếm ghi ở trang 1, dedupe 30 phút, giới hạn 120 lượt/10 phút/IP; chưa tìm theo triệu chứng/công dụng (ngữ nghĩa, T7.2).
+  - **Backend:** `modules/cua_hang/tim_kiem.py`, `GET /tim-kiem` và `GET /tim-kiem/goi-y` (spec 06 mục 3.13). **Frontend:** `OTimKiem` (AutoComplete ở header, trễ 250 ms), `TrangTimKiem`, `timKiem.ts`.
+  - **Đã chạy thật:** backend 1805 test, frontend 706 test, lint, `tsc`, build; Chromium thật 17/17 ("para", "paracetmol" gõ sai, "bo phe" không dấu, "acetaminophen" là tên khác của hoạt chất, kê đơn kèm "Cần tư vấn", không kết quả, gợi ý ≤ 8 kèm nhãn Hoạt chất, chọn gợi ý mở chi tiết, API gợi ý 35 ms, `lich_su_tim_kiem` ghi cả `so_ket_qua = 0`, 360px không tràn ngang, không lỗi console).
+  - **Chưa làm:** tìm theo triệu chứng/công dụng và `tai_lieu_tri_thuc` (T7.2); cập nhật bán chạy/còn hàng theo thời gian thực không có cache nên mỗi lượt gõ là một truy vấn (đo ~30 ms).
+
 
 ### [ ] T2.6 · Banner, bài viết, chính sách, FAQ
 - **Chức năng:** AD07 (Quản lý banner, bài viết, chính sách, FAQ), KVL11 (Xem bài viết sức khỏe, chính sách, FAQ)

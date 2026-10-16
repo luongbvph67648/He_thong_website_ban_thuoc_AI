@@ -1,6 +1,7 @@
 """Schema phản hồi của cửa hàng công khai (spec 06 mục 3.13). Chỉ đọc nên tiền dùng `TienDoc`."""
 
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel
 
@@ -152,3 +153,13 @@ class SanPhamChiTietCongKhai(BaseModel):
     con_hang: bool
     danh_gia: TongHopDanhGia
     tuong_tu: list[SanPhamThe]
+
+
+class GoiYTimKiem(BaseModel):
+    """Một dòng gợi ý khi gõ: sản phẩm (bấm vào mở thẳng chi tiết) hoặc hoạt chất (bấm vào để tìm)."""
+
+    kieu: Literal["san_pham", "hoat_chat"]
+    ten: str
+    slug: str | None
+    loai_san_pham: LoaiSanPham | None
+    can_tu_van: bool

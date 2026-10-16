@@ -6,7 +6,7 @@ from fastapi import APIRouter, Depends, Header, Path, Query, Request
 from pydantic import Field
 
 from app.core.db import Db
-from app.core.gioi_han import GioiHanCuaSoTruot, lay_bo_gioi_han_lich_su_xem
+from app.core.gioi_han import GioiHanCuaSoTruot, lay_bo_gioi_han_lich_su_xem, lay_bo_gioi_han_tim_kiem
 from app.core.phan_quyen import khach_tuy_chon
 from app.core.phan_trang import PhanTrang, Trang
 from app.core.tham_so import KHONG_NUL
@@ -15,6 +15,7 @@ from app.models.khach_hang import KhachHang
 from app.modules.cua_hang import chi_tiet as dich_vu_chi_tiet
 from app.modules.cua_hang import danh_muc as dich_vu_danh_muc
 from app.modules.cua_hang import danh_sach as dich_vu_danh_sach
+from app.modules.cua_hang import tim_kiem as dich_vu_tim_kiem
 from app.modules.cua_hang.chi_tiet import NguonXem
 from app.modules.cua_hang.danh_sach import BoLoc, SapXep
 from app.modules.cua_hang.schemas import (
@@ -22,6 +23,7 @@ from app.modules.cua_hang.schemas import (
     BoLocSanPham,
     DanhMucChiTiet,
     DanhMucCongKhai,
+    GoiYTimKiem,
     SanPhamChiTietCongKhai,
     SanPhamThe,
     TrangChu,
@@ -88,8 +90,38 @@ async def bo_loc(db: Db, danh_muc: SlugDanhMuc = None):
     return await dich_vu_danh_sach.bo_loc(db, danh_muc)
 
 
+TuKhoa = Annotated[str, Query(max_length=300, pattern=KHONG_NUL, description="Từ khóa tìm kiếm")]
+
+
+@router.get("/tim-kiem", response_model=Trang[SanPhamThe], summary="Tìm kiếm sản phẩm theo từ khóa (KVL04)")
+async def tim_kiem(
+    request: Request,
+    db: Db,
+    tp: PhanTrang,
+    khach: Annotated[KhachHang | None, Depends(khach_tuy_chon)],
+    bo_gioi_han: Annotated[GioiHanCuaSoTruot, Depends(lay_bo_gioi_han_tim_kiem)],
+    q: TuKhoa = "",
+    x_ma_phien: Annotated[str | None, Header(max_length=200)] = None,
+):
+    tu_khoa = dich_vu_tim_kiem.chuan_hoa_tu_khoa(q)
+    ket_qua = await dich_vu_tim_kiem.tim_san_pham(db, tu_khoa, tp)
+    # Chỉ ghi lần tìm ở trang 1 (đổi trang không phải tìm mới); quá giới hạn thì vẫn trả kết quả, chỉ không ghi.
+    ghi = len(tu_khoa) >= dich_vu_tim_kiem.TOI_THIEU_KY_TU and tp.trang == 1
+    if ghi and bo_gioi_han.thu(f"tim:{dia_chi_ip(request)}", GHI_TIM_TOI_DA_MOI_IP, GHI_TIM_CUA_SO_GIAY) is None:
+        ma_phien = dich_vu_chi_tiet.ma_phien_hop_le(x_ma_phien)
+        await dich_vu_tim_kiem.ghi_lich_su_tim_kiem(db, tu_khoa, ket_qua.tong, khach=khach, ma_phien=ma_phien)
+    return ket_qua
+
+
+@router.get("/tim-kiem/goi-y", response_model=list[GoiYTimKiem], summary="Gợi ý khi đang gõ (KVL04)")
+async def goi_y_tim_kiem(db: Db, q: TuKhoa = ""):
+    return await dich_vu_tim_kiem.goi_y(db, dich_vu_tim_kiem.chuan_hoa_tu_khoa(q))
+
+
 GHI_XEM_TOI_DA_MOI_IP = 120
 GHI_XEM_CUA_SO_GIAY = 600
+GHI_TIM_TOI_DA_MOI_IP = 120
+GHI_TIM_CUA_SO_GIAY = 600
 
 
 @router.get("/san-pham/{slug}", response_model=SanPhamChiTietCongKhai, summary="Chi tiết sản phẩm (KVL03)")

@@ -49,6 +49,7 @@ class GioiHanCuaSoTruot:
 _bo_otp_toan_cuc = GioiHanCuaSoTruot()
 _bo_dang_nhap_toan_cuc = GioiHanCuaSoTruot()
 _bo_lich_su_xem_toan_cuc = GioiHanCuaSoTruot()
+_bo_tim_kiem_toan_cuc = GioiHanCuaSoTruot()
 
 
 def lay_bo_gioi_han_otp() -> GioiHanCuaSoTruot:
@@ -64,3 +65,8 @@ def lay_bo_gioi_han_dang_nhap() -> GioiHanCuaSoTruot:
 def lay_bo_gioi_han_lich_su_xem() -> GioiHanCuaSoTruot:
     """Bộ đếm theo IP cho việc GHI lịch sử xem sản phẩm (route công khai, mã phiên do client tự chọn)."""
     return _bo_lich_su_xem_toan_cuc
+
+
+def lay_bo_gioi_han_tim_kiem() -> GioiHanCuaSoTruot:
+    """Bộ đếm theo IP cho việc GHI lịch sử tìm kiếm (route công khai)."""
+    return _bo_tim_kiem_toan_cuc

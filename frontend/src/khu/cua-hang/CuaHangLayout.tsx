@@ -1,10 +1,11 @@
 import { LogoutOutlined, ShoppingCartOutlined, UserOutlined } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
-import { Button, Input, Layout, Skeleton, Space, Typography } from 'antd'
+import { Button, Layout, Skeleton, Space, Typography } from 'antd'
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { dangXuatKhach } from '../../api/dangXuat'
 import { usePhien } from '../../stores/phien'
 import { MenuDanhMuc } from './MenuDanhMuc'
+import { OTimKiem } from './OTimKiem'
 
 const { Header, Content, Footer } = Layout
 
@@ -42,15 +43,7 @@ export default function CuaHangLayout() {
         <Link to="/" style={{ fontSize: 20, fontWeight: 600, whiteSpace: 'nowrap' }}>
           Nhà thuốc AI
         </Link>
-        <Input.Search
-          placeholder="Tìm thuốc, thực phẩm chức năng, thiết bị y tế…"
-          allowClear
-          style={{ flex: '1 1 240px', maxWidth: 560 }}
-          onSearch={(q) => {
-            const tu = q.trim()
-            if (tu) dieuHuong(`/tim-kiem?q=${encodeURIComponent(tu)}`)
-          }}
-        />
+        <OTimKiem />
         <Space size="large">
           <Link to="/gio-hang">
             <ShoppingCartOutlined /> Giỏ hàng

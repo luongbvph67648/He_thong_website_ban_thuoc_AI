@@ -1215,6 +1215,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tim-kiem": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tìm kiếm sản phẩm theo từ khóa (KVL04) */
+        get: operations["tim_kiem_api_v1_tim_kiem_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tim-kiem/goi-y": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Gợi ý khi đang gõ (KVL04) */
+        get: operations["goi_y_tim_kiem_api_v1_tim_kiem_goi_y_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/san-pham/{slug}": {
         parameters: {
             query?: never;
@@ -1695,6 +1729,24 @@ export interface components {
             bang: string[];
             /** Hanh Dong */
             hanh_dong: string[];
+        };
+        /**
+         * GoiYTimKiem
+         * @description Một dòng gợi ý khi gõ: sản phẩm (bấm vào mở thẳng chi tiết) hoặc hoạt chất (bấm vào để tìm).
+         */
+        GoiYTimKiem: {
+            /**
+             * Kieu
+             * @enum {string}
+             */
+            kieu: "san_pham" | "hoat_chat";
+            /** Ten */
+            ten: string;
+            /** Slug */
+            slug: string | null;
+            loai_san_pham: components["schemas"]["LoaiSanPham"] | null;
+            /** Can Tu Van */
+            can_tu_van: boolean;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -5697,6 +5749,76 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BoLocSanPham"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tim_kiem_api_v1_tim_kiem_get: {
+        parameters: {
+            query?: {
+                /** @description Từ khóa tìm kiếm */
+                q?: string;
+                /** @description Số trang, bắt đầu từ 1 */
+                trang?: number;
+                /** @description Số dòng mỗi trang */
+                kich_thuoc?: number;
+            };
+            header?: {
+                "x-ma-phien"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Trang_SanPhamThe_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    goi_y_tim_kiem_api_v1_tim_kiem_goi_y_get: {
+        parameters: {
+            query?: {
+                /** @description Từ khóa tìm kiếm */
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GoiYTimKiem"][];
                 };
             };
             /** @description Validation Error */
