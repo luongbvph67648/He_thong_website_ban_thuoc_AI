@@ -6,7 +6,7 @@ import uuid
 from collections.abc import AsyncIterator
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Request
+from fastapi import APIRouter, Depends, Request, WebSocket
 from fastapi.responses import StreamingResponse
 
 from app.ai import chatbot
@@ -16,8 +16,8 @@ from app.core.loi import LoiNghiepVu
 from app.core.phan_quyen import khach_tuy_chon
 from app.models.khach_hang import KhachHang
 from app.modules.tai_khoan.phien_http import dia_chi_ip
-from app.modules.tu_van import dich_vu
-from app.modules.tu_van.schemas import ChatVao, DanhGiaVao, LichSuRa
+from app.modules.tu_van import chuyen_duoc_si, dich_vu, ws
+from app.modules.tu_van.schemas import ChatVao, DanhGiaVao, GapDuocSiRa, GapDuocSiVao, LichSuRa
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/tu-van", tags=["Tư vấn AI"])
@@ -108,3 +108,14 @@ async def lich_su(ma_phien: uuid.UUID, db: Db, khach: KhachTuyChon):
 @router.post("/danh-gia", status_code=204, summary="Báo câu trả lời hữu ích hoặc sai (KVL05)")
 async def danh_gia(vao: DanhGiaVao, db: Db, khach: KhachTuyChon):
     await dich_vu.danh_gia(db, khach, vao.ma_phien, vao.tin_nhan_id, vao.ket_qua)
+
+
+@router.post("/gap-duoc-si", response_model=GapDuocSiRa, summary="Chuyển cuộc trò chuyện cho dược sĩ (KTV12, AI04)")
+async def gap_duoc_si(vao: GapDuocSiVao, db: Db, khach: KhachTuyChon):
+    """Trong giờ làm việc: `cho_duoc_si`; ngoài giờ: `cho_goi_lai` kèm số điện thoại. Có tóm tắt AI04 cho dược sĩ."""
+    return await chuyen_duoc_si.chuyen_cho_duoc_si(db, khach, vao.ma_phien, vao.so_dien_thoai)
+
+
+@router.websocket("/ws")
+async def chat_ws(websocket: WebSocket, ma_phien: uuid.UUID, tao_phien: Annotated[TaoPhien, Depends(lay_tao_phien)]):
+    await ws.phuc_vu(websocket, ma_phien, tao_phien)

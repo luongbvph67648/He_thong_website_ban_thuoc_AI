@@ -13,6 +13,7 @@ from app.core.thoi_gian import bay_gio_utc
 from app.models.ban_hang import DonHang, LichSuTrangThai, YeuCauDoiTra, YeuCauDonThuoc
 from app.models.enums import HinhThucNhan, TrangThaiDoiTra, TrangThaiDon, TrangThaiYeuCauDonThuoc
 from app.modules.ban_hang.trang_thai import NGUON_HE_THONG, TacNhan, chuyen_trang_thai
+from app.modules.tu_van.chuyen_duoc_si import dong_phien_khong_hoat_dong
 
 TT = TrangThaiDon
 
@@ -25,6 +26,7 @@ class KetQuaHt08Don:
     da_huy_qua_han_quay: list[str] = field(default_factory=list)
     bo_qua: list[str] = field(default_factory=list)
     nha_khoa_don_thuoc: list[str] = field(default_factory=list)
+    phien_chat_da_dong: list[int] = field(default_factory=list)
 
 
 def _moc_vao_trang_thai(trang_thai: TrangThaiDon):
@@ -76,6 +78,7 @@ async def tu_hoan_tat_don(db: AsyncSession) -> KetQuaHt08Don:
             except LoiNghiepVu:
                 ket_qua.bo_qua.append(don.ma_don)
     ket_qua.nha_khoa_don_thuoc = await nha_khoa_don_thuoc_qua_han(db)
+    ket_qua.phien_chat_da_dong = await dong_phien_khong_hoat_dong(db)  # dòng 6 của hội thoại (spec 04 mục 1.6)
     return ket_qua
 
 
