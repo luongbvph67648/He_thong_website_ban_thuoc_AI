@@ -1597,6 +1597,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/noi-bo/bao-cao/nhap-xuat-ton": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Báo cáo nhập xuất tồn (KHO13) */
+        get: operations["bao_cao_api_v1_noi_bo_bao_cao_nhap_xuat_ton_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/bao-cao/nhap-xuat-ton/excel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Xuất Excel báo cáo nhập xuất tồn (KHO13) */
+        get: operations["xuat_excel_api_v1_noi_bo_bao_cao_nhap_xuat_ton_excel_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/noi-bo/kiem-ke": {
         parameters: {
             query?: never;
@@ -2726,6 +2760,39 @@ export interface components {
             /** Cho Duyet */
             cho_duyet: boolean;
         };
+        /** DongNxt */
+        DongNxt: {
+            /** San Pham Id */
+            san_pham_id: number;
+            /** Sku */
+            sku: string;
+            /** Ten */
+            ten: string;
+            /** Lo Id */
+            lo_id?: number | null;
+            /** So Lo */
+            so_lo?: string | null;
+            /** Han Su Dung */
+            han_su_dung?: string | null;
+            /** Ton Dau */
+            ton_dau: number;
+            /** Nhap Kho */
+            nhap_kho: number;
+            /** Hoan Nhap */
+            hoan_nhap: number;
+            /** Nhan Tra Ve */
+            nhan_tra_ve: number;
+            /** Dieu Chinh */
+            dieu_chinh: number;
+            /** Xuat Ban */
+            xuat_ban: number;
+            /** Huy Hang */
+            huy_hang: number;
+            /** Xuat Tra Ncc */
+            xuat_tra_ncc: number;
+            /** Ton Cuoi */
+            ton_cuoi: number;
+        };
         /** DongPhieuRa */
         DongPhieuRa: {
             /** Lo Id */
@@ -3310,6 +3377,11 @@ export interface components {
             /** Ip */
             ip: string | null;
         };
+        /**
+         * Nhom
+         * @enum {string}
+         */
+        Nhom: "san_pham" | "lo";
         /** NhomCanhBao[LoCanhBao] */
         NhomCanhBao_LoCanhBao_: {
             /** Tong */
@@ -4263,6 +4335,17 @@ export interface components {
         Trang_DongNoiDung_: {
             /** Du Lieu */
             du_lieu: components["schemas"]["DongNoiDung"][];
+            /** Tong */
+            tong: number;
+            /** Trang */
+            trang: number;
+            /** Kich Thuoc */
+            kich_thuoc: number;
+        };
+        /** Trang[DongNxt] */
+        Trang_DongNxt_: {
+            /** Du Lieu */
+            du_lieu: components["schemas"]["DongNxt"][];
             /** Tong */
             tong: number;
             /** Trang */
@@ -8416,6 +8499,86 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CanhBaoKhoRa"];
+                };
+            };
+        };
+    };
+    bao_cao_api_v1_noi_bo_bao_cao_nhap_xuat_ton_get: {
+        parameters: {
+            query: {
+                /** @description Từ ngày (giờ VN), gồm ngày này */
+                tu_ngay: string;
+                /** @description Đến ngày (giờ VN), gồm ngày này */
+                den_ngay: string;
+                khu?: components["schemas"]["KhuTon"];
+                nhom?: components["schemas"]["Nhom"];
+                san_pham_id?: number | null;
+                q?: string | null;
+                /** @description Số trang, bắt đầu từ 1 */
+                trang?: number;
+                /** @description Số dòng mỗi trang */
+                kich_thuoc?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Trang_DongNxt_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    xuat_excel_api_v1_noi_bo_bao_cao_nhap_xuat_ton_excel_get: {
+        parameters: {
+            query: {
+                /** @description Từ ngày (giờ VN), gồm ngày này */
+                tu_ngay: string;
+                /** @description Đến ngày (giờ VN), gồm ngày này */
+                den_ngay: string;
+                khu?: components["schemas"]["KhuTon"];
+                nhom?: components["schemas"]["Nhom"];
+                san_pham_id?: number | null;
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

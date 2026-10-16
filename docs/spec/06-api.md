@@ -282,6 +282,13 @@ Kho lập (`day_du`), Admin duyệt; ba loại phiếu cùng đi qua một luồ
   - `POST /{loai}/{id}/tu-choi` `{ly_do}` (1 đến 1.000 ký tự, bắt buộc): cùng các kiểm tra (kể cả `TU_DUYET_KHONG_DUOC`, vì ràng buộc CSDL `nguoi_duyet_id <> nguoi_lap_id` áp cho cả từ chối); `tu_choi`, `ly_do_tu_choi`; tồn KHÔNG đổi; nhật ký `tu_choi`.
   - Thông báo cho người lập về kết quả duyệt: `thong_bao` loại `phieu_kho_da_duyet` hoặc `phieu_kho_tu_choi`, liên kết `/nhan-vien/<trang của loại>`.
 
+### 3.19 Báo cáo nhập - xuất - tồn (KHO13, T3.5)
+Quyền `report.inventory` (`xem`: kho và Admin). Tính hoàn toàn từ `bien_dong_kho`; ngày tính theo giờ Việt Nam, kỳ gồm cả `tu_ngay` và `den_ngay`.
+- `GET /noi-bo/bao-cao/nhap-xuat-ton?tu_ngay=&den_ngay=&khu=kho_ban|biet_tru&nhom=san_pham|lo&san_pham_id=&q=&trang=&kich_thuoc=` -> trang `{san_pham_id, sku, ten, [lo_id, so_lo, han_su_dung khi nhom=lo], ton_dau, nhap_kho, hoan_nhap, nhan_tra_ve, dieu_chinh, xuat_ban, huy_hang, xuat_tra_ncc, ton_cuoi}`. `khu` mặc định `kho_ban` (khớp `lo_thuoc.so_luong_ton`; `biet_tru` khớp `so_luong_biet_tru`).
+  - Các cột là tổng `so_luong` CÓ DẤU theo loại biến động trong kỳ (nhập dương, xuất âm); `ton_dau` = tổng trước `tu_ngay`; `ton_cuoi` = `ton_dau` + tổng các cột loại. Chỉ trả dòng có tồn đầu khác 0 hoặc có phát sinh trong kỳ.
+  - `den_ngay` < `tu_ngay` hoặc kỳ dài hơn 3.660 ngày là `400 DU_LIEU_KHONG_HOP_LE`.
+- `GET /noi-bo/bao-cao/nhap-xuat-ton/excel` cùng bộ lọc (không phân trang), trả file `.xlsx`; quá 20.000 dòng là `400` (thu hẹp bộ lọc). Chuỗi bắt đầu bằng `= + - @` được thêm dấu nháy để Excel không hiểu là công thức.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

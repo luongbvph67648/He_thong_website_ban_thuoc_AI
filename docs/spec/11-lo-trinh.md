@@ -500,17 +500,21 @@ _Nhập kho theo lô, thẻ kho, cảnh báo, kiểm kê, hủy, xuất trả, b
     5. Giao diện: danh sách chờ duyệt cho Admin (gộp 3 loại phiếu) + form phiếu hủy/xuất trả; đăng ký route ở `src/router.tsx` (`TRANG_NHAN_VIEN_THAT`) và `menu.ts`.
   - Quy ước làm tiết kiệm token: chỉ chạy test phần bị ảnh hưởng khi đang làm, chạy full một lần cuối task; `nghiep-vu-reviewer` chạy gộp một lần sau T3.5 (QĐ-22). `LoiNghiepVu` truyền `chi_tiet=` bằng keyword. Mỗi khi đổi backend phải restart uvicorn trước `npm run gen:api`.
 
-### [ ] T3.5 · Báo cáo nhập - xuất - tồn
+### [x] T3.5 · Báo cáo nhập - xuất - tồn
 - **Chức năng:** KHO13 (Báo cáo nhập, xuất, tồn)
 - **Phụ thuộc:** T3.4
 - **Bảng:** `bien_dong_kho`, `lo_thuoc`
 - **Tiêu chí chấp nhận:**
-  - [ ] Theo kỳ (từ ngày - đến ngày), theo sản phẩm hoặc lô: tồn đầu, nhập, xuất (theo loại biến động), tồn cuối, tính hoàn toàn từ `bien_dong_kho`.
-  - [ ] Test: tồn cuối báo cáo = `so_luong_ton` hiện tại khi đến ngày = hôm nay.
-  - [ ] Xuất file Excel (`openpyxl`).
+  - [x] Theo kỳ (từ ngày - đến ngày), theo sản phẩm hoặc lô: tồn đầu, nhập, xuất (theo loại biến động), tồn cuối, tính hoàn toàn từ `bien_dong_kho`.
+  - [x] Test: tồn cuối báo cáo = `so_luong_ton` hiện tại khi đến ngày = hôm nay.
+  - [x] Xuất file Excel (`openpyxl`).
 - **Giao diện:**
-  - [ ] Màn báo cáo có bộ lọc và nút xuất Excel.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Màn báo cáo có bộ lọc và nút xuất Excel.
+- **Ghi chú triển khai:**
+  - Spec 06 mục 3.19. Cột theo từng loại biến động là tổng có dấu (nhập dương, xuất âm); tồn cuối = tồn đầu + tổng; mặc định khu `kho_ban` (khớp `so_luong_ton`), chọn được `biet_tru`. Nhóm theo sản phẩm hoặc theo lô.
+  - Excel: `openpyxl`, tối đa 20.000 dòng, chặn chuỗi công thức. Giao diện `/nhan-vien/bao-cao-nxt` (bộ lọc kỳ, nhóm, khu, tìm kiếm, nút xuất Excel).
+  - Chưa làm: báo cáo theo giá trị tiền (chỉ số lượng, đơn vị cơ sở).
+
 
 ## P4 · Bán hàng online
 
