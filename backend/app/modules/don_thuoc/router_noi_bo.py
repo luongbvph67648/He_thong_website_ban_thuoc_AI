@@ -13,6 +13,7 @@ from app.modules.don_thuoc.schemas_duyet import (
     CanhBaoRa,
     CanhBaoVao,
     HangChoRa,
+    LuuThuocTrenDonVao,
     SanPhamChon,
     TaoDonRa,
     TaoDonVao,
@@ -39,6 +40,15 @@ async def chi_tiet(yc_id: IdInt, nv: Duyet, db: Db):
 @router.post("/noi-bo/don-thuoc/{yc_id}/nhan", response_model=YeuCauDuyetRa, summary="Nhận xử lý, khóa yêu cầu (DS04)")
 async def nhan(yc_id: IdInt, nv: Duyet, db: Db):
     return await duyet.nhan_xu_ly(db, nv, yc_id)
+
+
+@router.put(
+    "/noi-bo/don-thuoc/{yc_id}/thuoc-tren-don",
+    response_model=YeuCauDuyetRa,
+    summary="Chốt danh sách thuốc trên đơn: sửa/xác nhận gợi ý của AI06 (DS04)",
+)
+async def luu_thuoc_tren_don(yc_id: IdInt, vao: LuuThuocTrenDonVao, nv: Duyet, db: Db):
+    return await duyet.luu_thuoc_tren_don(db, nv, yc_id, vao)
 
 
 @router.post("/noi-bo/don-thuoc/{yc_id}/nha", status_code=204, summary="Trả yêu cầu về hàng chờ (DS04)")

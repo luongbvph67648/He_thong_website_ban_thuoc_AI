@@ -870,14 +870,14 @@ _Kho tri thức, tìm kiếm lai, chatbot RAG, chuyển dược sĩ, đọc ản
   - [x] Nút chụp ảnh tra cứu trên thanh tìm kiếm (mobile).
 - **Ghi chú triển khai:** `ai/anh.py` (Pillow, dùng lại cho T7.6), `ai/doc_anh.py` + `ai/prompts/doc_anh_hop_thuoc.md` (AI05), `modules/tra_cuu_anh/{dich_vu,router,schemas}.py`, API spec 06 mục 3.43, QĐ-46. LỆCH spec: ảnh gửi bằng multipart thay vì base64 (QĐ-46); chi phí lượt tra ảnh chưa cộng vào ngân sách ngày của chat. Giao diện `/tra-cuu-anh` (chụp/chọn ảnh, xem trước, kết quả, cảnh báo) và nút máy ảnh cạnh ô tìm kiếm. Test `tests/ai/test_tra_cuu_anh.py` (20), `TrangTraCuuAnh.test.tsx`. CHƯA thử với ảnh hộp thuốc thật và Claude thật.
 
-### [ ] T7.6 · Đọc ảnh đơn thuốc hỗ trợ dược sĩ
+### [x] T7.6 · Đọc ảnh đơn thuốc hỗ trợ dược sĩ
 - **Chức năng:** AI06 (Đọc ảnh đơn thuốc)
 - **Phụ thuộc:** T7.1, T5.3
 - **Bảng:** `yeu_cau_don_thuoc`, `ct_yeu_cau_don_thuoc`
 - **Tiêu chí chấp nhận:**
-  - [ ] Khi yêu cầu đơn thuốc được tạo: job đọc ảnh → `ket_qua_ai`, `ct_yeu_cau_don_thuoc` (tên trên đơn, hàm lượng, số lượng kê, `do_tin_cay_ai`, gợi ý `san_pham_id`).
-  - [ ] Màn duyệt DS04 hiển thị gợi ý kèm độ tin cậy, dược sĩ sửa/xác nhận (`do_duoc_si_nhap`). AI không tự duyệt.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Khi yêu cầu đơn thuốc được tạo: job đọc ảnh → `ket_qua_ai`, `ct_yeu_cau_don_thuoc` (tên trên đơn, hàm lượng, số lượng kê, `do_tin_cay_ai`, gợi ý `san_pham_id`).
+  - [x] Màn duyệt DS04 hiển thị gợi ý kèm độ tin cậy, dược sĩ sửa/xác nhận (`do_duoc_si_nhap`). AI không tự duyệt.
+- **Ghi chú triển khai:** `ai/doc_don_thuoc.py` + `ai/prompts/doc_don_thuoc.md` (AI06), `modules/don_thuoc/doc_anh_ai.py` (job `ai06_doc_don_thuoc` mỗi phút, gợi ý `san_pham_id`), `duyet.luu_thuoc_tren_don` + `PUT /noi-bo/don-thuoc/{id}/thuoc-tren-don` (vào registry phân quyền). API spec 06 mục 3.44; QĐ-47. Giao diện `ThuocTrenDon.tsx` trong màn DS04 (độ tin cậy, sửa/thêm/xóa dòng, nút tìm sản phẩm, lưu). Test `tests/ai/test_doc_don_thuoc.py` (13), `ThuocTrenDon.test.tsx` (11). CHƯA thử với ảnh đơn thuốc thật và Claude thật. LƯU Ý: `tao_don` vẫn nhận dòng sản phẩm do dược sĩ chọn ở DS05, không tự lấy từ gợi ý AI.
 
 ### [ ] T7.7 · Gợi ý sản phẩm và mua kèm
 - **Chức năng:** AI07 (Gợi ý sản phẩm tương tự, dành cho bạn), AI08 (Gợi ý mua kèm)

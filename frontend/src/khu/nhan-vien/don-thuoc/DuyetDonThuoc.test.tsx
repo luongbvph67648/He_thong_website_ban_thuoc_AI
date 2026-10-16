@@ -69,7 +69,7 @@ describe('Màn duyệt đơn thuốc (DS04, DS05)', () => {
     const tao = screen.getByRole('button', { name: 'Tạo đơn gửi khách' })
     expect(tao).toBeDisabled()
     await userEvent.type(screen.getByPlaceholderText('Tìm theo tên thuốc hoặc hoạt chất'), 'augmentin')
-    await userEvent.click(await screen.findByRole('button', { name: 'Thêm' }))
+    await userEvent.click((await screen.findByText('Thêm')).closest('button')!)
     expect(await screen.findByText(/khách khai dị ứng/)).toBeInTheDocument()
     for (const cb of screen.getAllByRole('checkbox')) await userEvent.click(cb)
     expect(tao).toBeDisabled() // thiếu ghi chú tư vấn cho cảnh báo chống chỉ định

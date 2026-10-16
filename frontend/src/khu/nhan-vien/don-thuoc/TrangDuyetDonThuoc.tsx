@@ -7,6 +7,7 @@ import { api } from '../../../api/client'
 import { goi, thongDiepChung } from '../../../api/goi'
 import type { components } from '../../../api/schema'
 import { dinhDangNgay, dinhDangTien } from '../../../lib/dinhDang'
+import ThuocTrenDon from './ThuocTrenDon'
 
 type YeuCau = components['schemas']['YeuCauDuyetRa']
 type SanPham = components['schemas']['SanPhamChon']
@@ -221,22 +222,7 @@ export default function TrangDuyetDonThuoc() {
           <Empty image={Empty.PRESENTED_IMAGE_SIMPLE} description="Khách vãng lai hoặc chưa đồng ý chia sẻ hồ sơ sức khỏe" />
         )}
       </Card>
-      {d.thuoc_tren_don.length > 0 && (
-        <Card size="small" title="Thuốc trên đơn (AI đọc, chỉ để tham khảo)">
-          <Table
-            size="small"
-            pagination={false}
-            rowKey={(r) => `${r.ten_thuoc_tren_don}-${r.ham_luong ?? ''}`}
-            dataSource={d.thuoc_tren_don}
-            columns={[
-              { title: 'Thuốc', dataIndex: 'ten_thuoc_tren_don' },
-              { title: 'Hàm lượng', dataIndex: 'ham_luong' },
-              { title: 'SL kê', dataIndex: 'so_luong_ke' },
-              { title: 'Độ tin cậy', dataIndex: 'do_tin_cay_ai' },
-            ]}
-          />
-        </Card>
-      )}
+      <ThuocTrenDon yc={d} onTim={setTuKhoa} />
       <Card size="small" title="Chọn sản phẩm cho đơn">
         <Input.Search allowClear placeholder="Tìm theo tên thuốc hoặc hoạt chất" value={tuKhoa} onChange={(e) => setTuKhoa(e.target.value)} />
         <Space orientation="vertical" style={{ width: '100%', marginTop: 8 }}>

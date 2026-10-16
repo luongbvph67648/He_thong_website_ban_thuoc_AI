@@ -29,11 +29,14 @@ class HangChoRa(BaseModel):
 
 
 class ThuocTrenDonRa(BaseModel):
+    id: int
+    do_duoc_si_nhap: bool
     ten_thuoc_tren_don: str
     ham_luong: str | None
     so_luong_ke: str | None
     do_tin_cay_ai: TienDoc | None
     san_pham_id: int | None
+    ten_san_pham: str | None
 
 
 class TrungAnhRa(BaseModel):
@@ -130,3 +133,20 @@ class TaoDonRa(BaseModel):
     don: DonHangRa
     lien_ket_xac_nhan: str | None
     """Link có mã truy cập cho khách vãng lai (đã gửi SMS); thành viên xác nhận trong tài khoản (`null`)."""
+
+
+class ThuocTrenDonVao(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    id: Annotated[int | None, Field(ge=1, le=2_147_483_647)] = None
+    """Có `id` = dòng AI gợi ý (hoặc dòng đã lưu); không có = dòng dược sĩ thêm tay."""
+    ten_thuoc_tren_don: Annotated[str, Field(min_length=1, max_length=255, pattern=r"^[^\x00]*$")]
+    ham_luong: Annotated[str | None, Field(max_length=50, pattern=r"^[^\x00]*$")] = None
+    so_luong_ke: Annotated[str | None, Field(max_length=50, pattern=r"^[^\x00]*$")] = None
+    san_pham_id: Annotated[int | None, Field(ge=1, le=2_147_483_647)] = None
+
+
+class LuuThuocTrenDonVao(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    dong: Annotated[list[ThuocTrenDonVao], Field(max_length=50)]

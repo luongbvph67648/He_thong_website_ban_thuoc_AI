@@ -12,6 +12,7 @@ from app.modules.ai_quan_tri.tri_thuc import KetQuaDongBo
 from app.modules.ai_quan_tri.tri_thuc import dong_bo as dong_bo_tri_thuc
 from app.modules.ban_hang.het_han import KetQuaHt03, huy_don_qua_han
 from app.modules.ban_hang.tu_hoan_tat import KetQuaHt08Don, tu_hoan_tat_don
+from app.modules.don_thuoc.doc_anh_ai import KetQuaAi06, doc_don_thuoc_moi
 from app.modules.kho.canh_bao import gui_thong_bao_ht02, nhan_vien_kho
 from app.modules.kho.lo_hang_ngay import KetQuaHt01, cap_nhat_trang_thai_lo
 from app.modules.thong_bao.nhac_mua_lai import KetQuaHt07, nhac_mua_lai
@@ -57,6 +58,11 @@ async def ai_dong_bo_tri_thuc(db: AsyncSession) -> KetQuaDongBo | None:
 
 async def ht08_tu_hoan_tat(db: AsyncSession) -> KetQuaHt08Don:
     return await tu_hoan_tat_don(db)
+
+
+async def ai06_doc_don_thuoc(db: AsyncSession) -> KetQuaAi06:
+    """AI06 mỗi phút: đọc ảnh các yêu cầu đơn thuốc mới để gợi ý cho dược sĩ."""
+    return await doc_don_thuoc_moi(db)
 
 
 async def don_lich_su(db: AsyncSession) -> int:

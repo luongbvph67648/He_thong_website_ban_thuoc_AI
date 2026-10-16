@@ -12,6 +12,7 @@ from app.core.log import cau_hinh_log
 from app.core.thoi_gian import VN_TZ
 from app.jobs.chay import HamJob, chay_job
 from app.jobs.cong_viec import (
+    ai06_doc_don_thuoc,
     ai_dong_bo_tri_thuc,
     don_lich_su,
     ht01_cap_nhat_lo,
@@ -33,6 +34,7 @@ LICH: tuple[tuple[str, HamJob, int, int], ...] = (
 LICH_PHUT: tuple[tuple[str, HamJob, int], ...] = (
     ("ht03_huy_qua_han", ht03_huy_qua_han, 1),
     ("ht08_tu_hoan_tat", ht08_tu_hoan_tat, 15),
+    ("ai06_doc_don_thuoc", ai06_doc_don_thuoc, 1),
 )
 
 

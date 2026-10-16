@@ -3449,6 +3449,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/noi-bo/don-thuoc/{yc_id}/thuoc-tren-don": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Chốt danh sách thuốc trên đơn: sửa/xác nhận gợi ý của AI06 (DS04) */
+        put: operations["luu_thuoc_tren_don_api_v1_noi_bo_don_thuoc__yc_id__thuoc_tren_don_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/noi-bo/don-thuoc/{yc_id}/nha": {
         parameters: {
             query?: never;
@@ -6982,6 +6999,11 @@ export interface components {
          * @enum {string}
          */
         LoaiSanPham: "thuoc_ke_don" | "thuoc_khong_ke_don" | "thuc_pham_chuc_nang" | "duoc_my_pham" | "thiet_bi_y_te";
+        /** LuuThuocTrenDonVao */
+        LuuThuocTrenDonVao: {
+            /** Dong */
+            dong: components["schemas"]["ThuocTrenDonVao"][];
+        };
         /**
          * LyDoDoiTra
          * @enum {string}
@@ -8301,6 +8323,10 @@ export interface components {
         };
         /** ThuocTrenDonRa */
         ThuocTrenDonRa: {
+            /** Id */
+            id: number;
+            /** Do Duoc Si Nhap */
+            do_duoc_si_nhap: boolean;
             /** Ten Thuoc Tren Don */
             ten_thuoc_tren_don: string;
             /** Ham Luong */
@@ -8311,6 +8337,21 @@ export interface components {
             do_tin_cay_ai: string | null;
             /** San Pham Id */
             san_pham_id: number | null;
+            /** Ten San Pham */
+            ten_san_pham: string | null;
+        };
+        /** ThuocTrenDonVao */
+        ThuocTrenDonVao: {
+            /** Id */
+            id?: number | null;
+            /** Ten Thuoc Tren Don */
+            ten_thuoc_tren_don: string;
+            /** Ham Luong */
+            ham_luong?: string | null;
+            /** So Luong Ke */
+            so_luong_ke?: string | null;
+            /** San Pham Id */
+            san_pham_id?: number | null;
         };
         /** ThuongHieuDoc */
         ThuongHieuDoc: {
@@ -16753,6 +16794,41 @@ export interface operations {
             cookie?: never;
         };
         requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["YeuCauDuyetRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    luu_thuoc_tren_don_api_v1_noi_bo_don_thuoc__yc_id__thuoc_tren_don_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                yc_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LuuThuocTrenDonVao"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {

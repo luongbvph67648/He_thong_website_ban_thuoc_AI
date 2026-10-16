@@ -31,6 +31,7 @@ from app.modules.don_thuoc.schemas_duyet import (
     CanhBaoRa,
     CanhBaoVao,
     HangChoRa,
+    LuuThuocTrenDonVao,
     SanPhamChon,
     TaoDonRa,
     TaoDonVao,
@@ -167,6 +168,17 @@ async def chi_tiet(db: AsyncSession, nv: NhanVien, yc_id: int) -> YeuCauDuyetRa:
         .scalars()
         .all()
     )
+    ten_sp = (
+        dict(
+            (
+                await db.execute(
+                    select(SanPham.id, SanPham.ten).where(SanPham.id.in_([c.san_pham_id for c in ct if c.san_pham_id]))
+                )
+            ).all()
+        )
+        if any(c.san_pham_id for c in ct)
+        else {}
+    )
     trung = []
     if yc.hash_anh:
         trung = (
@@ -199,11 +211,14 @@ async def chi_tiet(db: AsyncSession, nv: NhanVien, yc_id: int) -> YeuCauDuyetRa:
         ket_qua_ai=yc.ket_qua_ai,
         thuoc_tren_don=[
             ThuocTrenDonRa(
+                id=c.id,
+                do_duoc_si_nhap=c.do_duoc_si_nhap,
                 ten_thuoc_tren_don=c.ten_thuoc_tren_don,
                 ham_luong=c.ham_luong,
                 so_luong_ke=c.so_luong_ke,
                 do_tin_cay_ai=c.do_tin_cay_ai,
                 san_pham_id=c.san_pham_id,
+                ten_san_pham=ten_sp.get(c.san_pham_id),
             )
             for c in ct
         ],
@@ -216,6 +231,74 @@ async def chi_tiet(db: AsyncSession, nv: NhanVien, yc_id: int) -> YeuCauDuyetRa:
         ],
         ho_so_suc_khoe=ho_so,
     )
+
+
+def _loi_dong(i: int, truong: str, thong_diep: str) -> LoiNghiepVu:
+    return LoiNghiepVu(
+        "DU_LIEU_KHONG_HOP_LE",
+        "Dữ liệu không hợp lệ",
+        chi_tiet=[{"truong": f"dong.{i}.{truong}", "loi": thong_diep}],
+    )
+
+
+async def luu_thuoc_tren_don(db: AsyncSession, nv: NhanVien, yc_id: int, vao: LuuThuocTrenDonVao) -> YeuCauDuyetRa:
+    """T7.6 (DS04): danh sách thuốc trên đơn do dược sĩ chốt, thay toàn bộ danh sách hiện có (AI06 chỉ gợi ý).
+
+    Dòng có `id` mà nội dung chữ không đổi giữ nguyên độ tin cậy AI; dòng sửa chữ hoặc thêm tay mang `do_duoc_si_nhap`
+    và không còn `do_tin_cay_ai`. Dòng vắng mặt bị xóa."""
+    yc = await _lay_dang_khoa(db, nv, yc_id, khoa=True)
+    hien_co = {
+        c.id: c
+        for c in (await db.execute(select(CtYeuCauDonThuoc).where(CtYeuCauDonThuoc.yeu_cau_id == yc.id))).scalars()
+    }
+    sp_ids = {d.san_pham_id for d in vao.dong if d.san_pham_id is not None}
+    hop_le = (
+        set(
+            (await db.execute(select(SanPham.id).where(SanPham.id.in_(sp_ids), SanPham.deleted_at.is_(None)))).scalars()
+        )
+        if sp_ids
+        else set()
+    )
+    giu: set[int] = set()
+    moi: list[CtYeuCauDonThuoc] = []
+    for i, d in enumerate(vao.dong):
+        ten, hl, sl = (
+            d.ten_thuoc_tren_don.strip(),
+            (d.ham_luong or "").strip() or None,
+            (d.so_luong_ke or "").strip() or None,
+        )
+        if not ten:
+            raise _loi_dong(i, "ten_thuoc_tren_don", "Tên thuốc không được để trống")
+        if d.san_pham_id is not None and d.san_pham_id not in hop_le:
+            raise _loi_dong(i, "san_pham_id", "Sản phẩm không tồn tại")
+        if d.id is None:
+            moi.append(
+                CtYeuCauDonThuoc(
+                    yeu_cau_id=yc.id,
+                    san_pham_id=d.san_pham_id,
+                    ten_thuoc_tren_don=ten,
+                    ham_luong=hl,
+                    so_luong_ke=sl,
+                    do_tin_cay_ai=None,
+                    do_duoc_si_nhap=True,
+                )
+            )
+            continue
+        c = hien_co.get(d.id)
+        if c is None or c.id in giu:
+            raise _loi_dong(i, "id", "Dòng không thuộc yêu cầu này hoặc bị lặp")
+        giu.add(c.id)
+        if (c.ten_thuoc_tren_don, c.ham_luong, c.so_luong_ke) != (ten, hl, sl):
+            c.ten_thuoc_tren_don, c.ham_luong, c.so_luong_ke = ten, hl, sl
+            c.do_duoc_si_nhap, c.do_tin_cay_ai = True, None
+        c.san_pham_id = d.san_pham_id
+    for id_, c in hien_co.items():
+        if id_ not in giu:
+            await db.delete(c)
+    db.add_all(moi)
+    yc.updated_at = bay_gio_utc()
+    await db.flush()
+    return await chi_tiet(db, nv, yc_id)
 
 
 async def tim_san_pham(db: AsyncSession, nv: NhanVien, yc_id: int, q: str) -> list[SanPhamChon]:

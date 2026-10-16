@@ -440,3 +440,9 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **Tóm tắt lấy từ nội dung chuyên môn đã duyệt**, không để Claude "giải thích" thêm: tránh thông tin y khoa do AI tự sinh.
 - **Chi phí lượt tra ảnh chưa vào ngân sách ngày của chat** (`AI_NGAN_SACH_NGAY_USD` cộng từ `hoi_thoai.chi_phi`; chưa có bảng ghi chi phí AI chung, đổi schema phải qua `/doi-schema`). Bù lại bằng giới hạn 500 lượt/ngày toàn hệ thống và ghi log token từng lượt; T7.8 xem xét gom chi phí.
 
+## QĐ-47 · Đọc ảnh đơn thuốc (T7.6)
+- **Job thăm dò mỗi phút** thay vì gọi AI ngay trong request gửi đơn: khách không phải chờ AI, AI lỗi/tắt không ảnh hưởng việc gửi đơn, và lỗi được thử lại có giới hạn (3 lần). Đổi lại gợi ý đến chậm tối đa khoảng một phút; màn duyệt tự hiển thị khi dược sĩ mở lại.
+- **Không ghi đè dòng thuốc đã có** (dược sĩ có thể đã nhập tay trước khi job chạy); khi đó chỉ lưu `ket_qua_ai`.
+- **Chốt danh sách bằng một `PUT` thay toàn bộ** (không CRUD từng dòng): đơn giản, dược sĩ sửa nhiều dòng một lần; dòng chữ không đổi giữ nguyên độ tin cậy để còn dấu vết nguồn gốc. Không thêm cột "đã xác nhận": `do_duoc_si_nhap` chỉ đánh dấu dòng do dược sĩ nhập hoặc sửa chữ.
+- **Chi phí AI06 chưa vào ngân sách ngày** (cùng lý do QĐ-46); số yêu cầu bị chặn sẵn bởi giới hạn gửi đơn theo số điện thoại và theo OTP.
+

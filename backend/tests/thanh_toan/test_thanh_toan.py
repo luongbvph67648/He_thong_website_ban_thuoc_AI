@@ -452,7 +452,7 @@ async def test_ht03_don_vua_nhan_ipn_thanh_cong_khong_bi_huy(dang_nhap_khach, cl
 async def test_ht03_chay_qua_chay_job_va_lich(engine_test):
     from app.jobs.__main__ import LICH_PHUT, tao_scheduler
 
-    assert [t for t, *_ in LICH_PHUT] == ["ht03_huy_qua_han", "ht08_tu_hoan_tat"]
+    assert [t for t, *_ in LICH_PHUT] == ["ht03_huy_qua_han", "ht08_tu_hoan_tat", "ai06_doc_don_thuoc"]
     ids = {j.id for j in tao_scheduler().get_jobs()}
     assert "ht03_huy_qua_han" in ids
 

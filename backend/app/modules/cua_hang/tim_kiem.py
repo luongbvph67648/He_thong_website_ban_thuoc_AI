@@ -213,3 +213,8 @@ async def ghi_lich_su_tim_kiem(
         )
     )
     await db.flush()
+
+
+def diem_khop_ten(q: str) -> ColumnElement[float]:
+    """Điểm khớp (0..1) của từ khóa với tên sản phẩm hoặc hoạt chất của nó; dùng cho gợi ý khớp ngoài tìm kiếm."""
+    return _diem(q)
