@@ -394,6 +394,14 @@ Quyền `report.inventory` (`xem`: kho và Admin). Tính hoàn toàn từ `bien_
 - Lịch sử mua là `GET /toi/don-hang` (mục 3.24, đã phân trang).
 - `POST /toi/don-hang/{ma_don}/mua-lai` (khách đăng nhập, đơn của chính mình; đơn người khác hoặc không có là `404`): đưa từng dòng đơn cũ vào giỏ theo đúng quy tắc gộp giỏ (`PUT /toi/gio-hang/gop`, mục 3.20): cộng dồn với dòng đã có, cắt theo giới hạn mỗi đơn, giá lấy lại theo hiện tại. Phản hồi `{gio_hang, bo_qua: [{san_pham_id, don_vi_id, ly_do}]}`; dòng không mua lại được bị bỏ qua kèm `ly_do` (`thuoc_ke_don`, `khong_hien_thi`, `don_vi_khong_hop_le`, `vuot_toi_da`), không làm hỏng cả lần mua lại. Thuốc kê đơn không bao giờ vào giỏ.
 
+### 3.28 Hồ sơ sức khỏe và dị ứng (KTV11, T5.1)
+Khách đăng nhập, `khach_hang_id` lấy từ token. Nhân viên (kể cả Admin) gọi các route này là `401/403`; không có route nội bộ nào trả các trường này.
+- `GET /toi/ho-so-suc-khoe`: `{dong_y_su_dung, dong_y_luc, nam_sinh, benh_nen, dang_mang_thai, dang_cho_con_bu, di_ung: [{hoat_chat_id, ten_hoat_chat, ghi_chu}]}`. Chưa có hồ sơ thì `dong_y_su_dung = false` và các trường rỗng.
+- `PUT /toi/ho-so-suc-khoe`: tạo hoặc thay toàn bộ hồ sơ và danh sách dị ứng. `dong_y_su_dung` phải là `true`, nếu không là `400` và không lưu gì. `dong_y_luc` ghi lần đồng ý đầu và giữ nguyên khi sửa. `benh_nen` (tối đa 2000 ký tự) mã hóa Fernet trước khi lưu, API trả bản rõ cho chính chủ. Hoạt chất không có trong danh mục là `400`. `nam_sinh` 1900-2100.
+- `DELETE /toi/ho-so-suc-khoe`: xóa cứng `di_ung` và `ho_so_suc_khoe` (đồng thời là thu hồi đồng ý, QĐ-32); gọi lại vẫn `204`.
+- `GET /toi/ho-so-suc-khoe/hoat-chat?q=`: gợi ý tối đa 20 hoạt chất theo tên hoặc tên khác, không phân biệt hoa thường và dấu; chỉ trả `{id, ten}`.
+- Dược sĩ không có route riêng ở T5.1: đọc qua hàm cổng `suc_khoe.dich_vu.duoc_doc_ho_so_suc_khoe` / `doc_ho_so_cho_duoc_si` (spec 03 mục 5.1) để T5.3 và T7.x gọi.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

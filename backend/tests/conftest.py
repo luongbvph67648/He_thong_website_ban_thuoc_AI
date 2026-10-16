@@ -52,6 +52,15 @@ def khoa_jwt_cho_test():
     settings.JWT_SECRET = cu
 
 
+@pytest.fixture(scope="session", autouse=True)
+def khoa_ma_hoa_cho_test():
+    """Khóa Fernet riêng cho test (cố định để kết quả lặp lại, không phụ thuộc `.env`)."""
+    cu = settings.KHOA_MA_HOA
+    settings.KHOA_MA_HOA = SecretStr("YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=")
+    yield
+    settings.KHOA_MA_HOA = cu
+
+
 @pytest.fixture(autouse=True)
 def cau_hinh_co_dinh_cho_test(monkeypatch, tmp_path):
     """Ghim các cấu hình ảnh hưởng hành vi mà `backend/.env` của máy dev có thể đổi (ví dụ `COOKIE_SECURE=false`).

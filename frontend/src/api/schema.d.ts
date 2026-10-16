@@ -2305,6 +2305,42 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/toi/ho-so-suc-khoe": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Xem hồ sơ sức khỏe của tôi (KTV11) */
+        get: operations["xem_api_v1_toi_ho_so_suc_khoe_get"];
+        /** Lưu hồ sơ sức khỏe, cần đồng ý (KTV11) */
+        put: operations["luu_api_v1_toi_ho_so_suc_khoe_put"];
+        post?: never;
+        /** Xóa hồ sơ và thu hồi đồng ý (KTV11) */
+        delete: operations["xoa_api_v1_toi_ho_so_suc_khoe_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/toi/ho-so-suc-khoe/hoat-chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tìm hoạt chất để khai dị ứng (KTV11) */
+        get: operations["tim_hoat_chat_api_v1_toi_ho_so_suc_khoe_hoat_chat_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/noi-bo/kiem-ke": {
         parameters: {
             query?: never;
@@ -3188,6 +3224,22 @@ export interface components {
             /** Ids */
             ids: number[];
         };
+        /** DiUngRa */
+        DiUngRa: {
+            /** Hoat Chat Id */
+            hoat_chat_id: number;
+            /** Ten Hoat Chat */
+            ten_hoat_chat: string;
+            /** Ghi Chu */
+            ghi_chu: string | null;
+        };
+        /** DiUngVao */
+        DiUngVao: {
+            /** Hoat Chat Id */
+            hoat_chat_id: number;
+            /** Ghi Chu */
+            ghi_chu?: string | null;
+        };
         /**
          * DiaChiGiaoVao
          * @description Địa chỉ giao nhập tay khi gọi điện; tên tỉnh/xã do máy chủ điền từ danh mục.
@@ -4008,6 +4060,60 @@ export interface components {
          * @enum {string}
          */
         HinhThucNhan: "giao_tan_noi" | "nhan_tai_nha_thuoc";
+        /**
+         * HoSoRa
+         * @description `dong_y_su_dung = false` và các trường rỗng khi khách chưa có hồ sơ.
+         */
+        HoSoRa: {
+            /**
+             * Dong Y Su Dung
+             * @default false
+             */
+            dong_y_su_dung: boolean;
+            /** Dong Y Luc */
+            dong_y_luc?: string | null;
+            /** Nam Sinh */
+            nam_sinh?: number | null;
+            /** Benh Nen */
+            benh_nen?: string | null;
+            /** Dang Mang Thai */
+            dang_mang_thai?: boolean | null;
+            /** Dang Cho Con Bu */
+            dang_cho_con_bu?: boolean | null;
+            /**
+             * Di Ung
+             * @default []
+             */
+            di_ung: components["schemas"]["DiUngRa"][];
+        };
+        /** HoSoVao */
+        HoSoVao: {
+            /** Dong Y Su Dung */
+            dong_y_su_dung: boolean;
+            /** Nam Sinh */
+            nam_sinh?: number | null;
+            /** Benh Nen */
+            benh_nen?: string | null;
+            /** Dang Mang Thai */
+            dang_mang_thai?: boolean | null;
+            /** Dang Cho Con Bu */
+            dang_cho_con_bu?: boolean | null;
+            /**
+             * Di Ung
+             * @default []
+             */
+            di_ung: components["schemas"]["DiUngVao"][];
+        };
+        /**
+         * HoatChatChon
+         * @description Một lựa chọn hoạt chất; chỉ có id và tên (danh mục công khai, không chứa dữ liệu của khách).
+         */
+        HoatChatChon: {
+            /** Id */
+            id: number;
+            /** Ten */
+            ten: string;
+        };
         /** HoatChatDoc */
         HoatChatDoc: {
             /** Id */
@@ -11655,6 +11761,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DonViHanhChinh"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    xem_api_v1_toi_ho_so_suc_khoe_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HoSoRa"];
+                };
+            };
+        };
+    };
+    luu_api_v1_toi_ho_so_suc_khoe_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["HoSoVao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HoSoRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    xoa_api_v1_toi_ho_so_suc_khoe_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+        };
+    };
+    tim_hoat_chat_api_v1_toi_ho_so_suc_khoe_hoat_chat_get: {
+        parameters: {
+            query?: {
+                /** @description Tên hoạt chất (không dấu cũng được) */
+                q?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HoatChatChon"][];
                 };
             };
             /** @description Validation Error */

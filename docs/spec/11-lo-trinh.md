@@ -677,17 +677,17 @@ _Giỏ hàng, máy trạng thái, đặt hàng giữ hàng FEFO, thanh toán, x�
 
 _Hồ sơ sức khỏe, gửi và duyệt đơn thuốc, tạo đơn từ đơn thuốc, POS._
 
-### [ ] T5.1 · Hồ sơ sức khỏe và dị ứng
+### [x] T5.1 · Hồ sơ sức khỏe và dị ứng
 - **Chức năng:** KTV11 (Hồ sơ sức khỏe)
 - **Phụ thuộc:** T2.3
 - **Bảng:** `ho_so_suc_khoe`, `di_ung`, `hoat_chat`
 - **Tiêu chí chấp nhận:**
-  - [ ] Khách xem/sửa/xóa hồ sơ; chỉ lưu khi `dong_y_su_dung = true` (ghi `dong_y_luc`); `benh_nen` mã hóa mức ứng dụng (Fernet, khóa trong `.env`).
-  - [ ] Hàm cổng `duoc_doc_ho_so_suc_khoe(nhan_vien, khach_hang_id)` theo spec 03 mục 5; mọi lần dược sĩ đọc ghi nhật ký (không ghi nội dung).
-  - [ ] Test: Admin không đọc được; dược sĩ không được gán không đọc được.
+  - [x] Khách xem/sửa/xóa hồ sơ; chỉ lưu khi `dong_y_su_dung = true` (ghi `dong_y_luc`); `benh_nen` mã hóa mức ứng dụng (Fernet, khóa trong `.env`).
+  - [x] Hàm cổng `duoc_doc_ho_so_suc_khoe(nhan_vien, khach_hang_id)` theo spec 03 mục 5; mọi lần dược sĩ đọc ghi nhật ký (không ghi nội dung).
+  - [x] Test: Admin không đọc được; dược sĩ không được gán không đọc được.
 - **Giao diện:**
-  - [ ] Trang hồ sơ sức khỏe có màn đồng ý, chọn hoạt chất dị ứng.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Trang hồ sơ sức khỏe có màn đồng ý, chọn hoạt chất dị ứng.
+- **Ghi chú triển khai:** Module mới `modules/suc_khoe` (`dich_vu`, `router`, `schemas`) và `core/ma_hoa.py` (Fernet, khóa `KHOA_MA_HOA`, thêm phụ thuộc `cryptography`). API ở spec 06 mục 3.28: xem/lưu/xóa hồ sơ, gợi ý hoạt chất. Thu hồi đồng ý = xóa hồ sơ (QĐ-32). Hàm cổng `duoc_doc_ho_so_suc_khoe` kèm `doc_ho_so_cho_duoc_si`, chưa có route nội bộ (T5.3 và T7.x sẽ gọi). Giao diện `/tai-khoan/suc-khoe` (màn đồng ý, chọn hoạt chất dị ứng, xóa). Ghi chú từng dị ứng có ở API nhưng chưa có ô nhập trên giao diện. Test `tests/suc_khoe` (15) và `TrangSucKhoe.test.tsx` (4). `/review-nghiep-vu` gộp theo pha P5.
 
 ### [ ] T5.2 · Gửi yêu cầu tư vấn đơn thuốc
 - **Chức năng:** KVL08 (Gửi yêu cầu tư vấn đơn thuốc), KTV07 (Gửi yêu cầu tư vấn đơn thuốc)

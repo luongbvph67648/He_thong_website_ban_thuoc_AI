@@ -332,3 +332,9 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **Chạy mỗi 15 phút**, mỗi đơn đi qua `chuyen_trang_thai` trong savepoint riêng (hook hoàn nhập, hoàn tiền, trả lượt mã chạy như hủy thủ công). Phần nhả khóa đơn thuốc và đóng chat của HT08 làm ở T5.3, T7.4.
 - **Mua lại (KTV08)** dùng lại `gop_gio` của giỏ hàng: một bộ quy tắc duy nhất cho thuốc kê đơn, ngừng bán, đơn vị, hạn mức.
 
+## QĐ-32: Thu hồi đồng ý = xóa hồ sơ sức khỏe (2026-10-16, task T5.1)
+- Spec cho khách "xóa được bất kỳ lúc nào" và "chỉ lưu khi đồng ý" nhưng chưa nói thu hồi đồng ý thì sao. Chốt: **không có trạng thái "hồ sơ còn nhưng đã thu hồi"**. Thu hồi đồng ý chính là `DELETE /toi/ho-so-suc-khoe` (xóa cứng cả hai bảng); `PUT` với `dong_y_su_dung = false` bị `400`. Hồ sơ trong DB luôn có `dong_y_su_dung = true`, nên mọi nơi đọc (cổng dược sĩ, `kiem_tra_di_ung`, lọc gợi ý AI) không cần xử lý trạng thái lửng.
+- **Hàm cổng** `duoc_doc_ho_so_suc_khoe` trả `True` rồi mới ghi nhật ký; lần bị từ chối không ghi. `doc_ho_so_cho_duoc_si` là hàm đọc dữ liệu duy nhất cho dược sĩ, từ chối bằng `403 KHONG_CO_QUYEN` (không tiết lộ khách có hồ sơ hay không).
+- **Khóa `KHOA_MA_HOA`**: thiếu, sai định dạng hoặc còn giá trị mẫu `doi-...` thì mã hóa/giải mã báo lỗi hệ thống; đổi khóa làm hồ sơ cũ không giải được (cần giữ khóa; xoay khóa chưa làm).
+- Ghi chú dị ứng (`di_ung.ghi_chu`) có trong API nhưng giao diện T5.1 chưa cho nhập.
+

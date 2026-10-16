@@ -18,6 +18,7 @@ dependencies = [
     "python-multipart>=0.0.32",
     "apscheduler>=3.11.3",
     "openpyxl>=3.1.5",
+    "cryptography>=50.0.2",
 ]
 
 [dependency-groups]

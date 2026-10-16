@@ -28,6 +28,8 @@ class Settings(BaseSettings):
     SMTP_NGUOI_GUI: str = "Nhà thuốc AI <no-reply@nhathuoc.local>"
     # Tài khoản Admin đầu tiên do `python -m app.seed` tạo. Để trống thì seed báo lỗi (không có giá trị mặc định
     # để khỏi vô tình tạo Admin với mật khẩu đoán được).
+    # Khóa Fernet mã hóa `ho_so_suc_khoe.benh_nen` (cách sinh khóa: xem .env.example).
+    KHOA_MA_HOA: SecretStr = SecretStr("")
     ADMIN_EMAIL: str = ""
     ADMIN_MAT_KHAU: SecretStr = SecretStr("")
     # Thanh toán online (spec 08 mục 2-4): `gia` chạy offline với trang "cổng giả"; `sandbox` gọi VNPay/MoMo thật.
