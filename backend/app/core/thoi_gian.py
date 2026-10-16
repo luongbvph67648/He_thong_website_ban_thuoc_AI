@@ -17,3 +17,8 @@ def hom_nay_vn(bay_gio: datetime | None = None) -> date:
     if bay_gio.tzinfo is None:
         raise ValueError("bay_gio phải có múi giờ")
     return bay_gio.astimezone(VN_TZ).date()
+
+
+def dau_ngay_vn(ngay: date) -> datetime:
+    """00:00 giờ Việt Nam của `ngay`, ở dạng UTC: mốc đầu khoảng lọc theo ngày."""
+    return datetime(ngay.year, ngay.month, ngay.day, tzinfo=VN_TZ).astimezone(UTC)

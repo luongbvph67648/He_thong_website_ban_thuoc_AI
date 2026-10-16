@@ -36,6 +36,7 @@ asyncio_default_fixture_loop_scope = "session"
 asyncio_default_test_loop_scope = "session"
 testpaths = ["tests"]
 pythonpath = ["."]
+markers = ["khong_kiem_bat_bien: bỏ qua kiểm tra bất biến tồn kho cuối test (test cố ý làm sai số liệu)"]
 
 [tool.ruff]
 line-length = 120

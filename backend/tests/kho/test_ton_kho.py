@@ -37,6 +37,7 @@ async def test_nhap_nhieu_lan_ton_sau_la_ton_luy_ke(db):
     assert sum(b.so_luong for b in await the_kho(db, lo.id)) == lo.so_luong_ton  # bất biến 3 (spec 04 mục 3.2)
 
 
+@pytest.mark.khong_kiem_bat_bien  # tồn dựng sẵn không có thẻ kho
 async def test_nhap_vao_lo_da_co_ton_tinh_tiep_tu_ton_hien_co(db):
     lo = await tao_lo(db, so_luong_ton=10)  # tồn có sẵn nhưng chưa có thẻ kho (dữ liệu dựng tay)
     bien_dong = await nhap_kho(db, lo, 5, ChungTu("phieu_nhap", 1, None))
@@ -77,6 +78,7 @@ async def test_khoa_cac_lo_thieu_lo_thi_bao_loi(db):
         await khoa_cac_lo(db, [a.id, 424242])
 
 
+@pytest.mark.khong_kiem_bat_bien  # tồn dựng sẵn không có thẻ kho
 async def test_khoa_cac_lo_doc_gia_tri_moi_nhat_cua_lo_da_nap(db):
     """Đối tượng đã nạp từ trước phải được làm mới theo dòng vừa khóa (tránh ghi đè bằng số cũ)."""
     lo = await tao_lo(db, so_luong_ton=10)

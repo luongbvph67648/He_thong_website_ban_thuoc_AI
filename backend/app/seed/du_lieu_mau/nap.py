@@ -35,6 +35,7 @@ from app.models.san_pham import (
     ThuongHieu,
     TuongTacHoatChat,
 )
+from app.modules.kho.lo import trang_thai_theo_han
 from app.modules.kho.ton_kho import ChungTu, nhap_kho
 from app.seed.co_ban import khoa_seed
 from app.seed.du_lieu_mau import catalog
@@ -56,10 +57,8 @@ NGAY_NHAP_PHIEU_MAU_TRUOC = 45
 
 
 def trang_thai_lo(han_su_dung: date, hom_nay: date, nguong_can_han_ngay: int) -> str:
-    """Trạng thái lô theo hạn (spec 04 mục 1.4): hết hạn khi không còn `HSD > hôm nay`, cận hạn khi dưới ngưỡng."""
-    if han_su_dung <= hom_nay:
-        return "het_han"
-    return "can_han" if (han_su_dung - hom_nay).days < nguong_can_han_ngay else "dang_ban"
+    """Trạng thái lô theo hạn (spec 04 mục 1.4); quy tắc ở `modules/kho/lo.py`."""
+    return trang_thai_theo_han(han_su_dung, hom_nay, nguong_can_han_ngay).value
 
 
 async def _lay_hoac_tao(db: AsyncSession, model: type, khoa: dict[str, Any], them: dict[str, Any] | None = None):
