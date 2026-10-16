@@ -1,6 +1,6 @@
 /** Nhãn và màu thống nhất cho trạng thái (docs/spec/09-frontend.md mục 3), khớp enum trong ERD và OpenAPI. */
 
-export type LoaiTrangThai = 'don_hang' | 'thanh_toan' | 'kenh_ban' | 'loai_san_pham' | 'kinh_doanh'
+export type LoaiTrangThai = 'don_hang' | 'thanh_toan' | 'kenh_ban' | 'loai_san_pham' | 'kinh_doanh' | 'noi_dung' | 'muc_do_tuong_tac'
 
 export interface NhanHienThi {
   nhan: string
@@ -45,6 +45,17 @@ export const TRANG_THAI: Record<LoaiTrangThai, Record<string, NhanHienThi>> = {
   kinh_doanh: {
     dang_kinh_doanh: { nhan: 'Đang kinh doanh', mau: 'success' },
     ngung_kinh_doanh: { nhan: 'Ngừng kinh doanh', mau: 'default' },
+  },
+  noi_dung: {
+    nhap: { nhan: 'Bản nháp', mau: 'processing' },
+    da_duyet: { nhan: 'Đang hiển thị', mau: 'success' },
+    luu_tru: { nhan: 'Đã lưu trữ', mau: 'default' },
+  },
+  muc_do_tuong_tac: {
+    nhe: { nhan: 'Nhẹ', mau: 'blue' },
+    trung_binh: { nhan: 'Trung bình', mau: 'gold' },
+    nghiem_trong: { nhan: 'Nghiêm trọng', mau: 'orange' },
+    chong_chi_dinh: { nhan: 'Chống chỉ định', mau: 'red' },
   },
 }
 

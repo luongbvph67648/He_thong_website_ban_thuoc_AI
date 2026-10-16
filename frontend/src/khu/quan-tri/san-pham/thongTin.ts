@@ -4,7 +4,7 @@
  */
 import { chuoiHoacNull, gonTen, loiTen, loiVanBan } from '../../../lib/duLieuChung'
 import { loiCheo, loiSku } from '../../../lib/sanPham'
-import type { LuaChon } from './ChonDuLieuChung'
+import type { LuaChon } from '../../../components/ChonDuLieuChung'
 import type { LoaiSanPham, SanPhamChiTiet, TrangThaiKinhDoanh } from './sanPham'
 
 /** Giá trị form. Thương hiệu và nhà sản xuất giữ cả tên để ô chọn hiện được mà không phải tải lại. */

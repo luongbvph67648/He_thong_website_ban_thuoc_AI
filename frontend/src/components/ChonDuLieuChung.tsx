@@ -1,8 +1,8 @@
 import { useQuery } from '@tanstack/react-query'
 import { Select } from 'antd'
 import { useEffect, useState } from 'react'
-import { danhSach } from '../du-lieu-chung/goiApi'
-import { KHOA_QUERY_DU_LIEU_CHUNG, type MaNhom } from '../du-lieu-chung/nhom'
+import { danhSach } from '../khu/quan-tri/du-lieu-chung/goiApi'
+import { KHOA_QUERY_DU_LIEU_CHUNG, type MaNhom } from '../khu/quan-tri/du-lieu-chung/nhom'
 
 /** Giá trị của ô chọn: id kèm tên để hiện được ngay cả khi bản ghi chưa nằm trong trang kết quả tìm. */
 export interface LuaChon {

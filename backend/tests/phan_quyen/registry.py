@@ -74,6 +74,26 @@ REGISTRY: dict[tuple[str, str], tuple[str, str]] = {
     ("GET", f"{TIEN_TO_NOI_BO}/hoat-chat/{{ban_ghi_id}}"): ("master_data.manage", "xem"),
     ("POST", f"{TIEN_TO_NOI_BO}/hoat-chat"): ("master_data.manage", "day_du"),
     ("PATCH", f"{TIEN_TO_NOI_BO}/hoat-chat/{{ban_ghi_id}}"): ("master_data.manage", "day_du"),
+    # DS10: dược sĩ day_du, Admin chi_xem. Thao tác ghi còn đòi người thực hiện là dược sĩ (`dam_bao_la_duoc_si`).
+    ("GET", f"{TIEN_TO_NOI_BO}/chuyen-mon"): ("content.professional.edit", "xem"),
+    ("GET", f"{TIEN_TO_NOI_BO}/chuyen-mon/san-pham/{{san_pham_id}}"): ("content.professional.edit", "xem"),
+    ("POST", f"{TIEN_TO_NOI_BO}/chuyen-mon/san-pham/{{san_pham_id}}"): ("content.professional.edit", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/chuyen-mon/{{phien_ban_id}}/duyet"): ("content.approve", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/chuyen-mon/{{phien_ban_id}}/luu-tru"): ("content.professional.edit", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/tuong-tac"): ("content.professional.edit", "xem"),
+    ("GET", f"{TIEN_TO_NOI_BO}/tuong-tac/{{hoat_chat_1_id}}/{{hoat_chat_2_id}}"): ("content.professional.edit", "xem"),
+    ("POST", f"{TIEN_TO_NOI_BO}/tuong-tac"): ("content.professional.edit", "day_du"),
+    ("PUT", f"{TIEN_TO_NOI_BO}/tuong-tac/{{hoat_chat_1_id}}/{{hoat_chat_2_id}}"): (
+        "content.professional.edit",
+        "day_du",
+    ),
+    ("DELETE", f"{TIEN_TO_NOI_BO}/tuong-tac/{{hoat_chat_1_id}}/{{hoat_chat_2_id}}"): (
+        "content.professional.edit",
+        "day_du",
+    ),
+    ("GET", f"{TIEN_TO_NOI_BO}/bai-viet-cho-duyet"): ("content.approve", "xem"),
+    ("GET", f"{TIEN_TO_NOI_BO}/bai-viet-cho-duyet/{{bai_viet_id}}"): ("content.approve", "xem"),
+    ("POST", f"{TIEN_TO_NOI_BO}/bai-viet-cho-duyet/{{bai_viet_id}}/duyet"): ("content.approve", "day_du"),
 }
 
 # Route nội bộ cố ý KHÔNG cần quyền vì chạy trước khi có phiên (đăng nhập) hoặc chỉ dựa vào cookie refresh.

@@ -27,6 +27,7 @@ from app.models.he_thong import NhanVien, Quyen, VaiTro, VaiTroQuyen
 from app.models.khach_hang import KhachHang
 
 MA_VAI_TRO_ADMIN = "ADMIN"
+MA_VAI_TRO_DUOC_SI = "PHARMACIST"
 
 _TIEN_TO = "bearer "
 
@@ -158,6 +159,18 @@ async def dam_bao_la_admin(db: AsyncSession, nguoi_thuc_hien: NhanVien) -> None:
     ma_vai_tro = await db.scalar(select(VaiTro.ma).where(VaiTro.id == nguoi_thuc_hien.vai_tro_id))
     if ma_vai_tro != MA_VAI_TRO_ADMIN:
         raise LoiNghiepVu("KHONG_CO_QUYEN", "Chỉ Admin mới được thực hiện thao tác này")
+
+
+async def dam_bao_la_duoc_si(db: AsyncSession, nguoi_thuc_hien: NhanVien) -> None:
+    """Lớp phòng thủ thứ hai cho thao tác chuyên môn chỉ DƯỢC SĨ được làm (biên soạn, duyệt nội dung: DS10).
+
+    Spec 03 mục 7: Admin không sửa nội dung chuyên môn. `content.professional.edit` và `content.approve` mặc định chỉ
+    PHARMACIST giữ mức đầy đủ, nhưng Admin có thể gán chúng cho vai trò khác qua AD18 (kể cả kho): không có chốt này thì
+    đó là cách để Admin sửa nội dung chuyên môn gián tiếp. Dùng ở đầu mọi hàm GHI của DS10.
+    """
+    ma_vai_tro = await db.scalar(select(VaiTro.ma).where(VaiTro.id == nguoi_thuc_hien.vai_tro_id))
+    if ma_vai_tro != MA_VAI_TRO_DUOC_SI:
+        raise LoiNghiepVu("KHONG_CO_QUYEN", "Chỉ dược sĩ mới được thực hiện thao tác này")
 
 
 def xoa_cache_quyen() -> None:

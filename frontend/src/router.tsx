@@ -12,6 +12,9 @@ import TrangQuenMatKhau from './khu/cua-hang/quen-mat-khau/TrangQuenMatKhau'
 import { TRANG_CUA_HANG } from './khu/cua-hang/trang'
 import TrangChu from './khu/cua-hang/TrangChu'
 import NhanVienLayout, { TrangDauNhanVien } from './khu/nhan-vien/NhanVienLayout'
+import TrangNoiDungChuyenMon from './khu/nhan-vien/chuyen-mon/TrangNoiDungChuyenMon'
+import TrangSoanNoiDung from './khu/nhan-vien/chuyen-mon/TrangSoanNoiDung'
+import TrangTuongTac from './khu/nhan-vien/chuyen-mon/TrangTuongTac'
 import { MUC_NHAN_VIEN } from './khu/nhan-vien/menu'
 import TrangDangNhapNoiBo from './khu/nhan-vien/TrangDangNhap'
 import TrangTaiKhoanNoiBo from './khu/nhan-vien/TrangTaiKhoan'
@@ -47,6 +50,13 @@ const TRANG_THAT: Record<string, ReactNode> = {
   '/quen-mat-khau': <TrangQuenMatKhau />,
 }
 
+/** Trang khu nhân viên đã làm thật (khóa là đường dẫn trong `MUC_NHAN_VIEN`); còn lại là trang giữ chỗ. */
+const TRANG_NHAN_VIEN_THAT: Record<string, ReactNode> = {
+  '/noi-dung-chuyen-mon': <TrangNoiDungChuyenMon />,
+  '/noi-dung-chuyen-mon/:id': <TrangSoanNoiDung />,
+  '/tuong-tac': <TrangTuongTac />,
+}
+
 /** Trang khu quản trị đã làm thật (khóa là đường dẫn trong `MUC_QUAN_TRI`); còn lại là trang giữ chỗ. */
 const TRANG_QUAN_TRI_THAT: Record<string, ReactNode> = {
   '/nhan-vien': <TrangNhanVien />,
@@ -79,7 +89,7 @@ export function taoRoutes(): RouteObject[] {
       element: <NhanVienLayout />,
       children: [
         { index: true, element: <TrangDauNhanVien /> },
-        ...routeCuaKhu(MUC_NHAN_VIEN),
+        ...routeCuaKhu(MUC_NHAN_VIEN, TRANG_NHAN_VIEN_THAT),
         { path: '*', element: <Trang404 veTrang="/nhan-vien" nhanVe="Về trang đầu" /> },
       ],
     },

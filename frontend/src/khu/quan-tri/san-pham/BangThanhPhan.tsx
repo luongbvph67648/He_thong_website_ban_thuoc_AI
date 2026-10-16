@@ -2,7 +2,7 @@ import { DeleteOutlined, PlusOutlined } from '@ant-design/icons'
 import { Alert, Button, Input, Table } from 'antd'
 import type { ColumnsType } from 'antd/es/table'
 import { thanhPhanMoi, type ThanhPhanForm } from '../../../lib/sanPham'
-import { ChonDuLieuChung } from './ChonDuLieuChung'
+import { ChonDuLieuChung } from '../../../components/ChonDuLieuChung'
 
 interface Props {
   value: ThanhPhanForm[]

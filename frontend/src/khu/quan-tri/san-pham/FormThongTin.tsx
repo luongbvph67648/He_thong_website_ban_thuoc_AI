@@ -1,6 +1,6 @@
 import { Alert, Col, Form, Input, InputNumber, Row, Select, Switch, TreeSelect } from 'antd'
 import type { ReactNode } from 'react'
-import { ChonDuLieuChung } from './ChonDuLieuChung'
+import { ChonDuLieuChung } from '../../../components/ChonDuLieuChung'
 import { TUY_CHON_KINH_DOANH, TUY_CHON_LOAI, type TuyChonDanhMuc } from './sanPham'
 import { GIOI_HAN, type GiaTriThongTin } from './thongTin'
 

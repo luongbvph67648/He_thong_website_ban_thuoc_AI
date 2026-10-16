@@ -12,6 +12,7 @@ export const MUC_NHAN_VIEN: readonly MucDieuHuong[] = [
   { duong: '/tu-van', nhan: 'Tư vấn khách', nhom: 'Bán hàng', quyen: ['chat.handle'], chucNang: ['DS06'] },
   { duong: '/doi-tra', nhan: 'Đổi trả', nhom: 'Bán hàng', quyen: ['return.review'], chucNang: ['DS09'] },
   { duong: '/noi-dung-chuyen-mon', nhan: 'Nội dung chuyên môn', nhom: 'Chuyên môn', quyen: ['content.professional.edit'], chucNang: ['DS10'] },
+  { duong: '/noi-dung-chuyen-mon/:id', nhan: 'Soạn nội dung chuyên môn', quyen: ['content.professional.edit'], chucNang: ['DS10'], trongMenu: false },
   { duong: '/tuong-tac', nhan: 'Tương tác thuốc', nhom: 'Chuyên môn', quyen: ['content.professional.edit'], chucNang: ['DS10'] },
   { duong: '/kiem-duyet', nhan: 'Kiểm duyệt', nhom: 'Chuyên môn', quyen: ['review.moderate'], chucNang: ['DS11'] },
   { duong: '/danh-gia-ai', nhan: 'Đánh giá câu trả lời AI', nhom: 'Chuyên môn', quyen: ['ai_answer.review'], chucNang: ['DS12'] },
