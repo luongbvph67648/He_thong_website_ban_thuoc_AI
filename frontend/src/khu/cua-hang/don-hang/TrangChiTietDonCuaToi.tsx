@@ -10,6 +10,7 @@ import { nhanTrangThai } from '../../../lib/trangThai'
 import { usePhien } from '../../../stores/phien'
 import { NHAN_PHUONG_THUC } from '../gio-hang/thanhToan'
 import LichSuTrangThai from './LichSuTrangThai'
+import XacNhanDonThanhVien from '../don-thuoc/XacNhanDonThanhVien'
 import MuaLaiNut from './MuaLaiNut'
 
 /** KTV06: chi tiết đơn của tôi, dòng thời gian trạng thái và nút hủy đơn (chỉ khi chưa sang "Đang soạn hàng"). */
@@ -58,6 +59,7 @@ export default function TrangChiTietDonCuaToi() {
       {don.trang_thai_tt === 'cho_hoan_tien' && (
         <Alert type="info" showIcon message="Nhà thuốc sẽ hoàn lại tiền cho đơn này. Bạn sẽ nhận được thông báo khi hoàn tất." />
       )}
+      {don.trang_thai === 'cho_khach_xac_nhan' && <XacNhanDonThanhVien ma={don.ma_don} />}
       {don.ly_do_huy && <Alert type="warning" showIcon message={`Lý do hủy: ${don.ly_do_huy}`} />}
       <Descriptions bordered size="small" column={1}>
         <Descriptions.Item label="Ngày đặt">{dinhDangNgay(don.created_at, 'ngayGio')}</Descriptions.Item>

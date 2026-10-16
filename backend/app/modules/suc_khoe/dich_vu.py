@@ -23,7 +23,7 @@ from app.models.san_pham import HoatChat
 from app.modules.suc_khoe.schemas import DiUngRa, HoatChatChon, HoSoRa, HoSoVao
 
 
-async def _dung_ho_so(db: AsyncSession, khach_hang_id: int) -> HoSoRa:
+async def dung_ho_so(db: AsyncSession, khach_hang_id: int) -> HoSoRa:
     ho_so = await db.get(HoSoSucKhoe, khach_hang_id)
     if ho_so is None:
         return HoSoRa()
@@ -47,7 +47,7 @@ async def _dung_ho_so(db: AsyncSession, khach_hang_id: int) -> HoSoRa:
 
 
 async def xem(db: AsyncSession, khach: KhachHang) -> HoSoRa:
-    return await _dung_ho_so(db, khach.id)
+    return await dung_ho_so(db, khach.id)
 
 
 async def luu(db: AsyncSession, khach: KhachHang, vao: HoSoVao) -> HoSoRa:
@@ -79,7 +79,7 @@ async def luu(db: AsyncSession, khach: KhachHang, vao: HoSoVao) -> HoSoRa:
     ghi_chu = {d.hoat_chat_id: d.ghi_chu or None for d in vao.di_ung}
     db.add_all(DiUng(khach_hang_id=khach.id, hoat_chat_id=i, ghi_chu=ghi_chu[i]) for i in ids)
     await db.flush()
-    return await _dung_ho_so(db, khach.id)
+    return await dung_ho_so(db, khach.id)
 
 
 async def xoa(db: AsyncSession, khach: KhachHang) -> None:
@@ -124,7 +124,7 @@ async def doc_ho_so_cho_duoc_si(db: AsyncSession, nhan_vien: NhanVien, khach_han
     """Dược sĩ đọc hồ sơ qua hàm cổng; không qua cổng thì 403 (không tiết lộ khách có hồ sơ hay không)."""
     if not await duoc_doc_ho_so_suc_khoe(db, nhan_vien, khach_hang_id):
         raise LoiNghiepVu("KHONG_CO_QUYEN", "Bạn không được xem hồ sơ sức khỏe của khách này")
-    return await _dung_ho_so(db, khach_hang_id)
+    return await dung_ho_so(db, khach_hang_id)
 
 
 async def tim_hoat_chat(db: AsyncSession, q: str | None, toi_da: int = 20) -> list[HoatChatChon]:

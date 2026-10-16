@@ -67,6 +67,8 @@ class DonHangRa(BaseModel):
     phi_van_chuyen: TienDoc
     tong_tien: TienDoc
     han_thanh_toan: datetime | None
+    han_xac_nhan: datetime | None = None
+    """Đơn từ đơn thuốc: khách phải xác nhận trước thời điểm này (DS05)."""
     ma_giam_gia: str | None
     ten_nguoi_nhan: str | None
     sdt_nguoi_nhan: str | None

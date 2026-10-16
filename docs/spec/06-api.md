@@ -414,6 +414,20 @@ Khách đăng nhập, `khach_hang_id` lấy từ token. Nhân viên (kể cả A
 - `POST /toi/don-thuoc/{ma_yeu_cau}/huy`: chuyển `khach_huy` khi còn `cho_duyet` hoặc `dang_tu_van` (nhả khóa dược sĩ); trạng thái khác là `409 CHUYEN_TRANG_THAI_KHONG_HOP_LE`.
 - `GET /tep-rieng/{thu_muc}/{tep}?het_han=&ky=`: đọc file riêng tư bằng URL ký (HMAC-SHA256 trên `khoa|het_han`, khóa con của `JWT_SECRET`, hạn 10 phút). Chữ ký sai, hết hạn hoặc khóa lạ là `404`; không cần token vì quyền được kiểm lúc cấp URL (chủ yêu cầu; dược sĩ đang xử lý ở T5.3). Phản hồi `Cache-Control: private, no-store`.
 
+### 3.30 Duyệt đơn thuốc, tạo đơn và khách xác nhận (DS04, DS05, KTV07, T5.3)
+- **Dược sĩ** (`rx_request.review` cho DS04, `rx_order.create` cho DS05; ngoài ra service chốt vai trò `PHARMACIST`):
+  - `GET /noi-bo/don-thuoc`: hàng chờ = yêu cầu `cho_duyet` của kênh online và yêu cầu `dang_tu_van` do chính mình khóa, cũ nhất trước.
+  - `POST /noi-bo/don-thuoc/{id}/nhan`: khóa yêu cầu (`cho_duyet` -> `dang_tu_van`, `duoc_si_id`, `khoa_luc`) và trả màn duyệt; nhận lại yêu cầu của mình thì gia hạn; người khác đã khóa là `409 DA_CO_NGUOI_XU_LY`. `POST .../nha` trả về hàng chờ.
+  - `GET /noi-bo/don-thuoc/{id}`: chỉ yêu cầu đang khóa cho mình (khác là `403`). Gồm ảnh (URL ký), `ket_qua_ai`, `thuoc_tren_don`, `trung_anh` (yêu cầu khác cùng `hash_anh`), `het_khoa_luc` và `ho_so_suc_khoe`, trường này CHỈ có khi hàm cổng `duoc_doc_ho_so_suc_khoe` cho phép (ghi nhật ký mỗi lần), ngược lại `null`.
+  - `GET .../san-pham?q=`: tìm sản phẩm kể cả thuốc kê đơn theo tên hoặc hoạt chất, kèm tồn khả dụng (đơn vị cơ sở) và mọi đơn vị tính; `POST .../canh-bao {dong}`: cảnh báo tương tác và dị ứng cho các dòng đang chọn, `can_ghi_chu_tu_van` khi có mức `nghiem_trong`/`chong_chi_dinh` hoặc dị ứng.
+  - `POST .../tu-choi {ly_do}`: bắt buộc lý do, `tu_choi`, báo khách (thành viên: thông báo trong ứng dụng; vãng lai: SMS). Yêu cầu đang có đơn hàng chưa hủy là `409`.
+  - `POST .../tao-don {dong, checklist, ghi_chu_tu_van?, xac_nhan_trung_anh?}` -> 201 `{don, lien_ket_xac_nhan}`: đủ năm khóa checklist (`400` kèm khóa thiếu); ảnh trùng yêu cầu đã `da_su_dung` thì `409 CAN_XAC_NHAN_CANH_BAO` cho tới khi `xac_nhan_trung_anh`; có cảnh báo nặng thì bắt buộc `ghi_chu_tu_van`. Dòng kiểm như giỏ hàng nhưng ĐƯỢC chọn thuốc kê đơn và mọi đơn vị tính; không mã giảm giá. Đơn vào "Chờ khách xác nhận" (dòng 3), `han_xac_nhan = bây giờ + thoi_han_khach_xac_nhan_gio`, giữ hàng FEFO (thiếu là `409 HET_HANG`, hoàn tác cả đơn), yêu cầu sang `da_tao_don`. Khách vãng lai: sinh `token_truy_cap` (lưu hash SHA-256), link `<FRONTEND_URL>/xac-nhan-don/<token>` gửi SMS; thành viên nhận thông báo trong ứng dụng.
+- **Thành viên** `GET|POST /toi/don-hang/{ma}/xac-nhan`, `POST /toi/don-hang/{ma}/tu-choi`; **vãng lai** `GET /xac-nhan-don/{token}`, `POST /xac-nhan-don/{token}/xac-nhan|tu-choi|thanh-toan` (cùng nội dung; token sai là `404`; `thanh-toan` cần `Idempotency-Key`):
+  - `GET` -> `{don, co_the_xac_nhan, co_the_thanh_toan}`. Link luôn xem được trạng thái, còn xác nhận/từ chối chỉ khi `cho_khach_xac_nhan` và trước `han_xac_nhan`, nếu không là `409`.
+  - `POST xac-nhan {hinh_thuc_nhan, phuong_thuc_tt, dia_chi_id? | dia_chi + ten_nguoi_nhan + sdt_nguoi_nhan, ghi_chu?}`: chốt cách nhận, địa chỉ (thành viên dùng `dia_chi_id` của chính mình, người khác là `404`), tính phí ship, rồi COD -> "Đã xác nhận" (dòng 7), VNPay/MoMo -> "Chờ thanh toán" kèm `han_thanh_toan` (dòng 8).
+  - `POST tu-choi`: dòng 9, nhả hàng, yêu cầu về `dang_tu_van` để tạo lại đơn.
+- **Vòng đời yêu cầu** (spec 04 mục 1.2): đơn từ đơn thuốc bị hủy hoặc hết hạn TRƯỚC khi xuất kho (dòng 9, 12, 14, 15) thì yêu cầu về `dang_tu_van` (dược sĩ cũ, `khoa_luc` tính lại); sang "Đang soạn hàng" (dòng 16) thì `da_su_dung = true` và không quay lại nữa. HT08 nhả khóa `dang_tu_van` quá `thoi_gian_khoa_don_thuoc_phut` về `cho_duyet`.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

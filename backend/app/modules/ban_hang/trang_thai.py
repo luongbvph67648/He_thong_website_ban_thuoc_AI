@@ -16,7 +16,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.loi import LoiNghiepVu
 from app.core.thoi_gian import bay_gio_utc
-from app.models.ban_hang import CtDonHang, DonHang, LichSuTrangThai, PhanBoLo, ThanhToan
+from app.models.ban_hang import CtDonHang, DonHang, LichSuTrangThai, PhanBoLo, ThanhToan, YeuCauDonThuoc
 from app.models.enums import (
     HinhThucNhan,
     KenhBan,
@@ -27,6 +27,7 @@ from app.models.enums import (
     TrangThaiGiaoDich,
     TrangThaiPhanBo,
     TrangThaiThanhToan,
+    TrangThaiYeuCauDonThuoc,
 )
 from app.models.he_thong import NhanVien
 from app.models.san_pham import SanPham
@@ -355,12 +356,34 @@ async def _ghi_nhan_cod(db: AsyncSession, don: DonHang, tac_nhan: TacNhan) -> No
     don.trang_thai_tt = TrangThaiThanhToan.da_thanh_toan
 
 
+async def _danh_dau_don_thuoc_da_su_dung(db: AsyncSession, don: DonHang, tac_nhan: TacNhan) -> None:
+    """Dòng 16: thuốc thực sự xuất kho thì yêu cầu đơn thuốc liên kết hết dùng lại được (spec 04 mục 1.2 dòng 9)."""
+    if don.yeu_cau_don_thuoc_id is not None:
+        yc = await db.get(YeuCauDonThuoc, don.yeu_cau_don_thuoc_id, with_for_update=True, populate_existing=True)
+        if yc is not None:
+            yc.da_su_dung = True
+
+
+async def _tra_yeu_cau_don_thuoc(db: AsyncSession, don: DonHang, tac_nhan: TacNhan) -> None:
+    """Đơn từ đơn thuốc bị hủy/hết hạn TRƯỚC khi xuất kho: yêu cầu quay lại `dang_tu_van` để tạo lại đơn (dòng 8)."""
+    if don.yeu_cau_don_thuoc_id is None:
+        return
+    yc = await db.get(YeuCauDonThuoc, don.yeu_cau_don_thuoc_id, with_for_update=True, populate_existing=True)
+    if yc is not None and not yc.da_su_dung and yc.trang_thai == TrangThaiYeuCauDonThuoc.da_tao_don:
+        yc.trang_thai = TrangThaiYeuCauDonThuoc.dang_tu_van
+        yc.khoa_luc = bay_gio_utc()  # tính lại thời gian khóa từ lúc đơn hủy
+        yc.updated_at = yc.khoa_luc
+
+
 dang_ky_hook(23, _ghi_nhan_cod)
 for _so in (10, 11):
     dang_ky_hook(_so, _danh_dau_da_thanh_toan)
 for _so in (9, 12, 14, 15):
     dang_ky_hook(_so, _nha_hang_giu)
 dang_ky_hook(16, _xuat_kho)
+dang_ky_hook(16, _danh_dau_don_thuoc_da_su_dung)
+for _so in (9, 12, 14, 15, 19, 21, 27):
+    dang_ky_hook(_so, _tra_yeu_cau_don_thuoc)
 for _so in (9, 12, 14, 15, 19, 21, 27):
     dang_ky_hook(_so, tra_luot_khi_huy)
 for _so in (14, 15, 19, 21, 27):

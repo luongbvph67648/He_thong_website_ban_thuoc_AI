@@ -10,8 +10,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.cau_hinh import doc_cau_hinh
 from app.core.loi import LoiNghiepVu
 from app.core.thoi_gian import bay_gio_utc
-from app.models.ban_hang import DonHang, LichSuTrangThai, YeuCauDoiTra
-from app.models.enums import HinhThucNhan, TrangThaiDoiTra, TrangThaiDon
+from app.models.ban_hang import DonHang, LichSuTrangThai, YeuCauDoiTra, YeuCauDonThuoc
+from app.models.enums import HinhThucNhan, TrangThaiDoiTra, TrangThaiDon, TrangThaiYeuCauDonThuoc
 from app.modules.ban_hang.trang_thai import NGUON_HE_THONG, TacNhan, chuyen_trang_thai
 
 TT = TrangThaiDon
@@ -24,6 +24,7 @@ class KetQuaHt08Don:
     hoan_tat: list[str] = field(default_factory=list)
     da_huy_qua_han_quay: list[str] = field(default_factory=list)
     bo_qua: list[str] = field(default_factory=list)
+    nha_khoa_don_thuoc: list[str] = field(default_factory=list)
 
 
 def _moc_vao_trang_thai(trang_thai: TrangThaiDon):
@@ -74,4 +75,35 @@ async def tu_hoan_tat_don(db: AsyncSession) -> KetQuaHt08Don:
                 nhat_ky.append(don.ma_don)
             except LoiNghiepVu:
                 ket_qua.bo_qua.append(don.ma_don)
+    ket_qua.nha_khoa_don_thuoc = await nha_khoa_don_thuoc_qua_han(db)
     return ket_qua
+
+
+async def nha_khoa_don_thuoc_qua_han(db: AsyncSession) -> list[str]:
+    """Yêu cầu đơn thuốc `dang_tu_van` quá `thoi_gian_khoa_don_thuoc_phut` kể từ `khoa_luc` về `cho_duyet` (spec 04 mục
+    1.2 dòng 4). Yêu cầu còn đơn hàng chưa hủy thì trạng thái là `da_tao_don` nên không bị nhả."""
+    phut = int(await doc_cau_hinh(db, "thoi_gian_khoa_don_thuoc_phut", 30))
+    han = bay_gio_utc() - timedelta(minutes=phut)
+    ds = (
+        (
+            await db.execute(
+                select(YeuCauDonThuoc)
+                .where(
+                    YeuCauDonThuoc.trang_thai == TrangThaiYeuCauDonThuoc.dang_tu_van,
+                    YeuCauDonThuoc.khoa_luc < han,
+                )
+                .with_for_update(skip_locked=True)
+            )
+        )
+        .scalars()
+        .all()
+    )
+    for yc in ds:
+        yc.trang_thai, yc.duoc_si_id, yc.khoa_luc, yc.updated_at = (
+            TrangThaiYeuCauDonThuoc.cho_duyet,
+            None,
+            None,
+            bay_gio_utc(),
+        )
+    await db.flush()
+    return [yc.ma_yeu_cau for yc in ds]

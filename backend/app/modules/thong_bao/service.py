@@ -74,3 +74,21 @@ async def danh_dau_tat_ca_da_doc(db: AsyncSession, nhan_vien_id: int) -> int:
         update(ThongBao).where(ThongBao.nhan_vien_id == nhan_vien_id, ThongBao.da_doc.is_(False)).values(da_doc=True)
     )
     return ket_qua.rowcount
+
+
+async def gui_cho_khach(
+    db: AsyncSession,
+    khach_hang_id: int,
+    *,
+    loai: str,
+    tieu_de: str,
+    noi_dung: str | None = None,
+    lien_ket: str | None = None,
+) -> ThongBao:
+    """Tạo thông báo trong ứng dụng cho khách (đơn thuốc đã duyệt/từ chối...). Không chứa dữ liệu sức khỏe.
+    Màn xem thông báo của khách là KTV13 (T6.5)."""
+    kiem_tra_lien_ket(lien_ket)
+    thong_bao = ThongBao(khach_hang_id=khach_hang_id, loai=loai, tieu_de=tieu_de, noi_dung=noi_dung, lien_ket=lien_ket)
+    db.add(thong_bao)
+    await db.flush()
+    return thong_bao

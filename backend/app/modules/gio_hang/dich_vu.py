@@ -62,15 +62,15 @@ async def _nap_san_pham(db: AsyncSession, ids: set[int]) -> dict[int, SanPhamNap
     }
 
 
-def _ly_do_khong_hop_le(nap: SanPhamNap | None, don_vi_id: int) -> LyDo | None:
+def _ly_do_khong_hop_le(nap: SanPhamNap | None, don_vi_id: int, cho_phep_ke_don: bool = False) -> LyDo | None:
     if nap is None:
         return "khong_hien_thi"
-    if nap.sp.loai_san_pham == LoaiSanPham.thuoc_ke_don:
+    if nap.sp.loai_san_pham == LoaiSanPham.thuoc_ke_don and not cho_phep_ke_don:
         return "thuoc_ke_don"
     if not nap.hien_thi:
         return "khong_hien_thi"
     dv = next((d for d in nap.sp.don_vi_quy_doi if d.id == don_vi_id), None)
-    if dv is None or not dv.ban_online:
+    if dv is None or not (dv.ban_online or cho_phep_ke_don):
         return "don_vi_khong_hop_le"
     return None
 
@@ -257,15 +257,20 @@ async def lay_dong_de_dat(db: AsyncSession, khach: KhachHang) -> list[DongDat]:
     return await kiem_tra_dong_de_dat(db, [(c.id, c.san_pham_id, c.don_vi_id, c.so_luong) for c in dong])
 
 
-async def kiem_tra_dong_de_dat(db: AsyncSession, dong: list[tuple[int, int, int, int]]) -> list[DongDat]:
+async def kiem_tra_dong_de_dat(
+    db: AsyncSession, dong: list[tuple[int, int, int, int]], *, cho_phep_ke_don: bool = False
+) -> list[DongDat]:
     """Kiểm tra các dòng `(dong_id, san_pham_id, don_vi_id, so_luong)` có mua được không, cùng quy tắc với giỏ hàng
-    (kê đơn bị chặn ở đây, đơn vị bán online, giới hạn mỗi đơn). Dùng chung cho đặt hàng online và tạo đơn hộ (DS07)."""
+    (kê đơn bị chặn ở đây, đơn vị bán online, giới hạn mỗi đơn). Dùng chung cho đặt hàng online và tạo đơn hộ (DS07).
+
+    `cho_phep_ke_don` CHỈ dành cho tạo đơn từ yêu cầu đơn thuốc đã duyệt (DS05): dược sĩ được chọn thuốc kê đơn và đơn
+    vị bất kỳ của sản phẩm; mọi đường khác giữ mặc định chặn (CLAUDE.md quy tắc 6)."""
     naps = await _nap_san_pham(db, {sp_id for _, sp_id, _, _ in dong})
     tong_co_so: dict[int, int] = defaultdict(int)
     ra: list[DongDat] = []
     for dong_id, sp_id, don_vi_id, so_luong in dong:
         nap = naps.get(sp_id)
-        ly_do = _ly_do_khong_hop_le(nap, don_vi_id)
+        ly_do = _ly_do_khong_hop_le(nap, don_vi_id, cho_phep_ke_don)
         if ly_do is not None:
             raise _nem_loi(ly_do, nap)
         assert nap is not None

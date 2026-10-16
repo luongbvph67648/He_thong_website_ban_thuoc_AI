@@ -345,3 +345,11 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **`hash_anh`:** SHA-256 nội dung ảnh; nhiều ảnh thì băm các hash đã sắp xếp (cùng bộ ảnh, khác thứ tự vẫn trùng). Chỉ dùng để cảnh báo ở T5.3, không phải khóa duy nhất.
 - **Khách vãng lai** không có API xem lại yêu cầu; kết quả và link xác nhận gửi qua SMS ở T5.3. AI06 đọc ảnh (`ket_qua_ai`, `ct_yeu_cau_don_thuoc`) làm ở T7.6.
 
+## QĐ-34: Duyệt đơn thuốc, tạo đơn và xác nhận của khách (2026-10-16, task T5.3)
+- **Thuốc kê đơn chỉ vào đơn qua DS05:** `kiem_tra_dong_de_dat(..., cho_phep_ke_don=True)` mặc định `False`; chỉ `tao_don` của đơn thuốc bật, và dược sĩ đó phải đang khóa yêu cầu. Giỏ hàng, đặt hàng, đơn hộ (DS07) giữ nguyên chặn. Đơn từ đơn thuốc không có mã giảm giá.
+- **Phí ship tính lúc khách xác nhận,** không lúc tạo đơn (chưa biết địa chỉ); lúc tạo đơn `phi_van_chuyen = 0`, `tong_tien = tam_tinh`. Khách thấy "Tính sau khi chọn địa chỉ".
+- **Link mã truy cập:** token 256 bit ngẫu nhiên, chỉ lưu SHA-256. Link luôn XEM được đơn (trang kết quả thanh toán của khách vãng lai cần đọc lại sau khi cổng đưa về), các thao tác kiểm trạng thái và hạn. SMS gửi lỗi không làm hỏng nghiệp vụ (dược sĩ vẫn thấy link trong phản hồi).
+- **Khách vãng lai thanh toán online:** `tao_thanh_toan_don` dùng chung với thành viên; khóa chống trùng của vãng lai là `-don.id`. Trước khi sang cổng, trang lưu token vào `sessionStorage` để trang `/thanh-toan/ket-qua` đọc đơn qua link.
+- **Khóa yêu cầu:** hết hạn (HT08) thì về `cho_duyet`. Khi đơn bị hủy trước xuất kho yêu cầu về `dang_tu_van` giữ nguyên dược sĩ và đặt lại `khoa_luc`, nên nếu dược sĩ bỏ đi thì HT08 trả về hàng chờ sau thời gian khóa. Hủy SAU khi đã xuất kho giữ `da_su_dung = true`.
+- **Chưa làm (để task sau):** dược sĩ tự nhập `ct_yeu_cau_don_thuoc` (AI06 ở T7.6 điền), gợi ý thuốc thay thế cùng hoạt chất (tìm theo hoạt chất đã có), thông báo cho dược sĩ khi có yêu cầu mới (KTV13/T6.5).
+

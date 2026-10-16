@@ -701,18 +701,18 @@ _Hồ sơ sức khỏe, gửi và duyệt đơn thuốc, tạo đơn từ đơn 
   - [x] Trang gửi đơn thuốc (chụp/tải ảnh), trang "Đơn thuốc của tôi".
 - **Ghi chú triển khai:** Module `modules/don_thuoc` (`dich_vu`, `router`, `schemas`); vùng riêng tư và URL ký trong `core/luu_tru.py`, endpoint `GET /tep-rieng/...` ở `modules/tep`. API ở spec 06 mục 3.29, quyết định ở QĐ-33. OTP thêm mục đích `don_thuoc_khach`. Trang `/gui-don-thuoc` (OTP cho khách vãng lai) và `/tai-khoan/don-thuoc` (danh sách, xem ảnh, hủy). SMS kết quả và AI06 đọc ảnh làm ở T5.3 và T7.6. Test `tests/don_thuoc` (15), `DonThuoc.test.tsx` (5).
 
-### [ ] T5.3 · Duyệt đơn thuốc và tạo đơn từ đơn thuốc
+### [x] T5.3 · Duyệt đơn thuốc và tạo đơn từ đơn thuốc
 - **Chức năng:** DS04 (Duyệt yêu cầu đơn thuốc), DS05 (Tạo đơn hàng từ đơn thuốc)
 - **Phụ thuộc:** T5.2, T4.4
 - **Bảng:** `yeu_cau_don_thuoc`, `ct_yeu_cau_don_thuoc`, `ho_so_suc_khoe`, `di_ung`, `tuong_tac_hoat_chat`, `lo_thuoc`, `don_hang`, `ct_don_hang`, `phan_bo_lo`
 - **Tiêu chí chấp nhận:**
-  - [ ] Hàng chờ; nhận xử lý = khóa (`duoc_si_id`, `khoa_luc`), HT08 tự nhả quá `thoi_gian_khoa_don_thuoc_phut`.
-  - [ ] Màn duyệt: ảnh đơn, tồn kho, hồ sơ dị ứng (qua hàm cổng), cảnh báo trùng `hash_anh`, cảnh báo tương tác/dị ứng; checklist (spec 04 mục 6) bắt buộc đủ trước khi chấp nhận; từ chối bắt buộc lý do.
-  - [ ] Tạo đơn từ đơn thuốc → `cho_khach_xac_nhan`, `han_xac_nhan`, link có mã truy cập cho khách vãng lai (SMS); khách xác nhận/chọn thanh toán (phần còn lại của KTV07).
-  - [ ] `da_su_dung` chỉ bật khi đơn sang `dang_soan_hang`; đơn hủy trước đó → yêu cầu quay lại `dang_tu_van`, tạo lại đơn được.
+  - [x] Hàng chờ; nhận xử lý = khóa (`duoc_si_id`, `khoa_luc`), HT08 tự nhả quá `thoi_gian_khoa_don_thuoc_phut`.
+  - [x] Màn duyệt: ảnh đơn, tồn kho, hồ sơ dị ứng (qua hàm cổng), cảnh báo trùng `hash_anh`, cảnh báo tương tác/dị ứng; checklist (spec 04 mục 6) bắt buộc đủ trước khi chấp nhận; từ chối bắt buộc lý do.
+  - [x] Tạo đơn từ đơn thuốc → `cho_khach_xac_nhan`, `han_xac_nhan`, link có mã truy cập cho khách vãng lai (SMS); khách xác nhận/chọn thanh toán (phần còn lại của KTV07).
+  - [x] `da_su_dung` chỉ bật khi đơn sang `dang_soan_hang`; đơn hủy trước đó → yêu cầu quay lại `dang_tu_van`, tạo lại đơn được.
 - **Giao diện:**
-  - [ ] Màn hàng chờ và màn duyệt đơn thuốc cho dược sĩ; trang xác nhận đơn cho khách (cả link không cần đăng nhập).
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Màn hàng chờ và màn duyệt đơn thuốc cho dược sĩ; trang xác nhận đơn cho khách (cả link không cần đăng nhập).
+- **Ghi chú triển khai:** Module `modules/don_thuoc` thêm `duyet.py` (DS04, DS05), `xac_nhan.py` (KTV07), hai router; hook `trang_thai.py` cho `da_su_dung` (dòng 16) và trả yêu cầu về `dang_tu_van` (dòng 9, 12, 14, 15, 19, 21, 27); HT08 nhả khóa. API ở spec 06 mục 3.30, quyết định ở QĐ-34 (thuốc kê đơn chỉ vào đơn qua DS05, phí ship tính khi khách xác nhận, link mã truy cập, thanh toán online của khách vãng lai). Giao diện: hàng chờ `/don-thuoc`, màn duyệt `/don-thuoc/:id`, `/xac-nhan-don/:token`, panel xác nhận trong chi tiết đơn của thành viên. Test `tests/don_thuoc` (`test_duyet_don_thuoc`, `test_xac_nhan_don_thuoc`) và 3 file vitest mới. Chưa có: nhập tay thuốc trên đơn, gợi ý thuốc thay thế.
 
 ### [ ] T5.4 · Bán tại quầy (POS)
 - **Chức năng:** DS08 (Bán tại quầy – POS)

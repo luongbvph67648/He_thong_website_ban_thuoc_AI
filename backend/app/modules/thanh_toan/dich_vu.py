@@ -43,8 +43,14 @@ async def _khoa_don_cua_khach(db: AsyncSession, khach_hang_id: int, ma_don: str)
 async def tao_thanh_toan(db: AsyncSession, khach_hang_id: int, ma_don: str, khoa: str, ip: str) -> dict:
     """Tạo giao dịch `khoi_tao` cho đơn chờ thanh toán, trả URL của cổng (cùng `Idempotency-Key` thì trả URL cũ)."""
     don = await _khoa_don_cua_khach(db, khach_hang_id, ma_don)  # tuần tự hóa các lần bấm của cùng một đơn
-    dau_van_tay = idempotency.dau_van_tay({"ma_don": ma_don})
-    cu = idempotency.tra_cuu(THAO_TAC, khach_hang_id, khoa, dau_van_tay)
+    return await tao_thanh_toan_don(db, don, khach_hang_id, khoa, ip)
+
+
+async def tao_thanh_toan_don(db: AsyncSession, don: DonHang, chu_idem: int, khoa: str, ip: str) -> dict:
+    """Phần dùng chung: `don` đã khóa và đã kiểm quyền. `chu_idem` là khóa chủ sở hữu của `Idempotency-Key` (id khách,
+    hoặc `-don.id` cho khách vãng lai vào bằng link mã truy cập)."""
+    dau_van_tay = idempotency.dau_van_tay({"ma_don": don.ma_don})
+    cu = idempotency.tra_cuu(THAO_TAC, chu_idem, khoa, dau_van_tay)
     if cu is not None and await db.scalar(select(ThanhToan.id).where(ThanhToan.id == cu["giao_dich_id"])):
         return cu["ket_qua"]
     if don.trang_thai != TrangThaiDon.cho_thanh_toan or don.phuong_thuc_tt not in CONG_ONLINE:
@@ -63,7 +69,7 @@ async def tao_thanh_toan(db: AsyncSession, khach_hang_id: int, ma_don: str, khoa
     await db.flush()
     url = await lay_cong(don.phuong_thuc_tt).tao_url_thanh_toan(don, giao_dich, ip)
     ra = {"url_thanh_toan": url, "han_thanh_toan": don.han_thanh_toan.isoformat() if don.han_thanh_toan else None}
-    idempotency.ghi_nho(THAO_TAC, khach_hang_id, khoa, dau_van_tay, {"giao_dich_id": giao_dich.id, "ket_qua": ra})
+    idempotency.ghi_nho(THAO_TAC, chu_idem, khoa, dau_van_tay, {"giao_dich_id": giao_dich.id, "ket_qua": ra})
     return ra
 
 

@@ -3,7 +3,7 @@ import { Alert, App, Button, Descriptions, Result, Spin, Table, Typography } fro
 import { useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../../../api/client'
-import { thongDiepChung } from '../../../api/goi'
+import { goi, thongDiepChung } from '../../../api/goi'
 import { dinhDangNgay, dinhDangTien } from '../../../lib/dinhDang'
 import { NHAN_PHUONG_THUC } from './thanhToan'
 import { chuyenSangCong, layUrlThanhToan } from './thanhToanOnline'
@@ -23,7 +23,12 @@ export default function TrangKetQuaDatHang() {
     enabled: ma !== '',
     retry: false,
     refetchInterval: (query) => (query.state.data?.trang_thai === 'cho_thanh_toan' ? 3000 : false),
-    queryFn: async () => (await api.GET('/api/v1/toi/don-hang/{ma_don}', { params: { path: { ma_don: ma } } })).data ?? null,
+    queryFn: async () => {
+      // Khách vãng lai (đơn từ đơn thuốc) vào bằng link mã truy cập: token được lưu lúc bấm thanh toán.
+      const token = sessionStorage.getItem(`xacNhanDon:${ma}`)
+      if (token) return (await api.GET('/api/v1/xac-nhan-don/{token}', { params: { path: { token } } })).data?.don ?? null
+      return (await api.GET('/api/v1/toi/don-hang/{ma_don}', { params: { path: { ma_don: ma } } })).data ?? null
+    },
   })
   if (ma === '' || (!q.isLoading && !q.data)) {
     return <Result status="404" title="Không tìm thấy đơn hàng" extra={<Link to="/"><Button type="primary">Về trang chủ</Button></Link>} />
@@ -36,7 +41,12 @@ export default function TrangKetQuaDatHang() {
 
   async function thanhToanLai() {
     datDangMo(true)
-    const r = await layUrlThanhToan(don.ma_don)
+    const token = sessionStorage.getItem(`xacNhanDon:${don.ma_don}`)
+    const r = token
+      ? await goi(() =>
+          api.POST('/api/v1/xac-nhan-don/{token}/thanh-toan', { params: { path: { token }, header: { 'Idempotency-Key': crypto.randomUUID() } } }),
+        )
+      : await layUrlThanhToan(don.ma_don)
     datDangMo(false)
     if (r.ok) chuyenSangCong.di(r.data.url_thanh_toan)
     else void message.error(thongDiepChung(r.loi))

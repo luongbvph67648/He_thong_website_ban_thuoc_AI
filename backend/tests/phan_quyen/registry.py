@@ -44,6 +44,15 @@ REGISTRY: dict[tuple[str, str], tuple[str, str]] = {
     ("POST", f"{TIEN_TO_NOI_BO}/soan-hang/{{don_id}}/dong-goi"): ("shipment.create", "day_du"),
     ("GET", f"{TIEN_TO_NOI_BO}/don-ho/khach"): ("order.create_phone", "day_du"),
     ("POST", f"{TIEN_TO_NOI_BO}/don-ho"): ("order.create_phone", "day_du"),
+    # DS04 (duyệt) và DS05 (tạo đơn từ đơn thuốc): chỉ dược sĩ.
+    ("GET", f"{TIEN_TO_NOI_BO}/don-thuoc"): ("rx_request.review", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/don-thuoc/{{yc_id}}"): ("rx_request.review", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/don-thuoc/{{yc_id}}/nhan"): ("rx_request.review", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/don-thuoc/{{yc_id}}/nha"): ("rx_request.review", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/don-thuoc/{{yc_id}}/tu-choi"): ("rx_request.review", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/don-thuoc/{{yc_id}}/canh-bao"): ("rx_request.review", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/don-thuoc/{{yc_id}}/san-pham"): ("rx_order.create", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/don-thuoc/{{yc_id}}/tao-don"): ("rx_order.create", "day_du"),
     ("GET", f"{TIEN_TO_NOI_BO}/giao-tai-quay"): ("order.pickup_handover", "day_du"),
     ("POST", f"{TIEN_TO_NOI_BO}/giao-tai-quay/{{don_id}}"): ("order.pickup_handover", "day_du"),
     # KHO09, KHO11 (kho lập, Admin không lập) và AD12 (Admin duyệt/từ chối; kho không duyệt).

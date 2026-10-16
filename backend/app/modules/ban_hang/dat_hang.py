@@ -69,6 +69,7 @@ def don_ra(don: DonHang, ma_text: str | None, lich_su: Sequence[LichSuTrangThai]
         phi_van_chuyen=don.phi_van_chuyen,
         tong_tien=don.tong_tien,
         han_thanh_toan=don.han_thanh_toan,
+        han_xac_nhan=don.han_xac_nhan,
         ma_giam_gia=ma_text,
         ten_nguoi_nhan=don.ten_nguoi_nhan,
         sdt_nguoi_nhan=don.sdt_nguoi_nhan,
@@ -329,6 +330,24 @@ async def lich_su_don(db: AsyncSession, don_id: int) -> list[LichSuTrangThai]:
             )
         ).scalars()
     )
+
+
+async def don_ra_day_du(db: AsyncSession, don: DonHang) -> DonHangRa:
+    """`DonHangRa` của một đơn đã nạp (kèm dòng hàng, lịch sử, vận đơn); người gọi đã kiểm quyền truy cập đơn."""
+    don = (
+        await db.execute(
+            select(DonHang)
+            .where(DonHang.id == don.id)
+            .options(selectinload(DonHang.chi_tiet))
+            .execution_options(populate_existing=True)
+        )
+    ).scalar_one()
+    ma_text = None
+    if don.ma_giam_gia_id is not None:
+        ma_text = await db.scalar(select(MaGiamGia.ma).where(MaGiamGia.id == don.ma_giam_gia_id))
+    ra = don_ra(don, ma_text, await lich_su_don(db, don.id))
+    ra.van_don = await van_don_giao_hang(db, don.id)
+    return ra
 
 
 async def don_cua_khach(db: AsyncSession, khach: KhachHang, ma_don: str) -> DonHangRa:
