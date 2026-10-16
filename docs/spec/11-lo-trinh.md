@@ -538,15 +538,19 @@ _Giỏ hàng, máy trạng thái, đặt hàng giữ hàng FEFO, thanh toán, x�
   - Chưa làm: sửa hồ sơ cá nhân và đổi mật khẩu của khách (chưa có API), Idempotency-Key cho thêm giỏ không cần (cộng dồn là thao tác của người dùng).
 
 
-### [ ] T4.2 · Máy trạng thái đơn hàng
+### [x] T4.2 · Máy trạng thái đơn hàng
 - **Chức năng:** HT06 (Máy trạng thái đơn hàng)
 - **Phụ thuộc:** T3.1
 - **Bảng:** `don_hang`, `lich_su_trang_thai`
 - **Tiêu chí chấp nhận:**
-  - [ ] `ban_hang/trang_thai.py`: bảng chuyển trạng thái dạng dữ liệu đúng bảng 1 spec 04; `chuyen_trang_thai(db, don, den, tac_nhan, nguon, ghi_chu)` kiểm tra hợp lệ + vai trò được phép, ghi `lich_su_trang_thai`, gọi các hook tác động (kho, thanh toán, thông báo) trong cùng transaction.
-  - [ ] Không nơi nào khác được gán `don_hang.trang_thai` (thêm test quét mã nguồn tìm phép gán trực tiếp).
-  - [ ] Test tham số hóa: mọi dòng trong bảng chuyển hợp lệ; mọi cặp không có trong bảng bị từ chối (`ma_loi = "CHUYEN_TRANG_THAI_KHONG_HOP_LE"`).
-- **Ghi chú triển khai:** _(trống)_
+  - [x] `ban_hang/trang_thai.py`: bảng chuyển trạng thái dạng dữ liệu đúng bảng 1 spec 04; `chuyen_trang_thai(db, don, den, tac_nhan, nguon, ghi_chu)` kiểm tra hợp lệ + vai trò được phép, ghi `lich_su_trang_thai`, gọi các hook tác động (kho, thanh toán, thông báo) trong cùng transaction.
+  - [x] Không nơi nào khác được gán `don_hang.trang_thai` (thêm test quét mã nguồn tìm phép gán trực tiếp).
+  - [x] Test tham số hóa: mọi dòng trong bảng chuyển hợp lệ; mọi cặp không có trong bảng bị từ chối (`ma_loi = "CHUYEN_TRANG_THAI_KHONG_HOP_LE"`).
+- **Ghi chú triển khai:**
+  - Spec 04 mục 1.1 (phần Cài đặt), QĐ-24. Hai điểm vào `khoi_tao_trang_thai` (tạo đơn) và `chuyen_trang_thai`; bảng chuyển là dữ liệu, kiểm cả tác nhân, nguồn và điều kiện (kể cả chặn thuốc kê đơn ở dòng 1, 2, 4, 5 bằng SQL). Tác động kho (nhả giữ, xuất kho, hoàn nhập) đã nối; tác động khác gắn bằng `dang_ky_hook` ở task sau.
+  - Test: mọi dòng chạy với từng tác nhân hợp lệ, 13x12 cặp trừ bảng bị từ chối, sai tác nhân/nguồn, khách khác 404, hạn, lý do, hook lỗi hoàn tác, bấm hai lần không xuất kho hai lần, quét AST không nơi nào khác gán trạng thái.
+  - Chưa làm: hook cho dòng 27 (KHO10), thanh toán/hoàn tiền/mã giảm giá/vận đơn/thông báo (T4.3, T4.5–T4.7).
+
 
 ### [ ] T4.3 · Khuyến mãi và mã giảm giá
 - **Chức năng:** AD06 (Quản lý khuyến mãi, mã giảm giá), KTV04 (Áp dụng mã giảm giá)

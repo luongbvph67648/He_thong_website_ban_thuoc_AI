@@ -258,3 +258,12 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
   - **Chưa làm (KTV01):** sửa hồ sơ cá nhân và đổi mật khẩu của khách (spec 06 chưa có API `PATCH /toi`); ghi ở "Việc phát sinh".
 - **Hệ quả:** spec 06 mục 3.20; `modules/gio_hang/`, `modules/dia_chi/`, `tich_hop/van_chuyen/`; `frontend/src/khu/cua-hang/{gio-hang,tai-khoan}`; `test/render.tsx` bọc `<App>` của antd.
 
+## QĐ-24: Máy trạng thái đơn hàng (2026-10-16, task T4.2)
+- **Quyết định:**
+  - **Bảng chuyển là dữ liệu** (`BANG_CHUYEN`, theo số dòng spec 04 mục 1.1); mọi dòng và mọi cặp ngoài bảng đều có test tham số hóa. Sai tác nhân (`403`) tách khỏi sai cặp trạng thái (`409`).
+  - **Điều kiện cột "Điều kiện" được kiểm trong máy trạng thái** thay vì để nơi gọi tự nhớ: thuốc kê đơn không vào dòng 1, 2, 4, 5 (SQL), hạn xác nhận/thanh toán, đơn chưa thanh toán khi hủy, nhận tại nhà thuốc, lý do bắt buộc. Hệ quả: dòng 3 (đơn từ đơn thuốc) và 6 (bán tại quầy) được phép có thuốc kê đơn; cổng kê đơn của chúng do T5.x/T4.8 chặn.
+  - **Admin không có dòng nào** trong bảng: spec 04 chỉ liệt kê dược sĩ, kho, khách, hệ thống. Cần Admin hủy đơn thì phải sửa spec trước.
+  - **Tạo đơn qua `khoi_tao_trang_thai`:** cột `trang_thai` không null nên hàm này là chỗ duy nhất gán trạng thái đầu; test quét mã nguồn bằng AST (gán `.trang_thai` của đơn, `DonHang(trang_thai=...)`, `update(DonHang).values(trang_thai=...)`, SQL thô) và chỉ cho `trang_thai.py`.
+  - **Tác động qua hook đăng ký** (`dang_ky_hook`) để task sau thêm thanh toán, hoàn tiền, mã giảm giá, vận đơn, thông báo mà không sửa máy trạng thái. Dòng 27 (kiểm hàng hoàn: hoàn nhập hay biệt trữ) chưa có hook, thuộc KHO10.
+- **Hệ quả:** spec 04 mục 1.1 (phần Cài đặt); `modules/ban_hang/trang_thai.py`; `tests/ban_hang/`; `backend/CLAUDE.md`.
+
