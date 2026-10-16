@@ -3,7 +3,6 @@
 import asyncio
 
 import pytest
-from app.modules.he_thong import cau_hinh_service
 from sqlalchemy import func, select
 
 from app.core import phan_quyen
@@ -11,6 +10,7 @@ from app.core.cau_hinh import doc_cau_hinh
 from app.core.cau_hinh_khoa import KHOA_CAU_HINH, dau_van_tay
 from app.core.loi import LoiNghiepVu
 from app.models.he_thong import CauHinh, NhanVien, NhatKyHeThong, Quyen, VaiTro, VaiTroQuyen
+from app.modules.he_thong import cau_hinh_service
 from tests.factories import tao_nhan_vien
 from tests.nhan_vien.dung_chung import nhat_ky
 

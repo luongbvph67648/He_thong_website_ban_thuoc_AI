@@ -144,7 +144,7 @@ async def don_cua_toi(ma_don: str, kh: Annotated[KhachHang, Depends(khach_hien_t
 - Chạy nhanh một phần: `uv run pytest tests/ban_hang -q -x`. CI (`.github/workflows/ci.yml`) chạy ruff, vòng migration lên-xuống-lên + `alembic check`, `scripts/so_sanh_schema.py`, pytest; frontend chạy lint, `tsc`, vitest (khi có script `test`), build.
 
 ## Python
-- Bật `ruff` (lint + format) cho mọi file.
+- Bật `ruff` (lint + format) cho mọi file. Trước khi push chạy `uv run ruff check --no-cache .` và `uv run ruff format --check --no-cache .`: `.ruff_cache` cục bộ từng che lỗi thứ tự import (I001) khiến CI đỏ hai lần liền (T1.6) dù máy mình báo sạch.
 - Type hint đầy đủ cho hàm public.
 - Docstring tiếng Việt một dòng cho service public.
 - Không dùng `print`; dùng `logging.getLogger(__name__)`.
