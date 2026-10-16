@@ -121,6 +121,10 @@ async def test_loc_khoang_ngay_theo_gio_viet_nam_gom_ca_hai_dau(dang_nhap_admin,
         {"nhan_vien_id": 2_147_483_648},
         {"nhan_vien_id": "abc"},
         {"bang": "a" * 61},
+        {"tu_ngay": "0001-01-01"},  # theo giờ VN rơi vào năm 0 khi đổi sang UTC: asyncpg từ chối nếu lọt tới DB
+        {"den_ngay": "9999-12-31"},  # cộng thêm một ngày sẽ tràn
+        {"tu_ngay": "1999-12-31"},
+        {"den_ngay": "2101-01-01"},
         {"bang": "a\x00b"},  # byte NUL làm PostgreSQL báo lỗi: phải là 400, không phải 500
         {"ban_ghi_id": "\x00"},
         {"hanh_dong": "tao\x00"},
@@ -132,6 +136,14 @@ async def test_loc_khoang_ngay_theo_gio_viet_nam_gom_ca_hai_dau(dang_nhap_admin,
 )
 async def test_tham_so_sai_la_400_khong_phai_500(dang_nhap_admin, tham_so):
     assert la_loi(await dang_nhap_admin.get(GOC, params=tham_so), 400, "DU_LIEU_KHONG_HOP_LE")
+
+
+@pytest.mark.parametrize(
+    "tham_so",
+    [{"tu_ngay": "2000-01-01"}, {"den_ngay": "2100-12-31"}, {"tu_ngay": "2000-01-01", "den_ngay": "2100-12-31"}],
+)
+async def test_hai_dau_cua_mien_ngay_cho_phep_van_chay_binh_thuong(dang_nhap_admin, tham_so):
+    assert (await dang_nhap_admin.get(GOC, params=tham_so)).status_code == 200
 
 
 async def test_phan_trang_on_dinh_voi_dong_cung_thoi_diem(dang_nhap_admin, db):

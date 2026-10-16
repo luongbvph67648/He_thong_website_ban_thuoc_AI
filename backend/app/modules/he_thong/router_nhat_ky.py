@@ -17,6 +17,10 @@ router = APIRouter(prefix="/noi-bo/nhat-ky", tags=["Nhật ký hệ thống"])
 
 NhatKyXem = Annotated[NhanVien, Depends(yeu_cau_quyen("audit.view", "xem"))]
 KHONG_NUL = r"^[^\x00]*$"  # byte NUL làm PostgreSQL báo lỗi (500): chặn từ đầu
+# Ngày ở hai đầu miền (`0001-01-01` đổi sang UTC thành năm 0, `9999-12-31` cộng một ngày bị tràn) làm 500; nhật ký
+# chỉ có từ khi hệ thống chạy nên giới hạn 2000..2100 là dư.
+NGAY_NHO_NHAT = date(2000, 1, 1)
+NGAY_LON_NHAT = date(2100, 12, 31)
 
 
 def _chuoi(toi_da: int, mo_ta: str):
@@ -32,8 +36,12 @@ async def tra_cuu(
     ban_ghi_id: _chuoi(60, "Id bản ghi, khớp chính xác") = None,
     nhan_vien_id: Annotated[IdInt | None, Query(description="Người thực hiện")] = None,
     hanh_dong: _chuoi(30, "Hành động, khớp chính xác") = None,
-    tu_ngay: Annotated[date | None, Query(description="Từ ngày (giờ Việt Nam), gồm cả ngày này")] = None,
-    den_ngay: Annotated[date | None, Query(description="Đến ngày (giờ Việt Nam), gồm cả ngày này")] = None,
+    tu_ngay: Annotated[
+        date | None, Query(ge=NGAY_NHO_NHAT, le=NGAY_LON_NHAT, description="Từ ngày (giờ Việt Nam), gồm cả ngày này")
+    ] = None,
+    den_ngay: Annotated[
+        date | None, Query(ge=NGAY_NHO_NHAT, le=NGAY_LON_NHAT, description="Đến ngày (giờ Việt Nam), gồm cả ngày này")
+    ] = None,
 ):
     dong, tong = await nhat_ky_service.tim(
         db,

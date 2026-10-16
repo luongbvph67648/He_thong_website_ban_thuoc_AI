@@ -132,6 +132,18 @@ describe('TrangCauHinh', () => {
     expect(luu('Ngưỡng cận hạn')).toBeDisabled() // để trống cũng không hợp lệ
   })
 
+  it('ô tiền: xóa trắng là KHÔNG hợp lệ (không âm thầm thành 0, vì 0 nghĩa là miễn phí vận chuyển)', async () => {
+    const nguoi = userEvent.setup()
+    dung()
+    await screen.findByText('Phí vận chuyển mặc định')
+    await goTrong(nguoi, 'Phí vận chuyển mặc định', '')
+    expect(o('Phí vận chuyển mặc định')).toHaveValue('')
+    expect(await within(hang('Phí vận chuyển mặc định')).findByText(/Phải là số nguyên từ 0 đến 1\.000\.000 đồng/, { selector: '[role="alert"]' })).toBeInTheDocument()
+    expect(luu('Phí vận chuyển mặc định')).toBeDisabled()
+    await goTrong(nguoi, 'Phí vận chuyển mặc định', '0') // gõ 0 thật thì hợp lệ
+    expect(luu('Phí vận chuyển mặc định')).toBeEnabled()
+  })
+
   it('lưu: gửi PUT đúng khóa kèm phien_ban đã đọc, báo thành công và tải lại', async () => {
     PUT.mockResolvedValueOnce(ok(MUC()[0]))
     const nguoi = userEvent.setup()

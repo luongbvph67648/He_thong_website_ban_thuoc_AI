@@ -123,6 +123,14 @@ describe('TrangNhatKy', () => {
     expect(thamSoLanGoiNhatKy()).toMatchObject({ nhan_vien_id: undefined, tu_ngay: undefined, den_ngay: undefined, trang: 1 })
   })
 
+  it('ngày ngoài miền 2000..2100 trên URL bị bỏ qua (máy chủ từ chối nên không gửi lên)', async () => {
+    dung('/nhat-ky?tu_ngay=0001-01-01&den_ngay=9999-12-31')
+    await screen.findByText('16/10/2026 00:30:45')
+    expect(thamSoLanGoiNhatKy()).toMatchObject({ tu_ngay: undefined, den_ngay: undefined })
+    dung('/nhat-ky?tu_ngay=2000-01-01&den_ngay=2100-12-31')
+    await waitFor(() => expect(thamSoLanGoiNhatKy()).toMatchObject({ tu_ngay: '2000-01-01', den_ngay: '2100-12-31' }))
+  })
+
   it('chọn bảng từ ô lọc: gọi lại với bảng đó và về trang 1; ô lọc dựng từ giá trị máy chủ trả về', async () => {
     const nguoi = userEvent.setup()
     dung('/nhat-ky?trang=3')

@@ -21,7 +21,8 @@ function docNgay(gia: string | null): string | undefined {
   if (!khop) return undefined
   const [nam, thang, ngay] = [Number(khop[1]), Number(khop[2]), Number(khop[3])]
   const d = new Date(Date.UTC(nam, thang - 1, ngay))
-  return d.getUTCFullYear() === nam && d.getUTCMonth() === thang - 1 && d.getUTCDate() === ngay ? gia! : undefined
+  const hopLe = d.getUTCFullYear() === nam && d.getUTCMonth() === thang - 1 && d.getUTCDate() === ngay
+  return hopLe && nam >= 2000 && nam <= 2100 ? gia! : undefined // miền máy chủ chấp nhận (spec 06 mục 3.8)
 }
 
 function docSoNguyen(gia: string | null, toiDa: number): number | undefined {

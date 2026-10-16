@@ -46,7 +46,8 @@ function OSo({ nhan, gia, doi, khoa, don_vi, tien }: { nhan: string; gia: unknow
       disabled={khoa}
       addonAfter={don_vi ?? undefined}
       formatter={tien ? nhomTien : undefined}
-      parser={tien ? (v) => Number(String(v ?? '').replace(/\./g, '')) : undefined}
+      // Chuỗi rỗng phải giữ là rỗng: `Number('')` là 0 nên xóa trắng ô tiền sẽ âm thầm thành 0 (miễn phí vận chuyển).
+      parser={tien ? (v) => String(v ?? '').replace(/\./g, '') : undefined}
       onChange={(v) => doi(typeof v === 'number' ? v : null)}
       style={{ width: 240 }}
     />
