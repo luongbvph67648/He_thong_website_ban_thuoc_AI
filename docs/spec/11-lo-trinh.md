@@ -833,19 +833,19 @@ _Kho tri thức, tìm kiếm lai, chatbot RAG, chuyển dược sĩ, đọc ản
   - [x] AI lỗi hoặc tắt → tự quay về chỉ từ khóa (test bằng client giả ném lỗi). Ghi `che_do = hybrid`.
 - **Ghi chú triển khai:** `cua_hang/tim_kiem_lai.py` (`tim_lai`, `ghep_rrf`, `id_ngu_nghia`); route `/tim-kiem` dùng nó; API spec 06 mục 3.40. Chưa thêm điểm thưởng "bán chạy" vào RRF (chỉ cộng nhỏ cho còn hàng). Test `tests/ai/test_tim_kiem_lai.py` (7).
 
-### [ ] T7.3 · Chatbot tư vấn (RAG)
+### [x] T7.3 · Chatbot tư vấn (RAG)
 - **Chức năng:** KVL05 (Chat với trợ lý AI), AI02 (Phân loại ý định, phát hiện dấu hiệu nguy hiểm), AI03 (Trả lời bằng RAG)
 - **Phụ thuộc:** T7.2
 - **Bảng:** `hoi_thoai`, `tin_nhan`, `tai_lieu_tri_thuc`, `danh_gia_cau_tra_loi`, `cau_hinh`, `ho_so_suc_khoe`, `di_ung`, `tuong_tac_hoat_chat`
 - **Tiêu chí chấp nhận:**
-  - [ ] `POST /api/v1/tu-van/chat` trả SSE; lưu `hoi_thoai`, `tin_nhan` (ý định, sản phẩm gợi ý, cờ nguy hiểm, token).
-  - [ ] AI02: phân loại ý định + dấu hiệu nguy hiểm (từ khóa cấu hình chạy trước, rồi Claude) → nguy hiểm thì trả mẫu cố định khuyên đi khám/gọi 115 và gắn cờ.
-  - [ ] AI03: tool chỉ đọc theo spec 07 mục 4; mọi tool lọc bỏ thuốc kê đơn và (nếu khách đồng ý) sản phẩm chứa hoạt chất dị ứng ở tầng SQL.
-  - [ ] Giới hạn lượt theo phiên/IP; nút báo sai → `danh_gia_cau_tra_loi`.
-  - [ ] Bộ câu hỏi đánh giá (spec 07 mục 8) chạy được bằng lệnh riêng; test tự động dùng client giả.
+  - [x] `POST /api/v1/tu-van/chat` trả SSE; lưu `hoi_thoai`, `tin_nhan` (ý định, sản phẩm gợi ý, cờ nguy hiểm, token).
+  - [x] AI02: phân loại ý định + dấu hiệu nguy hiểm (từ khóa cấu hình chạy trước, rồi Claude) → nguy hiểm thì trả mẫu cố định khuyên đi khám/gọi 115 và gắn cờ.
+  - [x] AI03: tool chỉ đọc theo spec 07 mục 4; mọi tool lọc bỏ thuốc kê đơn và (nếu khách đồng ý) sản phẩm chứa hoạt chất dị ứng ở tầng SQL.
+  - [x] Giới hạn lượt theo phiên/IP; nút báo sai → `danh_gia_cau_tra_loi`.
+  - [x] Bộ câu hỏi đánh giá (spec 07 mục 8) chạy được bằng lệnh riêng; test tự động dùng client giả.
 - **Giao diện:**
-  - [ ] Widget chat nổi trên mọi trang cửa hàng, hiển thị stream, thẻ sản phẩm, nút "Gặp dược sĩ", nút báo sai.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Widget chat nổi trên mọi trang cửa hàng, hiển thị stream, thẻ sản phẩm, nút "Gặp dược sĩ", nút báo sai.
+- **Ghi chú triển khai:** `ai/chatbot.py` (AI02, AI03, 6 tool, `chay_luot`), `ai/dau_hieu.py`, `ai/prompts/`, `modules/tu_van/`, `ai/danh_gia.py` + `tests/ai/bo_cau_hoi.yaml` (40 câu); `core/db.lay_tao_phien` cho SSE; API spec 06 mục 3.41; QĐ-44. Giao diện `WidgetChat` trên mọi trang cửa hàng (stream, thẻ sản phẩm, báo sai; nút "Gặp dược sĩ" nối ở T7.4). Test `tests/ai/test_chatbot.py` (17), `test_danh_gia.py` (3), `WidgetChat.test.tsx`, `sse.test.ts`. CHƯA chạy được với Claude thật; nhóm cần chạy `python -m app.ai.danh_gia` để đo hai nhóm bắt buộc 100%.
 
 ### [ ] T7.4 · Chuyển dược sĩ và chat trực tiếp
 - **Chức năng:** AI04 (Tóm tắt, chuyển dược sĩ), KTV12 (Chat trực tiếp với dược sĩ), DS06 (Tư vấn trực tiếp)

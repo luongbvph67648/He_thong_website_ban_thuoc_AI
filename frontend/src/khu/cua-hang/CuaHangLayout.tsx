@@ -3,6 +3,7 @@ import { useQueryClient } from '@tanstack/react-query'
 import { Button, Layout, Skeleton, Space } from 'antd'
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { dangXuatKhach } from '../../api/dangXuat'
+import WidgetChat from './chat/WidgetChat'
 import { ChuongThongBao } from '../../components/ChuongThongBao'
 import { usePhien } from '../../stores/phien'
 import { ChanTrang } from './ChanTrang'
@@ -77,6 +78,7 @@ export default function CuaHangLayout() {
         <Outlet />
       </Content>
       <ChanTrang />
+      <WidgetChat />
     </Layout>
   )
 }

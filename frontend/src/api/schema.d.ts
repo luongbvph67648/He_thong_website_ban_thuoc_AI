@@ -2721,6 +2721,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/tu-van/chat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Chat với trợ lý AI (SSE) (KVL05)
+         * @description Sự kiện: `van_ban`, `the_san_pham`, `chuyen_duoc_si`, `nguy_hiem`, `ket_thuc`, `loi`.
+         */
+        post: operations["chat_api_v1_tu_van_chat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tu-van/{ma_phien}/tin-nhan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lịch sử một phiên tư vấn (KVL05) */
+        get: operations["lich_su_api_v1_tu_van__ma_phien__tin_nhan_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/tu-van/danh-gia": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Báo câu trả lời hữu ích hoặc sai (KVL05) */
+        post: operations["danh_gia_api_v1_tu_van_danh_gia_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/noi-bo/cau-hinh-ai": {
         parameters: {
             query?: never;
@@ -4351,6 +4405,16 @@ export interface components {
             /** Updated At */
             updated_at: string | null;
         };
+        /** ChatVao */
+        ChatVao: {
+            /**
+             * Ma Phien
+             * Format: uuid
+             */
+            ma_phien: string;
+            /** Noi Dung */
+            noi_dung: string;
+        };
         /** ChecklistVao */
         ChecklistVao: {
             /** Thong Tin Nguoi Benh */
@@ -4511,6 +4575,21 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** DanhGiaVao */
+        DanhGiaVao: {
+            /**
+             * Ma Phien
+             * Format: uuid
+             */
+            ma_phien: string;
+            /** Tin Nhan Id */
+            tin_nhan_id: number;
+            /**
+             * Ket Qua
+             * @enum {string}
+             */
+            ket_qua: "huu_ich" | "khong_huu_ich";
         };
         /** DanhMucChiTiet */
         DanhMucChiTiet: {
@@ -6589,6 +6668,13 @@ export interface components {
             /** Dong Luc */
             dong_luc: string | null;
         };
+        /** LichSuRa */
+        LichSuRa: {
+            /** Trang Thai */
+            trang_thai: string;
+            /** Tin Nhan */
+            tin_nhan: components["schemas"]["TinNhanRa"][];
+        };
         /** LienHeVao */
         LienHeVao: {
             ket_qua_lien_he: components["schemas"]["KetQuaLienHeThuHoi"];
@@ -8030,6 +8116,25 @@ export interface components {
             ten: string;
             /** Logo Url */
             logo_url?: string | null;
+        };
+        /** TinNhanRa */
+        TinNhanRa: {
+            /** Id */
+            id: number;
+            /**
+             * Vai Tro
+             * @enum {string}
+             */
+            vai_tro: "khach" | "ai" | "duoc_si" | "he_thong";
+            /** Noi Dung */
+            noi_dung: string;
+            /** Dau Hieu Nguy Hiem */
+            dau_hieu_nguy_hiem: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /**
          * TinhTrangHang
@@ -14949,6 +15054,101 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["KetQuaKiemHoan"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chat_api_v1_tu_van_chat_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ChatVao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    lich_su_api_v1_tu_van__ma_phien__tin_nhan_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                ma_phien: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LichSuRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    danh_gia_api_v1_tu_van_danh_gia_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DanhGiaVao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {

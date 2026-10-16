@@ -31,8 +31,8 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from app.core.bao_mat import tao_access_token
 from app.core.config import settings
-from app.core.db import PhienRequest, get_db, get_engine, tao_engine
-from app.core.gioi_han import GioiHanCuaSoTruot, lay_bo_gioi_han_dang_nhap, lay_bo_gioi_han_otp
+from app.core.db import PhienRequest, get_db, get_engine, lay_tao_phien, tao_engine
+from app.core.gioi_han import GioiHanCuaSoTruot, lay_bo_gioi_han_chat, lay_bo_gioi_han_dang_nhap, lay_bo_gioi_han_otp
 from app.core.log import BoLocRequestId, JsonFormatter
 from app.core.phan_quyen import xoa_cache_quyen
 from app.main import create_app
@@ -263,10 +263,19 @@ def app(engine_test, ket_noi, kenh_tin_nhan, gioi_han_ip, gioi_han_dang_nhap):
         async with phien, phien.begin():
             yield phien
 
+    @asynccontextmanager
+    async def tao_phien_test():
+        phien = PhienRequest(bind=ket_noi, join_transaction_mode="create_savepoint", expire_on_commit=False)
+        async with phien, phien.begin():
+            yield phien
+
     ung_dung = create_app()
+    ung_dung.dependency_overrides[lay_tao_phien] = lambda: tao_phien_test
     ung_dung.dependency_overrides[get_db] = get_db_test
     ung_dung.dependency_overrides[get_engine] = lambda: engine_test
     ung_dung.dependency_overrides[lay_kenh_tin_nhan] = lambda: kenh_tin_nhan
+    bo_chat = GioiHanCuaSoTruot()
+    ung_dung.dependency_overrides[lay_bo_gioi_han_chat] = lambda: bo_chat
     ung_dung.dependency_overrides[lay_bo_gioi_han_otp] = lambda: gioi_han_ip
     ung_dung.dependency_overrides[lay_bo_gioi_han_dang_nhap] = lambda: gioi_han_dang_nhap
     return ung_dung

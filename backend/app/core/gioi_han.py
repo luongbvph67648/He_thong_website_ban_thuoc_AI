@@ -50,6 +50,7 @@ _bo_otp_toan_cuc = GioiHanCuaSoTruot()
 _bo_dang_nhap_toan_cuc = GioiHanCuaSoTruot()
 _bo_lich_su_xem_toan_cuc = GioiHanCuaSoTruot()
 _bo_tim_kiem_toan_cuc = GioiHanCuaSoTruot()
+_bo_chat_toan_cuc = GioiHanCuaSoTruot()
 _bo_goi_y_toan_cuc = GioiHanCuaSoTruot()
 _bo_ma_giam_gia_toan_cuc = GioiHanCuaSoTruot()
 
@@ -82,3 +83,8 @@ def lay_bo_gioi_han_goi_y() -> GioiHanCuaSoTruot:
 def lay_bo_gioi_han_ma_giam_gia() -> GioiHanCuaSoTruot:
     """Bộ đếm theo khách cho việc thử mã giảm giá (chống dò mã hàng loạt)."""
     return _bo_ma_giam_gia_toan_cuc
+
+
+def lay_bo_gioi_han_chat() -> GioiHanCuaSoTruot:
+    """Bộ đếm lượt chat AI theo IP và theo phiên (mỗi lượt tốn tiền token). Là dependency để test thay bằng bộ riêng."""
+    return _bo_chat_toan_cuc

@@ -1,4 +1,5 @@
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from typing import Annotated
 
 from fastapi import Depends
@@ -53,3 +54,18 @@ Db = Annotated[PhienRequest, Depends(get_db, scope="function")]
 (`scope="request"`) commit chạy sau khi response đã gửi: client nhận "200" dù commit có thể thất bại.
 Hệ quả: response dạng streaming (SSE) không dùng được `db` bên trong generator, phải mở session riêng.
 """
+
+
+TaoPhien = Callable[[], AbstractAsyncContextManager[PhienRequest]]
+
+
+def lay_tao_phien(engine: AsyncEngine = Depends(get_engine)) -> TaoPhien:
+    """Hàm mở session riêng (commit khi thoát êm) cho response streaming như SSE, nơi `Db` của request đã đóng.
+    Là dependency để test thay bằng phiên chạy trên transaction của test."""
+
+    @asynccontextmanager
+    async def tao() -> AsyncIterator[PhienRequest]:
+        async with PhienRequest(engine, expire_on_commit=False) as session, session.begin():
+            yield session
+
+    return tao

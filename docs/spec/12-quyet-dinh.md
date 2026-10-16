@@ -417,3 +417,12 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **Cấu hình AI** lưu ở bốn khóa `ai_*` của `cau_hinh` nhưng sửa như một tài liệu có `phien_ban` chung (AD09), tách khỏi AD08.
 - Đoạn của thuốc kê đơn vẫn được lập chỉ mục (kèm `can_ke_don = true`) để tìm kiếm của trang cửa hàng thấy; chatbot phải lọc `can_ke_don = false` trong SQL (T7.3).
 
+## QĐ-44: Chatbot tư vấn (2026-10-16, task T7.3)
+- **SSE qua `POST` + fetch streaming** (không dùng `EventSource` vì cần thân JSON và header `Authorization`); frontend đi qua `api.POST(..., { parseAs: 'stream' })` để vẫn có middleware token.
+- **Ba pha, ba phiên DB:** route lưu tin khách và commit trước khi stream; pha đọc (tool) dùng phiên riêng chỉ đọc; pha cuối lưu trả lời. Khách ngắt giữa chừng thì tin của khách vẫn còn, tin AI có thể không lưu.
+- **Nguy hiểm/chuyển dược sĩ thắng trả lời:** `nguy_hiem` hoặc `can_chuyen_duoc_si` thì không chạy AI03; chỉ `do_tu_tin` thấp vẫn trả lời kèm đề nghị gặp dược sĩ.
+- **Dòng lưu ý tham khảo** do server thêm vào cuối mọi câu trả lời AI (và lưu cùng tin nhắn), không dựa vào prompt.
+- **Chặn thuốc kê đơn bằng code:** tool lọc ở SQL, thẻ sản phẩm lọc lại; không kiểm văn bản đầu ra theo tên thuốc (dễ chặn nhầm tên hoạt chất chung), cậy vào tool + prompt.
+- **Ngữ cảnh sức khỏe** đưa vào cuối tin nhắn khách (không đổi system prompt, giữ prompt caching).
+- **Bộ đánh giá chưa chạy với Claude thật** (cần khóa, tốn phí); kết quả ghi vào QĐ khi nhóm chạy.
+
