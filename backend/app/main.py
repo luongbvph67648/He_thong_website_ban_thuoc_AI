@@ -18,6 +18,9 @@ from app.modules.he_thong.router_nhat_ky import router as nhat_ky_router
 from app.modules.nhan_vien.router_auth import router as nhan_vien_auth_router
 from app.modules.nhan_vien.router_noi_bo import router as nhan_vien_noi_bo_router
 from app.modules.nhan_vien.router_quan_tri import router as nhan_vien_quan_tri_router
+from app.modules.noi_dung_web.router_cong_khai import router as bai_viet_cong_khai_router
+from app.modules.noi_dung_web.router_noi_bo import bai_viet_router as bai_viet_noi_bo_router
+from app.modules.noi_dung_web.router_noi_bo import banner_router as banner_noi_bo_router
 from app.modules.san_pham.router_danh_muc import router as danh_muc_router
 from app.modules.san_pham.router_du_lieu_chung import hoat_chat_router, nha_san_xuat_router, thuong_hieu_router
 from app.modules.san_pham.router_san_pham import router as san_pham_router
@@ -34,6 +37,13 @@ QUY_TAC_THAN_REQUEST = (
     QuyTacThanRequest(
         "POST",
         re.compile(r"/api/v1/noi-bo/san-pham/[0-9]+/anh"),
+        luu_tru.TOI_DA_ANH_BYTE + 64 * 1024,
+        "TEP_QUA_LON",
+        "Ảnh tối đa 5 MB",
+    ),
+    QuyTacThanRequest(
+        "POST",
+        re.compile(r"/api/v1/noi-bo/(banner|bai-viet)/anh"),
         luu_tru.TOI_DA_ANH_BYTE + 64 * 1024,
         "TEP_QUA_LON",
         "Ảnh tối đa 5 MB",
@@ -91,6 +101,9 @@ def create_app() -> FastAPI:
     app.include_router(bai_viet_duyet_router, prefix="/api/v1")
     app.include_router(tep_router, prefix="/api/v1")
     app.include_router(cua_hang_router, prefix="/api/v1")
+    app.include_router(banner_noi_bo_router, prefix="/api/v1")
+    app.include_router(bai_viet_noi_bo_router, prefix="/api/v1")
+    app.include_router(bai_viet_cong_khai_router, prefix="/api/v1")
     return app
 
 

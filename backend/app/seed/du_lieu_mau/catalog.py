@@ -402,3 +402,67 @@ BANNER_MAU: list[tuple[str, str, str | None, str, int]] = [
     ("Dược mỹ phẩm chính hãng", "/banner/phu-1.svg", "/danh-muc/duoc-my-pham", "trang_chu_phu", 1),
     ("Thiết bị y tế cho gia đình", "/banner/phu-2.svg", "/danh-muc/thiet-bi-y-te", "trang_chu_phu", 2),
 ]
+
+
+# --- Bài viết, chính sách, FAQ mẫu (loại, tiêu đề, nội dung Markdown, đưa vào kho tri thức AI) ---------------------------
+# Chỉ để minh họa giao diện; chưa được dược sĩ thật thẩm định, không dùng cho mục đích y khoa.
+
+BAI_VIET_MAU: list[tuple[str, str, str, bool]] = [
+    (
+        "bai_viet",
+        "Cách rửa tay đúng để phòng bệnh",
+        "## Vì sao cần rửa tay\n\nRửa tay đúng cách giúp giảm nguy cơ lây các bệnh đường hô hấp và tiêu hóa.\n\n"
+        "## Sáu bước rửa tay\n\n1. Làm ướt tay, lấy xà phòng.\n2. Chà lòng bàn tay.\n3. Chà mu bàn tay và kẽ ngón.\n"
+        "4. Chà đầu ngón tay.\n5. Chà ngón cái.\n6. Xả sạch và lau khô.\n\nRửa ít nhất **20 giây**.",
+        True,
+    ),
+    (
+        "bai_viet",
+        "Bảo quản thuốc tại nhà an toàn",
+        "## Nguyên tắc chung\n\n- Để thuốc nơi khô ráo, tránh ánh nắng và nhiệt độ cao.\n- Để xa tầm tay trẻ em.\n"
+        "- Giữ thuốc trong bao bì gốc, kèm hướng dẫn sử dụng.\n- Kiểm tra hạn dùng định kỳ; thuốc hết hạn không dùng nữa.\n\n"
+        "Khi có thắc mắc, hãy hỏi dược sĩ trước khi dùng.",
+        True,
+    ),
+    (
+        "bai_viet",
+        "Uống đủ nước mỗi ngày",
+        "Cơ thể cần nước để duy trì thân nhiệt và chức năng của các cơ quan. Lượng nước cần thiết khác nhau tùy tuổi, "
+        "cân nặng, vận động và thời tiết. Nếu có bệnh tim, thận hoặc đang được bác sĩ hạn chế nước, hãy làm theo hướng dẫn riêng.",
+        False,
+    ),
+    (
+        "chinh_sach",
+        "Chính sách đổi trả",
+        "## Điều kiện đổi trả\n\n- Sản phẩm còn nguyên niêm phong, còn hạn sử dụng.\n- Yêu cầu trong thời hạn quy định.\n"
+        "- Thuốc đã mở niêm phong chỉ đổi khi do lỗi của nhà thuốc hoặc nhà sản xuất.\n\n"
+        "Dược sĩ sẽ xem xét từng yêu cầu và thông báo kết quả cho bạn.",
+        False,
+    ),
+    (
+        "chinh_sach",
+        "Chính sách giao hàng",
+        "Đơn hàng được giao qua đơn vị vận chuyển. Phí giao hàng và thời gian dự kiến hiển thị khi thanh toán. "
+        "Bạn cũng có thể chọn nhận hàng tại nhà thuốc.",
+        False,
+    ),
+    (
+        "faq",
+        "Thuốc kê đơn có mua online được không?",
+        "Thuốc kê đơn cần có đơn của bác sĩ. Bạn gửi ảnh đơn thuốc, dược sĩ sẽ xem đơn rồi liên hệ xác nhận; "
+        "thuốc kê đơn không thêm vào giỏ hàng như sản phẩm khác.",
+        False,
+    ),
+    (
+        "faq",
+        "Bao lâu thì nhận được hàng?",
+        "Thời gian giao hàng phụ thuộc khu vực và đơn vị vận chuyển; thời gian dự kiến hiển thị ở bước thanh toán.",
+        False,
+    ),
+    (
+        "faq",
+        "Làm sao để hỏi dược sĩ?",
+        "Bạn có thể dùng khung chat tư vấn trên website. Trợ lý AI chỉ mang tính tham khảo; khi cần, cuộc trò chuyện được chuyển cho dược sĩ.",
+        False,
+    ),
+]

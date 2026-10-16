@@ -523,7 +523,7 @@ async def test_mau_chay_lai_khong_nhan_ban(co_mau):
     bang = [
         "danh_muc", "thuong_hieu", "nha_san_xuat", "hoat_chat", "san_pham", "thanh_phan", "don_vi_quy_doi",
         "tuong_tac_hoat_chat", "nha_cung_cap", "phieu_nhap", "ct_phieu_nhap", "lo_thuoc", "bien_dong_kho",
-        "nhan_vien", "khach_hang", "dia_chi", "khuyen_mai", "ma_giam_gia", "thong_tin_chuyen_mon", "banner",
+        "nhan_vien", "khach_hang", "dia_chi", "khuyen_mai", "ma_giam_gia", "thong_tin_chuyen_mon", "banner", "bai_viet",
     ]  # fmt: skip
     lan_1 = {b: await dem(co_mau, b) for b in bang}
     assert all(n > 0 for n in lan_1.values()), lan_1
@@ -639,3 +639,24 @@ async def test_mau_banner_dung_vi_tri_va_anh_co_trong_frontend(co_mau):
         assert lien_ket.startswith("/danh-muc/")
     slug = {d[0] for d in await hang(co_mau, "SELECT slug FROM danh_muc")}
     assert all(d[2].removeprefix("/danh-muc/") in slug for d in dong)  # banner không dẫn tới danh mục không có
+
+
+async def test_mau_bai_viet_chinh_sach_faq_da_dang_va_bai_suc_khoe_co_duoc_si_duyet(co_mau):
+    dong = await hang(
+        co_mau,
+        "SELECT loai, trang_thai, duoc_si_duyet_id IS NOT NULL, slug, ngay_duyet IS NOT NULL FROM bai_viet ORDER BY id",
+    )
+    assert {d[0] for d in dong} == {"bai_viet", "chinh_sach", "faq"}
+    assert all(d[1] == "da_duyet" and d[4] for d in dong)
+    assert all(d[2] for d in dong if d[0] == "bai_viet") and not any(d[2] for d in dong if d[0] != "bai_viet")
+    assert len({d[3] for d in dong}) == len(dong)
+    assert any(d[3] == "chinh-sach-doi-tra" for d in dong)
+
+
+async def test_mau_khong_dung_vao_bai_da_sua_hoac_da_go(co_mau):
+    await co_mau.execute(
+        text("UPDATE bai_viet SET trang_thai = 'luu_tru', tieu_de = 'Đã sửa' WHERE slug = 'chinh-sach-doi-tra'")
+    )
+    assert await seed_mau(co_mau) == {}
+    dong = await hang(co_mau, "SELECT trang_thai, tieu_de FROM bai_viet WHERE slug = 'chinh-sach-doi-tra'")
+    assert dong == [("luu_tru", "Đã sửa")]

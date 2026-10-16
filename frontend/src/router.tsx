@@ -14,7 +14,11 @@ import TrangChu from './khu/cua-hang/TrangChu'
 import TrangChiTietSanPhamCuaHang from './khu/cua-hang/TrangChiTietSanPham'
 import TrangDanhMucCuaHang from './khu/cua-hang/TrangDanhMuc'
 import TrangTimKiem from './khu/cua-hang/TrangTimKiem'
+import TrangBaiViet from './khu/cua-hang/TrangBaiViet'
+import TrangDanhSachBaiViet from './khu/cua-hang/TrangDanhSachBaiViet'
+import TrangHoiDap from './khu/cua-hang/TrangHoiDap'
 import NhanVienLayout, { TrangDauNhanVien } from './khu/nhan-vien/NhanVienLayout'
+import TrangBaiVietChoDuyet from './khu/nhan-vien/chuyen-mon/TrangBaiVietChoDuyet'
 import TrangNoiDungChuyenMon from './khu/nhan-vien/chuyen-mon/TrangNoiDungChuyenMon'
 import TrangSoanNoiDung from './khu/nhan-vien/chuyen-mon/TrangSoanNoiDung'
 import TrangTuongTac from './khu/nhan-vien/chuyen-mon/TrangTuongTac'
@@ -31,6 +35,7 @@ import TrangKhachHang from './khu/quan-tri/khach-hang/TrangKhachHang'
 import TrangChiTietSanPham from './khu/quan-tri/san-pham/TrangChiTietSanPham'
 import TrangSanPham from './khu/quan-tri/san-pham/TrangSanPham'
 import TrangNhatKy from './khu/quan-tri/nhat-ky/TrangNhatKy'
+import TrangNoiDung from './khu/quan-tri/noi-dung/TrangNoiDung'
 import TrangVaiTro from './khu/quan-tri/vai-tro/TrangVaiTro'
 import { MUC_QUAN_TRI } from './khu/quan-tri/menu'
 
@@ -54,6 +59,10 @@ const TRANG_THAT: Record<string, ReactNode> = {
   '/danh-muc/:slug': <TrangDanhMucCuaHang />,
   '/san-pham/:slug': <TrangChiTietSanPhamCuaHang />,
   '/tim-kiem': <TrangTimKiem />,
+  '/bai-viet': <TrangDanhSachBaiViet />,
+  '/bai-viet/:slug': <TrangBaiViet loai="bai_viet" />,
+  '/chinh-sach/:slug': <TrangBaiViet loai="chinh_sach" />,
+  '/hoi-dap': <TrangHoiDap />,
 }
 
 /** Trang khu nhân viên đã làm thật (khóa là đường dẫn trong `MUC_NHAN_VIEN`); còn lại là trang giữ chỗ. */
@@ -61,6 +70,7 @@ const TRANG_NHAN_VIEN_THAT: Record<string, ReactNode> = {
   '/noi-dung-chuyen-mon': <TrangNoiDungChuyenMon />,
   '/noi-dung-chuyen-mon/:id': <TrangSoanNoiDung />,
   '/tuong-tac': <TrangTuongTac />,
+  '/bai-viet-cho-duyet': <TrangBaiVietChoDuyet />,
 }
 
 /** Trang khu quản trị đã làm thật (khóa là đường dẫn trong `MUC_QUAN_TRI`); còn lại là trang giữ chỗ. */
@@ -74,6 +84,7 @@ const TRANG_QUAN_TRI_THAT: Record<string, ReactNode> = {
   '/san-pham': <TrangSanPham />,
   '/san-pham/moi': <TrangChiTietSanPham />,
   '/san-pham/:id': <TrangChiTietSanPham />,
+  '/noi-dung': <TrangNoiDung />,
   '/cau-hinh': <TrangCauHinh />,
   '/nhat-ky': <TrangNhatKy />,
 }

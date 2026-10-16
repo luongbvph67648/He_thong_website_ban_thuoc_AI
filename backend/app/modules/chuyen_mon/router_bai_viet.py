@@ -10,7 +10,7 @@ from app.core.phan_trang import PhanTrang, Trang, tao_trang
 from app.core.tham_so import IdInt, tu_khoa_tim
 from app.models.he_thong import NhanVien
 from app.modules.chuyen_mon import bai_viet_duyet as dich_vu
-from app.modules.chuyen_mon.schemas_bai_viet import BaiVietChiTiet, BaiVietTomTat
+from app.modules.chuyen_mon.schemas_bai_viet import BaiVietChiTiet, BaiVietTomTat, DuyetBaiViet
 from app.modules.tai_khoan.phien_http import dia_chi_ip
 
 router = APIRouter(prefix="/noi-bo/bai-viet-cho-duyet", tags=["Duyệt bài viết sức khỏe"])
@@ -36,5 +36,5 @@ async def chi_tiet(bai_viet_id: IdInt, actor: BaiVietXem, db: Db):
 
 
 @router.post("/{bai_viet_id}/duyet", response_model=BaiVietChiTiet, summary="Duyệt bài viết (cho phép đăng)")
-async def duyet(bai_viet_id: IdInt, request: Request, actor: BaiVietDuyet, db: Db):
-    return await dich_vu.duyet(db, actor, bai_viet_id, ip=dia_chi_ip(request))
+async def duyet(bai_viet_id: IdInt, du_lieu: DuyetBaiViet, request: Request, actor: BaiVietDuyet, db: Db):
+    return await dich_vu.duyet(db, actor, bai_viet_id, du_lieu.phien_ban, ip=dia_chi_ip(request))

@@ -94,6 +94,18 @@ REGISTRY: dict[tuple[str, str], tuple[str, str]] = {
     ("GET", f"{TIEN_TO_NOI_BO}/bai-viet-cho-duyet"): ("content.approve", "xem"),
     ("GET", f"{TIEN_TO_NOI_BO}/bai-viet-cho-duyet/{{bai_viet_id}}"): ("content.approve", "xem"),
     ("POST", f"{TIEN_TO_NOI_BO}/bai-viet-cho-duyet/{{bai_viet_id}}/duyet"): ("content.approve", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/banner"): ("cms.manage", "xem"),
+    ("POST", f"{TIEN_TO_NOI_BO}/banner"): ("cms.manage", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/banner/anh"): ("cms.manage", "day_du"),
+    ("PATCH", f"{TIEN_TO_NOI_BO}/banner/{{banner_id}}"): ("cms.manage", "day_du"),
+    ("DELETE", f"{TIEN_TO_NOI_BO}/banner/{{banner_id}}"): ("cms.manage", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/bai-viet"): ("cms.manage", "xem"),
+    ("POST", f"{TIEN_TO_NOI_BO}/bai-viet"): ("cms.manage", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/bai-viet/anh"): ("cms.manage", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/bai-viet/{{bai_viet_id}}"): ("cms.manage", "xem"),
+    ("PATCH", f"{TIEN_TO_NOI_BO}/bai-viet/{{bai_viet_id}}"): ("cms.manage", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/bai-viet/{{bai_viet_id}}/go"): ("cms.manage", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/bai-viet/{{bai_viet_id}}/dang"): ("cms.manage", "day_du"),
 }
 
 # Route nội bộ cố ý KHÔNG cần quyền vì chạy trước khi có phiên (đăng nhập) hoặc chỉ dựa vào cookie refresh.

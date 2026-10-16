@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.models.enums import LoaiBaiViet, TrangThaiNoiDung
 
@@ -24,3 +24,12 @@ class BaiVietChiTiet(BaiVietTomTat):
     dua_vao_ai: bool
     duoc_si_duyet: str | None
     ngay_duyet: datetime | None
+    phien_ban: str
+
+
+class DuyetBaiViet(BaseModel):
+    """`phien_ban` là giá trị `GET` trả về lúc dược sĩ đọc bài: chỉ duyệt đúng bản đã đọc."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    phien_ban: str = Field(min_length=16, max_length=16, pattern=r"^[0-9a-f]{16}$")

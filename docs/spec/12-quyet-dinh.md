@@ -221,3 +221,16 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
   - **Xếp hạng theo nhóm làm tròn 0,1** có ranh giới cứng (0,849 và 0,851 khác nhóm): hệ quả của thiết kế, chấp nhận.
 - **Hệ quả:** spec 06 mục 3.13, 09; `modules/cua_hang/tim_kiem.py`; `frontend/src/khu/cua-hang/{OTimKiem,TrangTimKiem,timKiem}`; `backend/CLAUDE.md`.
 
+## QĐ-21: Nội dung website: banner, bài viết, chính sách, FAQ (2026-10-16, task T2.6)
+- **Quyết định:**
+  - **Chỉ Admin soạn và đăng** (mã `cms.manage` chỉ ADMIN giữ, thêm `dam_bao_la_admin` ở service như AD03/AD04); dược sĩ chỉ duyệt bài sức khỏe qua `content.approve` (T2.3). Admin soạn xong không tự duyệt được.
+  - **Sửa bài đã duyệt đưa về chờ duyệt** (chỉ với bài sức khỏe, và chỉ khi đổi tiêu đề, nội dung hay ảnh bìa): bản dược sĩ từng duyệt không còn là bản đang sửa. Đổi riêng `dua_vao_ai` không cần duyệt lại vì không đổi nội dung hiển thị. Hệ quả: bài đã đăng vừa sửa lỗi chính tả cũng biến mất khỏi website tới khi được duyệt lại; chấp nhận để không có đường nào đưa nội dung chưa duyệt lên website (nếu cần sửa nhanh lỗi nhỏ, ghi thêm "sửa nhỏ không cần duyệt lại" ở "Việc phát sinh").
+  - **`loai` không đổi được sau khi tạo** vì đổi loại là cách vòng qua bước duyệt (đổi bài sức khỏe thành FAQ để đăng ngay).
+  - **Duyệt bài gắn với bản đã đọc** (việc rà soát T2.3 để lại): `phien_ban` trong body `POST /bai-viet-cho-duyet/{id}/duyet`, lệch là `409`. Đây là thay đổi hợp đồng của route T2.3 (thân bắt buộc).
+  - **Gỡ bài là `luu_tru`, không xóa:** giữ lịch sử và slug (không bao giờ dùng lại cho bài khác); đăng lại đi lại đúng quy trình của loại bài. Banner thì xóa hẳn (bảng không có `deleted_at`), kèm nhật ký.
+  - **Markdown lưu nguyên văn, làm sạch khi hiển thị:** frontend dùng bộ render không chạy HTML thô và chỉ nhận liên kết an toàn (`/...`, `http(s)://`, `mailto:`), ảnh chỉ từ `/...` hoặc `http(s)://`.
+  - **Ảnh banner và ảnh bìa tải lên trước khi có bản ghi** (người dùng chọn ảnh rồi mới lưu form), nên ảnh có thể mồ côi; dọn bằng job nền (T3.2, "Việc phát sinh").
+  - **Công khai:** FAQ có `kem_noi_dung` để một lần gọi đủ cả trang; chính sách và FAQ xếp theo thứ tự tạo, bài sức khỏe mới trước. Không trả người soạn, người duyệt, `dua_vao_ai`.
+  - **Giao diện dược sĩ duyệt** `/nhan-vien/bai-viet-cho-duyet` (mã `content.approve`), đọc toàn văn đã render rồi mới bấm duyệt.
+- **Hệ quả:** spec 06 mục 3.12 (thân duyệt), 3.14; spec 09 mục 2.1, 2.2, 2.3; `modules/noi_dung_web/`; `backend/CLAUDE.md`, `frontend/CLAUDE.md`.
+

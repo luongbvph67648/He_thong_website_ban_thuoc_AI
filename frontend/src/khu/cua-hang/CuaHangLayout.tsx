@@ -1,13 +1,14 @@
 import { LogoutOutlined, ShoppingCartOutlined, UserOutlined } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
-import { Button, Layout, Skeleton, Space, Typography } from 'antd'
+import { Button, Layout, Skeleton, Space } from 'antd'
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { dangXuatKhach } from '../../api/dangXuat'
 import { usePhien } from '../../stores/phien'
+import { ChanTrang } from './ChanTrang'
 import { MenuDanhMuc } from './MenuDanhMuc'
 import { OTimKiem } from './OTimKiem'
 
-const { Header, Content, Footer } = Layout
+const { Header, Content } = Layout
 
 /**
  * Layout khu cửa hàng (`/`): header gồm logo, tìm kiếm, giỏ hàng, tài khoản, kèm thanh danh mục 3 cấp. Widget chat nổi
@@ -72,15 +73,7 @@ export default function CuaHangLayout() {
       <Content style={{ padding: 16, maxWidth: 1200, width: '100%', margin: '0 auto' }}>
         <Outlet />
       </Content>
-      <Footer style={{ textAlign: 'center' }}>
-        <Space separator="·" wrap>
-          <Link to="/bai-viet">Bài viết</Link>
-          <Link to="/hoi-dap">Hỏi đáp</Link>
-        </Space>
-        <Typography.Paragraph type="secondary" style={{ marginTop: 8, marginBottom: 0 }}>
-          Thông tin trên website chỉ mang tính tham khảo, không thay thế tư vấn của dược sĩ hoặc bác sĩ.
-        </Typography.Paragraph>
-      </Footer>
+      <ChanTrang />
     </Layout>
   )
 }

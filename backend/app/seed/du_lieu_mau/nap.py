@@ -21,7 +21,7 @@ from app.core.slug import tao_slug
 from app.core.thoi_gian import bay_gio_utc, hom_nay_vn
 from app.core.tien import cong, lam_tron_vnd
 from app.models.ban_hang import KhuyenMai, MaGiamGia
-from app.models.he_thong import Banner, CauHinh, NhanVien, VaiTro
+from app.models.he_thong import BaiViet, Banner, CauHinh, NhanVien, VaiTro
 from app.models.khach_hang import DiaChi, KhachHang
 from app.models.kho import CtPhieuNhap, LoThuoc, NhaCungCap, PhieuNhap
 from app.models.san_pham import (
@@ -204,6 +204,28 @@ async def _nap_noi_dung_chuyen_mon(
         )
         dem["noi_dung_chuyen_mon"] += 1
     await db.flush()
+
+
+async def _nap_bai_viet(db: AsyncSession, duoc_si: NhanVien, dem: Counter) -> None:
+    """Bài sức khỏe (đã duyệt), chính sách và FAQ mẫu. Tìm theo slug: bài đã có (kể cả đã sửa hay gỡ) thì giữ nguyên."""
+    for loai, tieu_de, noi_dung, dua_vao_ai in catalog.BAI_VIET_MAU:
+        slug = tao_slug(tieu_de, 250)
+        _, moi = await _lay_hoac_tao(
+            db,
+            BaiViet,
+            {"slug": slug},
+            {
+                "tieu_de": tieu_de,
+                "noi_dung": noi_dung,
+                "loai": loai,
+                "tac_gia_id": duoc_si.id,
+                "trang_thai": "da_duyet",
+                "dua_vao_ai": dua_vao_ai,
+                "duoc_si_duyet_id": duoc_si.id if loai == "bai_viet" else None,
+                "ngay_duyet": bay_gio_utc(),
+            },
+        )
+        dem["bai_viet"] += moi
 
 
 async def _nap_banner(db: AsyncSession, dem: Counter) -> None:
@@ -468,6 +490,7 @@ async def seed_mau(db: AsyncSession, *, hom_nay: date | None = None) -> dict[str
     nhan_vien = await _nap_nhan_vien(db, vai_tro_id, dem)
     await _nap_noi_dung_chuyen_mon(db, san_pham, nhan_vien["PHARMACIST"], dem)
     await _nap_banner(db, dem)
+    await _nap_bai_viet(db, nhan_vien["PHARMACIST"], dem)
     nha_cung_cap = await _nap_nha_cung_cap(db, dem)
     await _nap_ton_kho(db, san_pham, nha_cung_cap, nhan_vien["WAREHOUSE"], dem, hom_nay or hom_nay_vn())
     await _nap_khach_hang(db, dem)

@@ -22,3 +22,9 @@ export function lienKetAnToan(url: string | null | undefined): string | null {
   }
   return null
 }
+
+/** Đường dẫn an toàn trong Markdown: `/...`, `http(s)://host`, `mailto:`. Còn lại (javascript:, data:, //host) bị bỏ. */
+export function urlMarkdownAnToan(url: string): string {
+  if (/^mailto:[^\s]+$/i.test(url)) return url
+  return lienKetAnToan(url) ?? ''
+}

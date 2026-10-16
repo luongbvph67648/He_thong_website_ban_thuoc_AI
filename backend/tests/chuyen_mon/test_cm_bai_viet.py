@@ -23,6 +23,9 @@ async def bai_viet(db, tac_gia, tieu_de="Cách phòng cảm cúm", **truong) -> 
     return bv
 
 
+GIA = {"phien_ban": "0" * 16}  # phiên bản giả: đủ cho các ca bị chặn trước khi so phiên bản
+
+
 async def test_danh_sach_chi_gom_bai_suc_khoe_dang_cho_duyet_cu_nhat_truoc(clients_theo_vai_tro, db):
     duoc_si = clients_theo_vai_tro["PHARMACIST"]
     admin = await tao_nhan_vien(db, "ADMIN", ho_ten="Admin Soạn Bài")
@@ -45,7 +48,8 @@ async def test_duyet_ghi_nguoi_duyet_ngay_duyet_va_nhat_ky(clients_theo_vai_tro,
     bv = await bai_viet(db, admin)
     chi_tiet = await duoc_si.get(f"{GOC_BAI_VIET}/{bv.id}")
     assert chi_tiet.status_code == 200 and chi_tiet.json()["noi_dung"] == "Nội dung bài viết sức khỏe"
-    phan_hoi = await duoc_si.post(f"{GOC_BAI_VIET}/{bv.id}/duyet")
+    phien_ban = (await duoc_si.get(f"{GOC_BAI_VIET}/{bv.id}")).json()["phien_ban"]
+    phan_hoi = await duoc_si.post(f"{GOC_BAI_VIET}/{bv.id}/duyet", json={"phien_ban": phien_ban})
     assert phan_hoi.status_code == 200, phan_hoi.text
     ket_qua = phan_hoi.json()
     assert ket_qua["trang_thai"] == "da_duyet" and ket_qua["ngay_duyet"] is not None and ket_qua["duoc_si_duyet"]
@@ -61,11 +65,12 @@ async def test_khong_duyet_lai_va_khong_duyet_chinh_sach_hay_bai_khong_co(client
     admin = await tao_nhan_vien(db, "ADMIN")
     bv = await bai_viet(db, admin)
     chinh_sach = await bai_viet(db, admin, "Chính sách đổi trả", slug="cs", loai=LoaiBaiViet.chinh_sach)
-    assert (await duoc_si.post(f"{GOC_BAI_VIET}/{bv.id}/duyet")).status_code == 200
-    assert la_loi(await duoc_si.post(f"{GOC_BAI_VIET}/{bv.id}/duyet"), 409, "DU_LIEU_DA_THAY_DOI")
+    phien_ban = (await duoc_si.get(f"{GOC_BAI_VIET}/{bv.id}")).json()["phien_ban"]
+    assert (await duoc_si.post(f"{GOC_BAI_VIET}/{bv.id}/duyet", json={"phien_ban": phien_ban})).status_code == 200
+    assert la_loi(await duoc_si.post(f"{GOC_BAI_VIET}/{bv.id}/duyet", json=GIA), 409, "DU_LIEU_DA_THAY_DOI")
     for bai_id in (chinh_sach.id, 2_000_000_000):
         assert la_loi(await duoc_si.get(f"{GOC_BAI_VIET}/{bai_id}"), 404, "KHONG_TIM_THAY")
-        assert la_loi(await duoc_si.post(f"{GOC_BAI_VIET}/{bai_id}/duyet"), 404, "KHONG_TIM_THAY")
+        assert la_loi(await duoc_si.post(f"{GOC_BAI_VIET}/{bai_id}/duyet", json=GIA), 404, "KHONG_TIM_THAY")
     await db.refresh(chinh_sach)
     assert chinh_sach.trang_thai == TrangThaiNoiDung.nhap  # chính sách không qua dược sĩ
 
@@ -78,9 +83,9 @@ async def test_admin_chi_xem_khong_tu_duyet_bai_cua_minh_kho_va_khach_khong_vao(
     bv = await bai_viet(db, tac_gia)
     assert (await admin.get(GOC_BAI_VIET)).status_code == 200  # Admin chỉ xem
     assert (await admin.get(f"{GOC_BAI_VIET}/{bv.id}")).status_code == 200
-    assert la_loi(await admin.post(f"{GOC_BAI_VIET}/{bv.id}/duyet"), 403, "KHONG_CO_QUYEN")
+    assert la_loi(await admin.post(f"{GOC_BAI_VIET}/{bv.id}/duyet", json=GIA), 403, "KHONG_CO_QUYEN")
     assert la_loi(await kho.get(GOC_BAI_VIET), 403, "KHONG_CO_QUYEN")
-    assert la_loi(await kho.post(f"{GOC_BAI_VIET}/{bv.id}/duyet"), 403, "KHONG_CO_QUYEN")
+    assert la_loi(await kho.post(f"{GOC_BAI_VIET}/{bv.id}/duyet", json=GIA), 403, "KHONG_CO_QUYEN")
     assert (await client.get(GOC_BAI_VIET)).status_code == 401
     assert (await dang_nhap_khach.get(GOC_BAI_VIET)).status_code == 401
     await db.refresh(bv)
@@ -97,6 +102,33 @@ async def test_quyen_duyet_cap_cho_kho_van_khong_cho_duyet(clients_theo_vai_tro,
     await db.flush()
     phan_quyen.xoa_cache_quyen()
     assert (await kho.get(GOC_BAI_VIET)).status_code == 200
-    assert la_loi(await kho.post(f"{GOC_BAI_VIET}/{bv.id}/duyet"), 403, "KHONG_CO_QUYEN")
+    assert la_loi(await kho.post(f"{GOC_BAI_VIET}/{bv.id}/duyet", json=GIA), 403, "KHONG_CO_QUYEN")
+    await db.refresh(bv)
+    assert bv.trang_thai == TrangThaiNoiDung.nhap
+
+
+async def test_duyet_dung_ban_da_doc_admin_sua_giua_chung_thi_409_va_bai_van_cho_duyet(clients_theo_vai_tro, db):
+    duoc_si = clients_theo_vai_tro["PHARMACIST"]
+    admin = await tao_nhan_vien(db, "ADMIN")
+    bv = await bai_viet(db, admin)
+    phien_ban = (await duoc_si.get(f"{GOC_BAI_VIET}/{bv.id}")).json()["phien_ban"]
+    bv.noi_dung = "Nội dung Admin vừa sửa mà dược sĩ chưa đọc"
+    await db.flush()
+    phan_hoi = await duoc_si.post(f"{GOC_BAI_VIET}/{bv.id}/duyet", json={"phien_ban": phien_ban})
+    assert la_loi(phan_hoi, 409, "DU_LIEU_DA_THAY_DOI")
+    moi = phan_hoi.json()["chi_tiet"]["phien_ban_hien_tai"]
+    assert moi != phien_ban
+    await db.refresh(bv)
+    assert bv.trang_thai == TrangThaiNoiDung.nhap and bv.duoc_si_duyet_id is None
+    assert (
+        await duoc_si.post(f"{GOC_BAI_VIET}/{bv.id}/duyet", json={"phien_ban": moi})
+    ).status_code == 200  # đọc lại rồi duyệt
+
+
+async def test_duyet_thieu_hoac_sai_phien_ban_la_400(clients_theo_vai_tro, db):
+    duoc_si = clients_theo_vai_tro["PHARMACIST"]
+    bv = await bai_viet(db, await tao_nhan_vien(db, "ADMIN"))
+    for than in ({}, {"phien_ban": "xyz"}, {"phien_ban": "0" * 16, "them": 1}):
+        assert la_loi(await duoc_si.post(f"{GOC_BAI_VIET}/{bv.id}/duyet", json=than), 400, "DU_LIEU_KHONG_HOP_LE")
     await db.refresh(bv)
     assert bv.trang_thai == TrangThaiNoiDung.nhap

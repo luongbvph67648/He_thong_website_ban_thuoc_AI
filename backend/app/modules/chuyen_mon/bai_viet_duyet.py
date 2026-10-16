@@ -10,6 +10,7 @@ from typing import Any
 from sqlalchemy import Select, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cau_hinh_khoa import dau_van_tay
 from app.core.loi import LoiNghiepVu
 from app.core.nhat_ky import ghi_nhat_ky
 from app.core.phan_quyen import dam_bao_la_duoc_si
@@ -21,6 +22,21 @@ from app.models.he_thong import BaiViet, NhanVien
 from app.modules.chuyen_mon.schemas_bai_viet import BaiVietChiTiet, BaiVietTomTat
 
 BANG = "bai_viet"
+
+
+def phien_ban_bai_viet(bv: BaiViet) -> str:
+    """Dấu vân tay nội dung bài viết. Dược sĩ duyệt đúng phiên bản đã đọc: Admin sửa bài giữa chừng thì duyệt bị `409`
+    (nếu không, bài vừa sửa được duyệt dù dược sĩ chưa đọc bản mới)."""
+    return dau_van_tay(
+        {
+            "loai": bv.loai,
+            "tieu_de": bv.tieu_de,
+            "noi_dung": bv.noi_dung,
+            "anh_bia_url": bv.anh_bia_url,
+            "dua_vao_ai": bv.dua_vao_ai,
+            "trang_thai": bv.trang_thai,
+        }
+    )
 
 
 def _khong_tim_thay() -> LoiNghiepVu:
@@ -74,6 +90,7 @@ async def _chi_tiet(db: AsyncSession, bv: BaiViet) -> BaiVietChiTiet:
         dua_vao_ai=bv.dua_vao_ai,
         duoc_si_duyet=nguoi_duyet,
         ngay_duyet=bv.ngay_duyet,
+        phien_ban=phien_ban_bai_viet(bv),
     )
 
 
@@ -91,12 +108,20 @@ async def lay(db: AsyncSession, bai_viet_id: int) -> BaiVietChiTiet:
     return await _chi_tiet(db, await _lay(db, bai_viet_id))
 
 
-async def duyet(db: AsyncSession, actor: NhanVien, bai_viet_id: int, *, ip: str) -> BaiVietChiTiet:
-    """`nhap` -> `da_duyet`, ghi người duyệt và ngày duyệt. Duyệt bài không còn ở `nhap` là `409`."""
+async def duyet(db: AsyncSession, actor: NhanVien, bai_viet_id: int, phien_ban: str, *, ip: str) -> BaiVietChiTiet:
+    """`nhap` -> `da_duyet`, ghi người duyệt và ngày duyệt. Duyệt bài không còn ở `nhap` hoặc đã bị sửa sau khi dược sĩ
+    mở (`phien_ban` lệch) là `409`."""
     await dam_bao_la_duoc_si(db, actor)
     bv = await _lay(db, bai_viet_id, khoa=True)
     if bv.trang_thai != TrangThaiNoiDung.nhap:
         raise LoiNghiepVu("DU_LIEU_DA_THAY_DOI", "Bài viết này không còn ở trạng thái chờ duyệt")
+    hien_tai = phien_ban_bai_viet(bv)
+    if hien_tai != phien_ban:
+        raise LoiNghiepVu(
+            "DU_LIEU_DA_THAY_DOI",
+            "Bài viết đã được sửa sau khi bạn mở. Hãy đọc lại bản mới rồi duyệt",
+            chi_tiet={"phien_ban_hien_tai": hien_tai},
+        )
     bv.trang_thai = TrangThaiNoiDung.da_duyet
     bv.duoc_si_duyet_id = actor.id
     bv.ngay_duyet = bay_gio_utc()
