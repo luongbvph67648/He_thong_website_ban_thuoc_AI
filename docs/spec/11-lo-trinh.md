@@ -470,17 +470,22 @@ _Nhập kho theo lô, thẻ kho, cảnh báo, kiểm kê, hủy, xuất trả, b
   - Chưa làm: ghi nhận hàng tìm thấy ở lô đang tồn 0 (kiểm kê chỉ gồm lô còn tồn; dùng điều chỉnh lập tay).
 
 
-### [ ] T3.4 · Phiếu hủy, phiếu xuất trả và duyệt
+### [x] T3.4 · Phiếu hủy, phiếu xuất trả và duyệt
 - **Chức năng:** KHO09 (Lập phiếu hủy hàng), KHO11 (Xuất trả nhà cung cấp), AD12 (Duyệt phiếu hủy, điều chỉnh tồn, xuất trả NCC)
 - **Phụ thuộc:** T3.3
 - **Bảng:** `phieu_huy`, `ct_phieu_huy`, `phieu_xuat_tra`, `ct_phieu_xuat_tra`, `phieu_dieu_chinh`, `lo_thuoc`, `bien_dong_kho`
 - **Tiêu chí chấp nhận:**
-  - [ ] Lập phiếu hủy và phiếu xuất trả NCC (chọn lô, khu `kho_ban`/`biet_tru`, số lượng ≤ tồn khu đó); trạng thái chờ duyệt.
-  - [ ] Admin duyệt/từ chối phiếu điều chỉnh, hủy, xuất trả: người duyệt ≠ người lập (`ma_loi = "TU_DUYET_KHONG_DUOC"`); chỉ khi duyệt mới gọi `ton_kho` và ghi thẻ kho; từ chối bắt buộc lý do.
-  - [ ] Test: tự duyệt bị chặn; duyệt làm tồn đúng; từ chối không đổi tồn.
+  - [x] Lập phiếu hủy và phiếu xuất trả NCC (chọn lô, khu `kho_ban`/`biet_tru`, số lượng ≤ tồn khu đó); trạng thái chờ duyệt.
+  - [x] Admin duyệt/từ chối phiếu điều chỉnh, hủy, xuất trả: người duyệt ≠ người lập (`ma_loi = "TU_DUYET_KHONG_DUOC"`); chỉ khi duyệt mới gọi `ton_kho` và ghi thẻ kho; từ chối bắt buộc lý do.
+  - [x] Test: tự duyệt bị chặn; duyệt làm tồn đúng; từ chối không đổi tồn.
 - **Giao diện:**
-  - [ ] Danh sách phiếu chờ duyệt cho Admin; form phiếu hủy/xuất trả.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Danh sách phiếu chờ duyệt cho Admin; form phiếu hủy/xuất trả.
+- **Ghi chú triển khai:**
+  - Spec 06 mục 3.18. Lập: `/noi-bo/phieu-huy` (`disposal.create`), `/noi-bo/xuat-tra` (`supplier_return.create`), dòng `{lo_id, tu_khu, so_luong}` kiểm `so_luong` ≤ tồn khu lúc lập (khu bán trừ hàng đang giữ). Duyệt: `/noi-bo/duyet-phieu` (`stock_doc.approve`), danh sách gộp ba loại, `POST /{loai}/{id}/duyet|tu-choi` (`modules/kho/duyet_phieu.py`, loại `dieu-chinh|huy|xuat-tra`).
+  - Duyệt khóa phiếu `FOR UPDATE`, kiểm tra người duyệt khác người lập rồi trạng thái `cho_duyet`, khóa mọi lô theo id tăng dần rồi mới gọi `ton_kho.dieu_chinh`/`tru_ton` (số lượng kiểm tra lại, thiếu thì `HET_HANG` và rollback cả phiếu). `TU_DUYET_KHONG_DUOC` áp cả cho TỪ CHỐI (CHECK CSDL `nguoi_duyet_id <> nguoi_lap_id` áp cả hai). Người lập nhận thông báo `phieu_kho_da_duyet`/`phieu_kho_tu_choi`.
+  - Giao diện: `/nhan-vien/phieu-huy`, `/nhan-vien/xuat-tra` (danh sách, chi tiết, form lập), `/quan-tri/duyet-phieu` (danh sách chờ duyệt gộp ba loại, duyệt/từ chối có lý do).
+  - Chưa làm: `bien_ban_url` của phiếu hủy (chưa có route tải tệp), `lenh_thu_hoi_id` và ghi nhận NCC đã nhận hàng `da_xac_nhan` (T6.6). Hai nhánh lỗi duyệt đồng thời cùng một phiếu dựa vào khóa dòng phiếu, chưa có test tranh chấp nhiều session riêng.
+
 - **Ghi chú chuẩn bị (từ T3.1–T3.3, đọc trước khi làm):**
   - Kiến trúc kho hiện có (`backend/app/modules/kho/`):
     - `ton_kho.py`: mọi hàm đổi tồn (`tru_ton`, `dieu_chinh`, `giu_hang_nhieu`...) khóa lô `FOR UPDATE` theo id tăng dần, ghi `bien_dong_kho` cùng transaction. Chứng từ truyền vào bằng `ChungTu('phieu_dieu_chinh'|'phieu_huy'|'phieu_xuat_tra', id, nguoi_thuc_hien_id)`.

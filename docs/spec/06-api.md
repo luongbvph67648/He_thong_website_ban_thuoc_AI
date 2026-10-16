@@ -269,6 +269,19 @@ Nhân viên kho `day_du` (`stocktake.manage`, `stock_adjust.create`); Admin ch�
   - `POST` `{ly_do, phieu_kiem_ke_id?}` hoặc `{ly_do, dong: [{lo_id, so_luong_thay_doi}]}` (đúng một trong hai): từ phiếu kiểm kê đã chốt thì lấy các dòng có `chenh_lech != 0` (không có dòng lệch là `400`; phiếu chưa chốt là `409`; đã có phiếu điều chỉnh `cho_duyet` hoặc `da_duyet` của phiếu kiểm kê đó là `409 TRUNG_DU_LIEU`, bị từ chối thì lập lại được). Lập tay: 1 đến 100 dòng, mỗi lô một lần, `so_luong_thay_doi` khác 0 (sửa nhầm lẫn khác kiểm kê, ví dụ nhập sai số lượng). `ly_do` 1 đến 1.000 ký tự.
   - `GET ?trang_thai_duyet=&trang=&kich_thuoc=`, `GET /{id}` -> phiếu với `nguoi_lap`, `nguoi_duyet`, `ly_do_tu_choi`, `dong: [{lo_id, san_pham, so_lo, so_luong_thay_doi, so_luong_ton_hien_tai}]`.
 
+### 3.18 Phiếu hủy, phiếu xuất trả NCC và duyệt phiếu kho (KHO09, KHO11, AD12, T3.4)
+Kho lập (`day_du`), Admin duyệt; ba loại phiếu cùng đi qua một luồng `cho_duyet -> da_duyet | tu_choi` (spec 04 mục 1.5). Tồn CHỈ đổi khi duyệt.
+- **Phiếu hủy** (`/noi-bo/phieu-huy`, `disposal.create`): mã `PH` + YY + 6 số.
+  - `POST` `{ly_do: het_han|hu_hong|hang_tra_ve|thu_hoi|khac, mo_ta?, dong: [{lo_id, tu_khu: kho_ban|biet_tru, so_luong}]}` -> 201. 1 đến 100 dòng, mỗi cặp (`lo_id`, `tu_khu`) một lần, `so_luong` >= 1 (đơn vị cơ sở). `so_luong` không vượt tồn khu đó lúc lập (`kho_ban`: `so_luong_ton - so_luong_giu`; `biet_tru`: `so_luong_biet_tru`), quá là `409 HET_HANG` kèm `{lo_id, con_lai}`; lô không tồn tại là `400`. Không đổi tồn.
+  - `GET ?trang_thai_duyet=&trang=&kich_thuoc=`, `GET /{id}` -> `{id, ma_phieu, ly_do, mo_ta, trang_thai_duyet, nguoi_lap, nguoi_duyet, ly_do_tu_choi, duyet_luc, created_at, dong: [{lo_id, san_pham, so_lo, han_su_dung, tu_khu, so_luong}]}`.
+- **Phiếu xuất trả NCC** (`/noi-bo/xuat-tra`, `supplier_return.create`): mã `XT` + YY + 6 số.
+  - `POST` `{nha_cung_cap_id, ly_do, dong: [{lo_id, tu_khu, so_luong, don_gia?}]}`: như phiếu hủy; `nha_cung_cap_id` là nhà cung cấp chưa xóa; `don_gia` (giá trị NCC hoàn hoặc cấn trừ, một đơn vị cơ sở) mặc định `lo_thuoc.gia_nhap`. Phản hồi thêm `nha_cung_cap: {id, ten}`, `da_xac_nhan`. Liên kết lệnh thu hồi (`lenh_thu_hoi_id`) làm ở T6.6; ghi nhận NCC đã nhận hàng (`da_xac_nhan`) chưa có route.
+- **Duyệt** (`/noi-bo/duyet-phieu`, `stock_doc.approve`, chỉ Admin). `loai` là `dieu-chinh`, `huy` hoặc `xuat-tra`.
+  - `GET ?loai=&trang_thai_duyet=&trang=&kich_thuoc=` -> gộp ba loại, mới nhất trước: `{loai, id, ma_phieu, ly_do, trang_thai_duyet, nguoi_lap, created_at, so_dong}`. `GET /{loai}/{id}` -> chi tiết đúng dạng của loại đó.
+  - `POST /{loai}/{id}/duyet`: khóa phiếu `FOR UPDATE`; người duyệt trùng người lập là `403 TU_DUYET_KHONG_DUOC`; phiếu không còn `cho_duyet` là `409 CHUYEN_TRANG_THAI_KHONG_HOP_LE` (duyệt hai lần không đổi tồn hai lần). Sau đó khóa mọi lô theo id tăng dần và gọi `ton_kho` từng dòng (`dieu_chinh`; `tru_ton` loại `huy_hang`/`xuat_tra_ncc` theo `tu_khu`), thẻ kho `chung_tu_loai` = bảng phiếu. Số lượng được kiểm tra LẠI lúc duyệt: tồn đã giảm không đủ thì `409 HET_HANG` và cả phiếu không đổi gì (vẫn `cho_duyet`). Thành công: `da_duyet`, `nguoi_duyet_id`, `duyet_luc`; nhật ký `duyet`.
+  - `POST /{loai}/{id}/tu-choi` `{ly_do}` (1 đến 1.000 ký tự, bắt buộc): cùng các kiểm tra (kể cả `TU_DUYET_KHONG_DUOC`, vì ràng buộc CSDL `nguoi_duyet_id <> nguoi_lap_id` áp cho cả từ chối); `tu_choi`, `ly_do_tu_choi`; tồn KHÔNG đổi; nhật ký `tu_choi`.
+  - Thông báo cho người lập về kết quả duyệt: `thong_bao` loại `phieu_kho_da_duyet` hoặc `phieu_kho_tu_choi`, liên kết `/nhan-vien/<trang của loại>`.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

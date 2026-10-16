@@ -26,6 +26,7 @@ import TrangCanhBao from './khu/nhan-vien/kho/TrangCanhBao'
 import TrangDieuChinh from './khu/nhan-vien/kho/TrangDieuChinh'
 import TrangKiemKe from './khu/nhan-vien/kho/TrangKiemKe'
 import TrangNhaCungCap from './khu/nhan-vien/kho/TrangNhaCungCap'
+import TrangPhieuKho from './khu/nhan-vien/kho/TrangPhieuKho'
 import TrangPhieuNhap from './khu/nhan-vien/kho/TrangPhieuNhap'
 import TrangTaoPhieuNhap from './khu/nhan-vien/kho/TrangTaoPhieuNhap'
 import TrangTonKho from './khu/nhan-vien/kho/TrangTonKho'
@@ -41,6 +42,7 @@ import TrangDuLieuChung from './khu/quan-tri/du-lieu-chung/TrangDuLieuChung'
 import TrangKhachHang from './khu/quan-tri/khach-hang/TrangKhachHang'
 import TrangChiTietSanPham from './khu/quan-tri/san-pham/TrangChiTietSanPham'
 import TrangSanPham from './khu/quan-tri/san-pham/TrangSanPham'
+import TrangDuyetPhieu from './khu/quan-tri/duyet-phieu/TrangDuyetPhieu'
 import TrangNhatKy from './khu/quan-tri/nhat-ky/TrangNhatKy'
 import TrangNoiDung from './khu/quan-tri/noi-dung/TrangNoiDung'
 import TrangVaiTro from './khu/quan-tri/vai-tro/TrangVaiTro'
@@ -85,6 +87,8 @@ const TRANG_NHAN_VIEN_THAT: Record<string, ReactNode> = {
   '/canh-bao': <TrangCanhBao />,
   '/kiem-ke': <TrangKiemKe />,
   '/dieu-chinh': <TrangDieuChinh />,
+  '/phieu-huy': <TrangPhieuKho loai="huy" />,
+  '/xuat-tra': <TrangPhieuKho loai="xuat-tra" />,
 }
 
 /** Trang khu quản trị đã làm thật (khóa là đường dẫn trong `MUC_QUAN_TRI`); còn lại là trang giữ chỗ. */
@@ -101,6 +105,7 @@ const TRANG_QUAN_TRI_THAT: Record<string, ReactNode> = {
   '/noi-dung': <TrangNoiDung />,
   '/cau-hinh': <TrangCauHinh />,
   '/nhat-ky': <TrangNhatKy />,
+  '/duyet-phieu': <TrangDuyetPhieu />,
 }
 
 /** Toàn bộ route của ứng dụng (tách khỏi `createBrowserRouter` để test dựng bằng memory router). */

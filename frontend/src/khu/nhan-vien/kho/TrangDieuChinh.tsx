@@ -14,7 +14,7 @@ const NHAN: Record<TrangThai, { nhan: string; mau: string }> = {
   tu_choi: { nhan: 'Từ chối', mau: 'red' },
 }
 
-/** KHO08: danh sách và chi tiết phiếu điều chỉnh tồn. Phiếu lập từ kiểm kê ở màn Kiểm kê; Admin duyệt ở T3.4. */
+/** KHO08: danh sách và chi tiết phiếu điều chỉnh tồn. Phiếu lập từ kiểm kê ở màn Kiểm kê; Admin duyệt ở màn Duyệt phiếu kho (AD12). */
 export default function TrangDieuChinh() {
   const [trangThai, setTrangThai] = useState<TrangThai | undefined>()
   const [trang, setTrang] = useState(1)

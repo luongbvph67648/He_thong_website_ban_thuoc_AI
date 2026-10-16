@@ -23,6 +23,17 @@ REGISTRY: dict[tuple[str, str], tuple[str, str]] = {
     ("GET", f"{TIEN_TO_NOI_BO}/dieu-chinh"): ("stock_adjust.create", "day_du"),
     ("POST", f"{TIEN_TO_NOI_BO}/dieu-chinh"): ("stock_adjust.create", "day_du"),
     ("GET", f"{TIEN_TO_NOI_BO}/dieu-chinh/{{phieu_id}}"): ("stock_adjust.create", "day_du"),
+    # KHO09, KHO11 (kho lập, Admin không lập) và AD12 (Admin duyệt/từ chối; kho không duyệt).
+    ("GET", f"{TIEN_TO_NOI_BO}/phieu-huy"): ("disposal.create", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/phieu-huy"): ("disposal.create", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/phieu-huy/{{phieu_id}}"): ("disposal.create", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/xuat-tra"): ("supplier_return.create", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/xuat-tra"): ("supplier_return.create", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/xuat-tra/{{phieu_id}}"): ("supplier_return.create", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/duyet-phieu"): ("stock_doc.approve", "xem"),
+    ("GET", f"{TIEN_TO_NOI_BO}/duyet-phieu/{{loai}}/{{phieu_id}}"): ("stock_doc.approve", "xem"),
+    ("POST", f"{TIEN_TO_NOI_BO}/duyet-phieu/{{loai}}/{{phieu_id}}/duyet"): ("stock_doc.approve", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/duyet-phieu/{{loai}}/{{phieu_id}}/tu-choi"): ("stock_doc.approve", "day_du"),
     # KHO01, KHO02: kho ghi, Admin xem.
     ("GET", f"{TIEN_TO_NOI_BO}/nha-cung-cap"): ("supplier.manage", "xem"),
     ("POST", f"{TIEN_TO_NOI_BO}/nha-cung-cap"): ("supplier.manage", "day_du"),
