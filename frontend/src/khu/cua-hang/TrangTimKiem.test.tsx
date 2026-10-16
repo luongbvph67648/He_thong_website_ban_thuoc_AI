@@ -116,7 +116,7 @@ describe('OTimKiem (ô tìm kiếm ở header)', () => {
     dapUng()
     const { router } = renderTai('/')
     const o = await screen.findByLabelText('Tìm kiếm')
-    const u = userEvent.setup()
+    const u = userEvent.setup({ pointerEventsCheck: 0 }) // danh sách gợi ý cũ có thể còn đang chạy hiệu ứng đóng
     await u.type(o, 'para')
     await u.click(await screen.findByText('Amoxicillin 500mg'))
     await waitFor(() => expect(router.state.location.pathname + router.state.location.search).toBe('/san-pham/amoxicillin-500mg?nguon=tim_kiem'))
