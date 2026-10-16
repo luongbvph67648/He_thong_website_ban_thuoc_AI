@@ -14,7 +14,7 @@ interface Props {
   cay: TuyChonDanhMuc[]
   coQuyenGhi: boolean
   capNhat: (ban: SanPhamChiTiet) => void
-  lamMoi: () => Promise<unknown>
+  lamMoi: () => Promise<SanPhamChiTiet | undefined>
 }
 
 /**

@@ -78,4 +78,8 @@ Tien = Annotated[Decimal, BeforeValidator(_kiem_tra_tien_khong_am), _XUAT_CHUOI]
 """Kiểu tiền KHÔNG ÂM cho schema Pydantic: nhận số đồng nguyên, xuất JSON dạng chuỗi "125000.00" (spec 06 mục 1)."""
 
 TienCoDau = Annotated[Decimal, BeforeValidator(_kiem_tra_tien_co_dau), _XUAT_CHUOI]
+
+TienDoc = Annotated[Decimal, _XUAT_CHUOI]
+"""Kiểu tiền cho schema ĐỌC (phản hồi): chỉ định dạng xuất `"125000.00"`, KHÔNG kiểm tra lại. `Tien` là bộ kiểm đầu VÀO
+(đồng nguyên, không âm); dùng nó ở phản hồi thì một dòng NUMERIC(14,2) có phần lẻ (nhập ngoài API) làm cả trang 500."""
 """Như Tien nhưng cho phép số âm, dùng cho chênh lệch/điều chỉnh."""

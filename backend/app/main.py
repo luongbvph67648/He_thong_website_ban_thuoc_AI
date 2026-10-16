@@ -1,10 +1,13 @@
+import re
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.core import luu_tru
 from app.core.config import settings
 from app.core.log import cau_hinh_log
 from app.core.loi import dang_ky_xu_ly_loi
-from app.core.middleware import HEADER_REQUEST_ID, RequestIdMiddleware
+from app.core.middleware import HEADER_REQUEST_ID, GioiHanKichThuocThan, QuyTacThanRequest, RequestIdMiddleware
 from app.health import router as health_router
 from app.modules.he_thong.router_cau_hinh import router as cau_hinh_router
 from app.modules.he_thong.router_nhat_ky import router as nhat_ky_router
@@ -21,11 +24,25 @@ from app.modules.tep.router_cong_khai import router as tep_router
 from app.modules.thong_bao.router_noi_bo import router as thong_bao_noi_bo_router
 from app.modules.vai_tro.router_noi_bo import router as vai_tro_noi_bo_router
 
+# Mọi route nhận tệp phải có quy tắc ở đây (test `test_moi_route_nhan_tep_deu_co_quy_tac_gioi_han` duyệt OpenAPI).
+# Mức = kích thước tệp tối đa cộng phần đầu multipart.
+QUY_TAC_THAN_REQUEST = (
+    QuyTacThanRequest(
+        "POST",
+        re.compile(r"/api/v1/noi-bo/san-pham/[0-9]+/anh"),
+        luu_tru.TOI_DA_ANH_BYTE + 64 * 1024,
+        "TEP_QUA_LON",
+        "Ảnh tối đa 5 MB",
+    ),
+)
+
 
 def create_app() -> FastAPI:
     cau_hinh_log()
     app = FastAPI(title="Nhà thuốc AI", version="0.1.0")
     dang_ky_xu_ly_loi(app)
+    # Thêm trước CORS = nằm trong CORS: phản hồi 413 vẫn có header CORS nên trình duyệt đọc được thông điệp.
+    app.add_middleware(GioiHanKichThuocThan, quy_tac=QUY_TAC_THAN_REQUEST)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins_list,

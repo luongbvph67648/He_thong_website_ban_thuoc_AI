@@ -12,9 +12,11 @@ from datetime import datetime
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.loi import LoiNghiepVu
 from app.core.thoi_gian import bay_gio_utc
 from app.models.enums import KhuTon, LoaiBienDong
 from app.models.kho import BienDongKho, LoThuoc
+from app.models.san_pham import SanPham
 
 
 @dataclass(frozen=True)
@@ -49,6 +51,19 @@ async def khoa_cac_lo(db: AsyncSession, lo_ids: Iterable[int]) -> list[LoThuoc]:
     return lo_thuoc
 
 
+async def kiem_tra_san_pham_chua_xoa(db: AsyncSession, lo: LoThuoc) -> None:
+    """Từ chối TĂNG tồn của lô thuộc sản phẩm đã xóa mềm. Gọi SAU khi đã khóa lô (`khoa_cac_lo`).
+
+    Xóa sản phẩm khóa mọi lô của nó `FOR UPDATE` rồi mới kiểm tra "không còn hàng". Nhập kho đã khóa lô thì hoặc thắng
+    (xóa chờ rồi thấy tồn > 0 và bị từ chối), hoặc chờ xóa commit rồi đọc được `deleted_at` ở đây và bị từ chối; không
+    có đường thứ ba để tồn mắc kẹt dưới sản phẩm đã xóa. Mọi hàm tăng tồn từ 0 (nhập kho, hoàn nhập đổi trả, điều chỉnh
+    tăng, ra khỏi biệt trữ) phải gọi hàm này; hàm chỉ giảm hay chuyển khu thì không cần vì lô đang có hàng chặn xóa.
+    """
+    da_xoa = await db.scalar(select(SanPham.deleted_at).where(SanPham.id == lo.san_pham_id))
+    if da_xoa is not None:
+        raise LoiNghiepVu("KHONG_TIM_THAY", "Sản phẩm của lô này đã bị xóa")
+
+
 def _kiem_tra_so_luong(so_luong: int) -> None:
     if isinstance(so_luong, bool) or not isinstance(so_luong, int):
         raise TypeError(f"so_luong phải là số nguyên, nhận {type(so_luong).__name__}")
@@ -70,6 +85,7 @@ async def nhap_kho(
     """
     _kiem_tra_so_luong(so_luong)
     (lo_khoa,) = await khoa_cac_lo(db, [lo.id])
+    await kiem_tra_san_pham_chua_xoa(db, lo_khoa)
     lo_khoa.so_luong_ton += so_luong
     lo_khoa.updated_at = bay_gio_utc()
     bien_dong = BienDongKho(

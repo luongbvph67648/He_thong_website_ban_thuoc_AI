@@ -92,10 +92,11 @@ async def thay_don_vi(
             ) from loi
         db.expunge(d)
     sua = [(hien_co[m.id], m) for m in moi if m.id is not None]
-    # Pha 2: gỡ cờ mặc định và đưa tên về tên tạm để pha 3 áp từng dòng mà không va unique tên / mặc định.
+    # Pha 2: gỡ cờ mặc định và đưa tên về tên tạm để pha 3 áp từng dòng mà không va unique tên / mặc định. Tên tạm chứa
+    # ký tự điều khiển (`DonViVao.ten_don_vi` từ chối ký tự này) nên không thể trùng với bất kỳ tên nào Admin nhập được.
     for d, _ in sua:
         d.la_mac_dinh = False
-        d.ten_don_vi = f"~{d.id}"
+        d.ten_don_vi = f"\x01{d.id}"
     await db.flush()
     # Pha 3: áp giá trị cuối; các dòng rời hệ số 1 trước, dòng vào hệ số 1 sau (unique một đơn vị cơ sở).
     for d, m in sorted(sua, key=lambda cap: cap[1].he_so == 1):

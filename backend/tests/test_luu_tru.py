@@ -1,6 +1,8 @@
 """core/luu_tru.py: nhận dạng ảnh theo nội dung, khóa file an toàn, ghi/đọc/xóa trong vùng công khai."""
 
 import asyncio
+import logging
+from pathlib import Path
 
 import pytest
 
@@ -97,3 +99,45 @@ def test_thu_muc_luu_tuong_doi_tinh_tu_backend_khong_phu_thuoc_thu_muc_dang_chay
     assert luu_tru.luu_tru().goc == (luu_tru.BACKEND_DIR / "storage").resolve()
     monkeypatch.setattr(luu_tru.settings, "LUU_TRU_THU_MUC", str(tmp_path))
     assert luu_tru.luu_tru().goc == tmp_path.resolve()
+
+
+async def test_symlink_tu_vung_cong_khai_tro_sang_vung_khac_khong_duoc_doc(tmp_path):
+    """`cong_khai/.../lien-ket.jpg` -> `rieng_tu/bi-mat.jpg`: vẫn nằm trong thư mục lưu trữ nhưng NGOÀI vùng công khai."""
+    kho = luu_tru.LuuTruCucBo(tmp_path)
+    (tmp_path / "rieng_tu").mkdir()
+    (tmp_path / "rieng_tu" / "bi-mat.jpg").write_bytes(JPEG)
+    (tmp_path / "cong_khai" / "san-pham").mkdir(parents=True)
+    (tmp_path / "cong_khai" / "san-pham" / "lien-ket.jpg").symlink_to(tmp_path / "rieng_tu" / "bi-mat.jpg")
+    with pytest.raises(ValueError):
+        await kho.doc("san-pham/lien-ket.jpg")
+
+
+async def test_route_cong_khai_tra_404_cho_symlink_ra_ngoai_vung_cong_khai(client, tmp_path):
+    kho = luu_tru.luu_tru()
+    (kho.goc / "rieng_tu").mkdir(parents=True, exist_ok=True)
+    (kho.goc / "rieng_tu" / "bi-mat.jpg").write_bytes(JPEG)
+    (kho.goc / "cong_khai" / "san-pham").mkdir(parents=True, exist_ok=True)
+    (kho.goc / "cong_khai" / "san-pham" / "lien-ket.jpg").symlink_to(kho.goc / "rieng_tu" / "bi-mat.jpg")
+    phan_hoi = await client.get("/api/v1/tep/san-pham/lien-ket.jpg")
+    assert phan_hoi.status_code == 404 and phan_hoi.json()["ma_loi"] == "KHONG_TIM_THAY"
+
+
+async def test_doc_file_vua_bi_xoa_giua_luc_kiem_tra_va_doc_tra_none_khong_loi(monkeypatch):
+    kho = luu_tru.luu_tru()
+    khoa = await kho.luu("san-pham", JPEG, "image/jpeg")
+
+    def vua_bi_xoa(_self):
+        raise FileNotFoundError
+
+    monkeypatch.setattr(Path, "read_bytes", vua_bi_xoa)
+    assert await kho.doc(khoa) is None
+
+
+def test_xoa_file_sau_commit_that_bai_thi_ghi_canh_bao_khong_nem_loi(monkeypatch, caplog):
+    def khong_xoa_duoc(_self, missing_ok=False):
+        raise PermissionError("không có quyền")
+
+    monkeypatch.setattr(Path, "unlink", khong_xoa_duoc)
+    with caplog.at_level(logging.WARNING, logger="app.core.luu_tru"):
+        luu_tru._xoa_dong_bo("san-pham/abcdef.jpg")
+    assert any("san-pham/abcdef.jpg" in str(getattr(b, "khoa", "")) or "tệp" in b.getMessage() for b in caplog.records)

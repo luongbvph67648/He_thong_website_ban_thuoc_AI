@@ -11,7 +11,7 @@ interface Props {
   ban: SanPhamChiTiet
   coQuyenGhi: boolean
   capNhat: (ban: SanPhamChiTiet) => void
-  lamMoi: () => Promise<unknown>
+  lamMoi: () => Promise<SanPhamChiTiet | undefined>
 }
 
 /**

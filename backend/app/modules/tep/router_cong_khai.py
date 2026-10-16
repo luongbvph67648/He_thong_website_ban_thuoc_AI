@@ -18,7 +18,10 @@ async def tai_tep(thu_muc: str, ten_tep: str) -> Response:
     khoa = f"{thu_muc}/{ten_tep}"
     if not luu_tru.khoa_hop_le(khoa):
         raise LoiNghiepVu("KHONG_TIM_THAY", "Không tìm thấy tệp")
-    noi_dung = await luu_tru.luu_tru().doc(khoa)
+    try:
+        noi_dung = await luu_tru.luu_tru().doc(khoa)
+    except ValueError:  # symlink dẫn ra ngoài vùng công khai: coi như không có
+        noi_dung = None
     if noi_dung is None:
         raise LoiNghiepVu("KHONG_TIM_THAY", "Không tìm thấy tệp")
     kieu = luu_tru.KIEU_THEO_DUOI["." + khoa.rsplit(".", 1)[1]]

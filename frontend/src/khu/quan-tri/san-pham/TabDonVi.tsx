@@ -6,13 +6,13 @@ import { goi, thongDiepChung } from '../../../api/goi'
 import { loiTheoTruong } from '../../../api/loi'
 import { donViRaApi, donViTuApi, kiemTraDonVi, loiDonViTuApi, type DonViForm } from '../../../lib/sanPham'
 import { BangDonVi } from './BangDonVi'
-import { THONG_DIEP_XUNG_DOT, type SanPhamChiTiet } from './sanPham'
+import { THONG_DIEP_XUNG_DOT_DANH_SACH, type SanPhamChiTiet } from './sanPham'
 
 interface Props {
   ban: SanPhamChiTiet
   coQuyenGhi: boolean
   capNhat: (ban: SanPhamChiTiet) => void
-  lamMoi: () => Promise<unknown>
+  lamMoi: () => Promise<SanPhamChiTiet | undefined>
 }
 
 /** Tab "Đơn vị và giá": sửa tại chỗ cả danh sách rồi lưu một lần (máy chủ thay cả danh sách trong một giao dịch). */
@@ -41,8 +41,12 @@ export function TabDonVi({ ban, coQuyenGhi, capNhat, lamMoi }: Props) {
     const kq = await thay.mutateAsync(donVi)
     if (!kq.ok) {
       if (kq.loi?.ma_loi === 'DU_LIEU_DA_THAY_DOI') {
-        await lamMoi()
-        return setThongDiep(THONG_DIEP_XUNG_DOT)
+        const moi = await lamMoi()
+        if (moi) {
+          setDonVi(moi.don_vi.map(donViTuApi))
+          setDaThuLuu(false)
+        }
+        return setThongDiep(moi ? THONG_DIEP_XUNG_DOT_DANH_SACH : 'Sản phẩm vừa được người khác thay đổi và chưa tải lại được bản mới, hãy thử lại.')
       }
       const theoTruong = kq.loi ? loiTheoTruong(kq.loi) : {}
       if (Object.keys(theoTruong).length > 0) {

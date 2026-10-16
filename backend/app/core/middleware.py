@@ -4,12 +4,14 @@ import logging
 import re
 import time
 import uuid
+from collections.abc import Sequence
+from dataclasses import dataclass
 
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 from app.core.log import request_id_var
-from app.core.loi import phan_hoi_loi_he_thong
+from app.core.loi import phan_hoi_loi_he_thong, tra_loi
 
 logger = logging.getLogger("app.truy_cap")
 logger_loi = logging.getLogger("app.loi")
@@ -88,3 +90,75 @@ class RequestIdMiddleware:
                 },
             )
             request_id_var.reset(token)
+
+
+@dataclass(frozen=True)
+class QuyTacThanRequest:
+    """Giới hạn thân request của một route (khớp theo phương thức và toàn bộ đường dẫn)."""
+
+    phuong_thuc: str
+    mau_duong_dan: re.Pattern[str]
+    toi_da_byte: int
+    ma_loi: str
+    thong_diep: str
+
+
+class GioiHanKichThuocThan:
+    """Từ chối thân request quá lớn TRƯỚC khi route chạy, nên cũng trước xác thực và trước khi parse multipart.
+
+    Starlette đọc cả multipart vào tệp tạm trước khi chạy dependency (kể cả `yeu_cau_quyen`): không có lớp này thì người
+    chưa đăng nhập vẫn ghi được hàng trăm MB vào đĩa chỉ bằng một request. Có `Content-Length` vượt mức thì trả lỗi ngay
+    không đọc gì; thân gửi theo từng mảnh (không có `Content-Length`) thì đếm byte và ngắt khi vượt, route chỉ thấy
+    "client ngắt kết nối" còn phản hồi lỗi của route bị bỏ để trả lỗi đúng của quy tắc.
+    """
+
+    def __init__(self, app: ASGIApp, quy_tac: Sequence[QuyTacThanRequest]) -> None:
+        self.app = app
+        self.quy_tac = tuple(quy_tac)
+
+    def _tim(self, scope: Scope) -> QuyTacThanRequest | None:
+        for q in self.quy_tac:
+            if scope["method"] == q.phuong_thuc and q.mau_duong_dan.fullmatch(scope["path"]):
+                return q
+        return None
+
+    @staticmethod
+    def _phan_hoi(q: QuyTacThanRequest):
+        return tra_loi(q.ma_loi, q.thong_diep, {"toi_da_byte": q.toi_da_byte})
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        quy_tac = self._tim(scope) if scope["type"] == "http" else None
+        if quy_tac is None:
+            await self.app(scope, receive, send)
+            return
+        do_dai = Headers(scope=scope).get("content-length", "")
+        if do_dai.isdigit() and int(do_dai) > quy_tac.toi_da_byte:
+            await self._phan_hoi(quy_tac)(scope, receive, send)
+            return
+
+        da_nhan = 0
+        vuot = False
+
+        async def nhan() -> Message:
+            nonlocal da_nhan, vuot
+            if vuot:
+                return {"type": "http.disconnect"}
+            thong_diep = await receive()
+            if thong_diep["type"] == "http.request":
+                da_nhan += len(thong_diep.get("body", b""))
+                if da_nhan > quy_tac.toi_da_byte:
+                    vuot = True
+                    return {"type": "http.disconnect"}
+            return thong_diep
+
+        async def gui(thong_diep: Message) -> None:
+            if not vuot:  # route phản ứng với "ngắt kết nối" bằng lỗi riêng: bỏ, ta trả lỗi của quy tắc
+                await send(thong_diep)
+
+        try:
+            await self.app(scope, nhan, gui)
+        except Exception:
+            if not vuot:
+                raise
+        if vuot:
+            await self._phan_hoi(quy_tac)(scope, receive, send)

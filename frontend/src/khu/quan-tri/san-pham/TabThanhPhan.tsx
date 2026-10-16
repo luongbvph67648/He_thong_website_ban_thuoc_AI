@@ -7,13 +7,13 @@ import { loiTheoTruong } from '../../../api/loi'
 import { chuoiHoacNull } from '../../../lib/duLieuChung'
 import { kiemTraThanhPhan, khoaMoi, loiThanhPhanTuApi, type ThanhPhanForm } from '../../../lib/sanPham'
 import { BangThanhPhan } from './BangThanhPhan'
-import { THONG_DIEP_XUNG_DOT, type SanPhamChiTiet } from './sanPham'
+import { THONG_DIEP_XUNG_DOT_DANH_SACH, type SanPhamChiTiet } from './sanPham'
 
 interface Props {
   ban: SanPhamChiTiet
   coQuyenGhi: boolean
   capNhat: (ban: SanPhamChiTiet) => void
-  lamMoi: () => Promise<unknown>
+  lamMoi: () => Promise<SanPhamChiTiet | undefined>
 }
 
 const tuApi = (ban: SanPhamChiTiet): ThanhPhanForm[] =>
@@ -48,8 +48,12 @@ export function TabThanhPhan({ ban, coQuyenGhi, capNhat, lamMoi }: Props) {
     const kq = await thay.mutateAsync(ds)
     if (!kq.ok) {
       if (kq.loi?.ma_loi === 'DU_LIEU_DA_THAY_DOI') {
-        await lamMoi()
-        return setThongDiep(THONG_DIEP_XUNG_DOT)
+        const moi = await lamMoi()
+        if (moi) {
+          setDs(tuApi(moi))
+          setDaThuLuu(false)
+        }
+        return setThongDiep(moi ? THONG_DIEP_XUNG_DOT_DANH_SACH : 'Sản phẩm vừa được người khác thay đổi và chưa tải lại được bản mới, hãy thử lại.')
       }
       const theoTruong = kq.loi ? loiTheoTruong(kq.loi) : {}
       if (Object.keys(theoTruong).length > 0) {

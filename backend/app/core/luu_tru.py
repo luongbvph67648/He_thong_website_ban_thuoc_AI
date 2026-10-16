@@ -11,7 +11,7 @@ Vùng riêng tư (ảnh đơn thuốc, chứng từ hoàn tiền, URL ký) làm 
 """
 
 import asyncio
-import contextlib
+import logging
 import re
 import uuid
 from pathlib import Path
@@ -19,6 +19,8 @@ from pathlib import Path
 from sqlalchemy import event
 
 from app.core.config import BACKEND_DIR, settings
+
+logger = logging.getLogger(__name__)
 
 TOI_DA_ANH_BYTE = 5 * 1024 * 1024
 """Ảnh tối đa 5 MB (spec 06 mục 7)."""
@@ -67,9 +69,12 @@ class LuuTruCucBo:
     def _duong_dan(self, khoa: str) -> Path:
         if not khoa_hop_le(khoa):
             raise ValueError(f"Khóa file không hợp lệ: {khoa!r}")
-        duong_dan = (self.goc / "cong_khai" / khoa).resolve()
-        if not duong_dan.is_relative_to(self.goc):  # phòng thủ thêm: khóa đã qua regex nên không thể ra ngoài
-            raise ValueError(f"Khóa file trỏ ra ngoài thư mục lưu trữ: {khoa!r}")
+        vung = (self.goc / "cong_khai").resolve()
+        duong_dan = (vung / khoa).resolve()
+        # Phải nằm trong VÙNG CÔNG KHAI chứ không chỉ trong thư mục lưu trữ: symlink từ `cong_khai/` sang `rieng_tu/`
+        # (ảnh đơn thuốc) vẫn ở trong thư mục lưu trữ. Khóa đã qua regex nên chỉ symlink mới có thể làm ra ngoài.
+        if not duong_dan.is_relative_to(vung):
+            raise ValueError(f"Khóa file trỏ ra ngoài vùng công khai: {khoa!r}")
         return duong_dan
 
     async def luu(self, thu_muc: str, noi_dung: bytes, kieu_mime: str) -> str:
@@ -86,7 +91,14 @@ class LuuTruCucBo:
 
     async def doc(self, khoa: str) -> bytes | None:
         duong_dan = self._duong_dan(khoa)
-        return await asyncio.to_thread(lambda: duong_dan.read_bytes() if duong_dan.is_file() else None)
+
+        def doc_file() -> bytes | None:
+            try:
+                return duong_dan.read_bytes()
+            except (FileNotFoundError, IsADirectoryError):  # vừa bị xóa (`xoa_sau_commit`) giữa lúc request tới
+                return None
+
+        return await asyncio.to_thread(doc_file)
 
     async def xoa(self, khoa: str) -> None:
         duong_dan = self._duong_dan(khoa)
@@ -100,8 +112,10 @@ def luu_tru() -> LuuTruCucBo:
 
 
 def _xoa_dong_bo(khoa: str) -> None:
-    with contextlib.suppress(OSError, ValueError):  # dọn dẹp tốt nhất có thể, không phá việc đã xong
+    try:
         luu_tru()._duong_dan(khoa).unlink(missing_ok=True)
+    except (OSError, ValueError):  # dọn dẹp tốt nhất có thể, không phá việc đã xong; để lại dấu vết cho ai dọn tay
+        logger.warning("Không xóa được tệp công khai %s", khoa, exc_info=True)
 
 
 def xoa_sau_commit(db, khoa: str) -> None:

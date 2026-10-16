@@ -419,6 +419,63 @@ describe('Tab Đơn vị và giá', () => {
   })
 })
 
+describe('Xung đột phiên bản ở tab thay cả danh sách', () => {
+  it('đơn vị: sau 409 form hiện danh sách MỚI của máy chủ (có đơn vị người kia thêm), lưu lại không xóa nó', async () => {
+    const nguoi = userEvent.setup()
+    dung('/quan-tri/san-pham/5')
+    await screen.findByRole('heading', { name: 'Paracetamol 500mg' })
+    await nguoi.click(screen.getByRole('tab', { name: 'Đơn vị và giá' }))
+    fireEvent.change(await screen.findByLabelText('Giá bán đơn vị 2'), { target: { value: '95000' } })
+    // Người khác vừa thêm đơn vị Thùng.
+    const thung = { id: 23, ten_don_vi: 'Thùng', he_so: 1000, gia_ban: '800000.00', ban_online: true, la_mac_dinh: false, ma_vach: null }
+    hienTai = SAN_PHAM({ don_vi: [...SAN_PHAM().don_vi, thung], phien_ban: 'cccccccccccccccc' })
+    PUT.mockResolvedValueOnce(loi(409, 'DU_LIEU_DA_THAY_DOI', 'Dữ liệu đã bị người khác thay đổi'))
+    await nguoi.click(nutChu('Lưu đơn vị'))
+    expect(await screen.findByText(/Đã tải lại danh sách mới nhất/)).toBeInTheDocument()
+    expect(await screen.findByLabelText('Tên đơn vị 3')).toHaveValue('Thùng')
+    expect(screen.getByLabelText('Giá bán đơn vị 2')).toHaveValue('90000') // chỉnh sửa chưa lưu bị bỏ, không ghi đè ngầm
+
+    PUT.mockResolvedValueOnce(ok(SAN_PHAM({ phien_ban: 'dddddddddddddddd' })))
+    await nguoi.click(nutChu('Lưu đơn vị'))
+    await waitFor(() => expect(PUT).toHaveBeenCalledTimes(2))
+    expect(PUT.mock.calls[1][1].body.phien_ban).toBe('cccccccccccccccc')
+    expect(PUT.mock.calls[1][1].body.don_vi.map((d: { id: number }) => d.id)).toEqual([21, 22, 23]) // Thùng còn nguyên
+  })
+
+  it('thành phần: sau 409 form hiện danh sách mới của máy chủ', async () => {
+    const nguoi = userEvent.setup()
+    dung('/quan-tri/san-pham/5')
+    await screen.findByRole('heading', { name: 'Paracetamol 500mg' })
+    await nguoi.click(screen.getByRole('tab', { name: 'Thành phần' }))
+    await screen.findByDisplayValue('500 mg')
+    hienTai = SAN_PHAM({
+      thanh_phan: [...SAN_PHAM().thanh_phan, { hoat_chat_id: 10, ten_hoat_chat: 'Caffeine', ham_luong: '65 mg' }],
+      phien_ban: 'cccccccccccccccc',
+    })
+    PUT.mockResolvedValueOnce(loi(409, 'DU_LIEU_DA_THAY_DOI', 'Dữ liệu đã bị người khác thay đổi'))
+    await nguoi.click(await screen.findByLabelText('Xóa thành phần 1'))
+    await nguoi.click(nutChu('Lưu thành phần'))
+    expect(await screen.findByText(/Đã tải lại danh sách mới nhất/)).toBeInTheDocument()
+    expect(await screen.findByDisplayValue('65 mg')).toBeInTheDocument()
+    expect(screen.getByDisplayValue('500 mg')).toBeInTheDocument() // dòng tôi vừa xóa trở lại, cùng thay đổi của người kia
+  })
+
+  it('tải lại lỗi sau 409: trang giữ nguyên (không thay bằng cảnh báo), chữ đang gõ còn, báo chưa tải lại được', async () => {
+    const nguoi = userEvent.setup()
+    dung('/quan-tri/san-pham/5')
+    await screen.findByRole('heading', { name: 'Paracetamol 500mg' })
+    await nguoi.click(screen.getByRole('tab', { name: 'Đơn vị và giá' }))
+    fireEvent.change(await screen.findByLabelText('Giá bán đơn vị 2'), { target: { value: '95000' } })
+    PUT.mockResolvedValueOnce(loi(409, 'DU_LIEU_DA_THAY_DOI', 'Dữ liệu đã bị người khác thay đổi'))
+    GET.mockImplementation(async (duong: string) => (duong === '/api/v1/noi-bo/san-pham/{san_pham_id}' ? loi(500, 'LOI_HE_THONG', 'Lỗi hệ thống') : ok(CAY)))
+    await nguoi.click(nutChu('Lưu đơn vị'))
+    expect(await screen.findByText(/chưa tải lại được bản mới/)).toBeInTheDocument()
+    expect(screen.getByLabelText('Giá bán đơn vị 2')).toHaveValue('95000')
+    expect(screen.queryByText('Không tải được sản phẩm')).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Paracetamol 500mg' })).toBeInTheDocument()
+  })
+})
+
 describe('Tab Thành phần', () => {
   it('hiện thành phần hiện có; thêm dòng chưa chọn hoạt chất bị chặn, chọn xong lưu bằng PUT', async () => {
     const nguoi = userEvent.setup()

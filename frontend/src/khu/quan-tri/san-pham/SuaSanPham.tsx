@@ -58,7 +58,11 @@ export default function SuaSanPham({ id }: { id: number }) {
     queryClient.setQueryData(khoaChiTiet(id), ban)
     void queryClient.invalidateQueries({ queryKey: [...KHOA_QUERY_SAN_PHAM, 'danh-sach'] })
   }
-  const lamMoi = () => chiTiet.refetch()
+  // Trả bản mới, hoặc `undefined` nếu tải lại lỗi (khi đó `refetch` vẫn giữ bản cũ trong `data`, không được tưởng là mới).
+  const lamMoi = async (): Promise<SanPhamChiTiet | undefined> => {
+    const kq = await chiTiet.refetch()
+    return kq.isError ? undefined : kq.data
+  }
 
   const xoa = useMutation({
     mutationFn: (phienBan: string) =>
@@ -66,7 +70,8 @@ export default function SuaSanPham({ id }: { id: number }) {
   })
 
   if (chiTiet.isError && laLoiApi(chiTiet.error) && chiTiet.error.ma_loi === 'KHONG_TIM_THAY') return <KhongTimThay />
-  if (chiTiet.isError) return <Alert type="error" showIcon title="Không tải được sản phẩm" />
+  // Tải lại lỗi mà vẫn còn bản cũ (`data`) thì giữ nguyên trang: thay bằng cảnh báo là mất chữ người dùng đang gõ.
+  if (chiTiet.isError && !chiTiet.data) return <Alert type="error" showIcon title="Không tải được sản phẩm" />
   const ban = chiTiet.data
   if (!ban) return <Spin style={{ display: 'block', margin: '48px auto' }} />
 

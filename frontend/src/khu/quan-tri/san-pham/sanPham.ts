@@ -32,6 +32,10 @@ export function cayChoTreeSelect(cay: readonly (NutDanhMuc & NutCay)[]): TuyChon
   }))
 }
 
+/** Tab thay CẢ danh sách (đơn vị, thành phần): lưu lại bản đang gõ sẽ xóa phần người kia vừa thêm, nên bản mới thay hẳn form. */
+export const THONG_DIEP_XUNG_DOT_DANH_SACH =
+  'Sản phẩm vừa được người khác thay đổi. Đã tải lại danh sách mới nhất; chỉnh sửa chưa lưu của tab này đã bị bỏ để không xóa nhầm thay đổi của họ. Hãy sửa lại rồi lưu.'
+
 export const THONG_DIEP_XUNG_DOT =
   'Sản phẩm vừa được người khác thay đổi. Đã tải bản mới; giá trị bạn nhập vẫn được giữ nguyên, hãy kiểm tra rồi bấm Lưu lần nữa.'
 

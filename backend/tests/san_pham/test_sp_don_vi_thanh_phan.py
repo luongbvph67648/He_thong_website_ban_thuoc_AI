@@ -310,6 +310,16 @@ async def test_chua_co_lo_hay_tham_chieu_thi_thay_don_vi_co_so_duoc(dang_nhap_ad
     assert (await db.get(SanPham, sp["id"])).don_vi_co_so == "Cái"
 
 
+async def test_doi_ten_don_vi_thanh_ten_trung_voi_ten_tam_noi_bo_khong_gay_500(dang_nhap_admin, db):
+    """Tên tạm trong lúc thay danh sách không được trùng với tên nhập được: Admin không có cách nào làm nó va nhau."""
+    sp = await sp_moi(dang_nhap_admin, db)
+    id_vien = next(d["id"] for d in sp["don_vi"] if d["ten_don_vi"] == "Viên")
+    # Hộp (áp trước, vì không giữ hệ số 1) đổi tên đúng bằng tên tạm mà Viên còn đang mang lúc đó.
+    phan_hoi = await thay(dang_nhap_admin, sp, don_vi_vao(sp, Hộp={"ten_don_vi": f"~{id_vien}"}))
+    assert phan_hoi.status_code == 200, phan_hoi.text
+    assert [d["ten_don_vi"] for d in phan_hoi.json()["don_vi"]] == ["Viên", f"~{id_vien}"]
+
+
 async def test_hai_san_pham_dat_cung_ma_vach_cung_luc_chi_mot_ben_thanh_cong(db_that):
     """Mã vạch không có unique trong DB, chỉ khóa tư vấn giữ lời hứa "một mã vạch, một dòng": hai PUT song song."""
     async with db_that() as s, s.begin():

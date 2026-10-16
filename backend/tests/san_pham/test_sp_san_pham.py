@@ -10,6 +10,7 @@ from app.core import phan_quyen
 from app.core.loi import LoiNghiepVu
 from app.core.thoi_gian import bay_gio_utc
 from app.models.he_thong import NhanVien, NhatKyHeThong, Quyen, VaiTro, VaiTroQuyen
+from app.models.kho import LoThuoc
 from app.models.san_pham import DanhMuc, HoatChat, NhaSanXuat, SanPham, ThuongHieu
 from app.modules.san_pham import san_pham as dich_vu
 from app.modules.san_pham.schemas_san_pham import SanPhamSua, SanPhamTao
@@ -722,3 +723,170 @@ async def test_xoa_danh_muc_cho_giao_dich_dang_tao_san_pham_roi_thay_san_pham_va
     assert isinstance(ket_qua[1], LoiNghiepVu) and ket_qua[1].ma_loi == "DANH_MUC_CON_SAN_PHAM", ket_qua
     async with db_that() as s:
         assert (await s.get(DanhMuc, dm_id)).deleted_at is None
+
+
+async def test_xoa_san_pham_dua_voi_nhap_kho_vao_lo_san_co_khong_de_ton_ket_duoi_san_pham_da_xoa(db_that):
+    """Xóa đọc "không còn hàng" rồi mới commit; nhập kho vào lô sẵn có (tồn 0) chen giữa phải thua chứ không để tồn mắc kẹt."""
+    from app.modules.kho import ton_kho
+
+    admin_id, dm_id = await _admin_va_danh_muc(db_that)
+    async with db_that() as s, s.begin():
+        actor = await s.get(NhanVien, admin_id)
+        sp = await dich_vu.tao(s, actor, _tao_than(dm_id), ip="127.0.0.1")
+        sp_id, phien_ban = sp.id, sp.phien_ban
+        lo_id = (await tao_lo(s, await s.get(SanPham, sp_id))).id  # lô có sẵn, tồn 0
+    dang_xoa = asyncio.Event()
+
+    async def xoa():
+        async with db_that() as s, s.begin():
+            actor = await s.get(NhanVien, admin_id)
+            await dich_vu.xoa(s, actor, sp_id, phien_ban, ip="127.0.0.1")
+            dang_xoa.set()
+            await asyncio.sleep(0.5)  # đã đánh dấu xóa, chưa commit
+
+    async def nhap():
+        await dang_xoa.wait()
+        async with db_that() as s, s.begin():
+            lo = await s.get(LoThuoc, lo_id)
+            await ton_kho.nhap_kho(s, lo, 100, ton_kho.ChungTu("phieu_nhap", 0))
+
+    ket_qua = await asyncio.wait_for(asyncio.gather(xoa(), nhap(), return_exceptions=True), timeout=20)
+    assert ket_qua[0] is None
+    assert isinstance(ket_qua[1], LoiNghiepVu) and ket_qua[1].ma_loi == "KHONG_TIM_THAY", ket_qua
+    async with db_that() as s:
+        assert (await s.get(SanPham, sp_id)).deleted_at is not None
+        assert (await s.get(LoThuoc, lo_id)).so_luong_ton == 0
+
+
+async def test_nhap_kho_vao_lo_dang_giu_khoa_thi_xoa_san_pham_cho_roi_bi_tu_choi(db_that):
+    from app.modules.kho import ton_kho
+
+    admin_id, dm_id = await _admin_va_danh_muc(db_that)
+    async with db_that() as s, s.begin():
+        actor = await s.get(NhanVien, admin_id)
+        sp = await dich_vu.tao(s, actor, _tao_than(dm_id), ip="127.0.0.1")
+        sp_id, phien_ban = sp.id, sp.phien_ban
+        lo_id = (await tao_lo(s, await s.get(SanPham, sp_id))).id
+    dang_nhap = asyncio.Event()
+
+    async def nhap():
+        async with db_that() as s, s.begin():
+            lo = await s.get(LoThuoc, lo_id)
+            await ton_kho.nhap_kho(s, lo, 100, ton_kho.ChungTu("phieu_nhap", 0))
+            dang_nhap.set()
+            await asyncio.sleep(0.5)  # chưa commit
+
+    async def xoa():
+        await dang_nhap.wait()
+        async with db_that() as s, s.begin():
+            actor = await s.get(NhanVien, admin_id)
+            await dich_vu.xoa(s, actor, sp_id, phien_ban, ip="127.0.0.1")
+
+    ket_qua = await asyncio.wait_for(asyncio.gather(nhap(), xoa(), return_exceptions=True), timeout=20)
+    assert ket_qua[0] is None
+    assert isinstance(ket_qua[1], LoiNghiepVu) and ket_qua[1].ma_loi == "SAN_PHAM_CON_TON_KHO", ket_qua
+    async with db_that() as s:
+        assert (await s.get(SanPham, sp_id)).deleted_at is None
+
+
+async def test_nhap_kho_vao_lo_cua_san_pham_da_xoa_bi_tu_choi_va_khong_ghi_the_kho(db):
+    from app.models.kho import BienDongKho
+    from app.modules.kho import ton_kho
+
+    sp = await tao_san_pham(db, deleted_at=bay_gio_utc())
+    lo = await tao_lo(db, sp)
+    with pytest.raises(LoiNghiepVu) as loi:
+        await ton_kho.nhap_kho(db, lo, 5, ton_kho.ChungTu("phieu_nhap", 0))
+    assert loi.value.ma_loi == "KHONG_TIM_THAY"
+    assert (
+        await db.execute(select(func.count()).select_from(BienDongKho).where(BienDongKho.lo_id == lo.id))
+    ).scalar_one() == 0
+
+
+async def test_ma_vach_cua_san_pham_da_xoa_dung_lai_duoc_con_san_pham_dang_ban_thi_van_chan(dang_nhap_admin, db):
+    dm = await tao_danh_muc(db, "A")
+    vach = [{"ten_don_vi": "Viên", "he_so": 1, "gia_ban": "1", "ma_vach": "893000111"}]
+    cu = await tao_sp(dang_nhap_admin, dm.id, don_vi=vach)
+    xoa = await dang_nhap_admin.delete(f"{GOC}/{cu['id']}", params={"phien_ban": cu["phien_ban"]})
+    assert xoa.status_code == 204
+    moi = await dang_nhap_admin.post(GOC, json=than_tao(dm.id, don_vi=vach))  # xóa là cuối cùng: mã vạch được trả lại
+    assert moi.status_code == 201, moi.text
+    trung = await dang_nhap_admin.post(GOC, json=than_tao(dm.id, don_vi=vach))  # nhưng chủ mới thì vẫn giữ chỗ
+    assert la_loi(trung, 409, "TRUNG_DU_LIEU") and trung.json()["chi_tiet"] == {"truong": "don_vi.0.ma_vach"}
+
+
+async def test_tao_san_pham_dua_voi_xoa_thuong_hieu_xoa_phai_cho_roi_bi_tu_choi_khong_bao_gio_500(db_that):
+    """Kiểm tra "thương hiệu tồn tại" giữ khóa `FOR SHARE`: xóa chen giữa kiểm tra và ghi không còn gây `IntegrityError`."""
+    from sqlalchemy import text
+
+    from app.modules.san_pham import du_lieu_chung
+
+    async with db_that() as s, s.begin():
+        admin_id = (await tao_nhan_vien(s, "ADMIN")).id
+        dm_id = (await tao_danh_muc(s, "A")).id
+        th = ThuongHieu(ten="Hãng X")
+        s.add(th)
+        await s.flush()
+        th_id = th.id
+    than = than_tao(dm_id, thuong_hieu_id=th_id)
+    than["don_vi"][0]["ma_vach"] = "8930000001"  # buộc đi qua khóa tư vấn mã vạch, SAU bước kiểm tra thương hiệu
+    du_lieu = SanPhamTao.model_validate(than)
+
+    async with db_that() as giu, db_that() as a, db_that() as b:
+        await giu.begin()
+        await giu.execute(text("SELECT pg_advisory_xact_lock(hashtext('nha_thuoc.san_pham.ma_vach'))"))
+        await a.begin()
+        await b.begin()
+        viec_tao = asyncio.create_task(dich_vu.tao(a, await a.get(NhanVien, admin_id), du_lieu, ip="1.1.1.1"))
+        await asyncio.sleep(0.5)
+        assert not viec_tao.done()  # A đã kiểm tra thương hiệu rồi dừng ở khóa mã vạch
+        viec_xoa = asyncio.create_task(
+            du_lieu_chung.xoa(b, await b.get(NhanVien, admin_id), du_lieu_chung.THUONG_HIEU, th_id, ip="1.1.1.1")
+        )
+        await asyncio.sleep(0.5)
+        assert not viec_xoa.done(), "xóa phải chờ khóa FOR SHARE của giao dịch tạo sản phẩm"
+        await giu.commit()
+        await asyncio.wait_for(viec_tao, 5)
+        await a.commit()
+        with pytest.raises(LoiNghiepVu) as loi:
+            await asyncio.wait_for(viec_xoa, 5)
+        assert loi.value.ma_loi == "DU_LIEU_DANG_DUOC_SU_DUNG"
+        await b.rollback()
+    async with db_that() as s:
+        assert (
+            await s.execute(select(func.count()).select_from(SanPham).where(SanPham.thuong_hieu_id == th_id))
+        ).scalar_one() == 1
+
+
+async def test_don_vi_gia_le_trong_db_khong_lam_hong_doc_chi_tiet_va_danh_sach(dang_nhap_admin, db):
+    """DB cho phép NUMERIC(14,2): dòng nhập ngoài API (1000.50) phải đọc được, chỉ đầu VÀO mới đòi số đồng nguyên."""
+    from sqlalchemy import update
+
+    from app.models.san_pham import DonViQuyDoi
+
+    dm = await tao_danh_muc(db, "A")
+    sp = await tao_sp(dang_nhap_admin, dm.id)
+    await db.execute(
+        update(DonViQuyDoi).where(DonViQuyDoi.id == sp["don_vi"][0]["id"]).values(gia_ban=Decimal("1000.50"))
+    )
+    chi_tiet = await dang_nhap_admin.get(f"{GOC}/{sp['id']}")
+    assert chi_tiet.status_code == 200, chi_tiet.text
+    assert chi_tiet.json()["don_vi"][0]["gia_ban"] == "1000.50"
+    # Đơn vị mặc định là Hộp (90000); bỏ cờ mặc định để giá hiển thị ở danh sách là giá lẻ của đơn vị cơ sở.
+    await db.execute(update(DonViQuyDoi).where(DonViQuyDoi.san_pham_id == sp["id"]).values(la_mac_dinh=False))
+    ds = await dang_nhap_admin.get(GOC)
+    assert ds.status_code == 200, ds.text
+    assert ds.json()["du_lieu"][0]["gia_mac_dinh"] == "1000.50"
+
+
+@pytest.mark.parametrize(
+    ("truong", "gia_tri"),
+    [
+        ("don_vi", [{"ten_don_vi": f"Đơn vị {i}", "he_so": i + 1, "gia_ban": "1"} for i in range(51)]),
+        ("thanh_phan", [{"hoat_chat_id": i + 1} for i in range(51)]),
+    ],
+)
+async def test_danh_sach_don_vi_va_thanh_phan_co_gioi_han_do_dai(dang_nhap_admin, db, truong, gia_tri):
+    dm = await tao_danh_muc(db, "A")
+    phan_hoi = await dang_nhap_admin.post(GOC, json=than_tao(dm.id, **{truong: gia_tri}))
+    assert la_loi(phan_hoi, 400, "DU_LIEU_KHONG_HOP_LE") and phan_hoi.json()["chi_tiet"][0]["truong"] == truong

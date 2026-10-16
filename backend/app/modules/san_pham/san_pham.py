@@ -13,7 +13,7 @@
 from collections.abc import Sequence
 from typing import Any
 
-from sqlalchemy import ColumnElement, Select, and_, func, or_, select, text
+from sqlalchemy import ColumnElement, Select, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.cau_hinh_khoa import dau_van_tay
@@ -326,7 +326,10 @@ async def _gan_danh_muc(db: AsyncSession, danh_muc_id: int) -> None:
 async def _kiem_tra_tham_chieu(db: AsyncSession, truong: str, mo_hinh: Any, gia_tri: int | None) -> None:
     if gia_tri is None:
         return
-    if (await db.execute(select(mo_hinh.id).where(mo_hinh.id == gia_tri))).first() is None:
+    # FOR SHARE: xóa thương hiệu/nhà sản xuất (AD05) phải chờ giao dịch này, nên không có sản phẩm nào trỏ vào bản ghi
+    # vừa bị xóa.
+    co = await db.execute(select(mo_hinh.id).where(mo_hinh.id == gia_tri).with_for_update(read=True))
+    if co.first() is None:
         raise loi_truong(truong, "Không tồn tại")
 
 
@@ -346,7 +349,12 @@ async def kiem_tra_ma_vach(db: AsyncSession, don_vi: Sequence[DonViVao], san_pha
     if not can:
         return
     await khoa_tu_van(db, _KHOA_MA_VACH)
-    stmt = select(func.upper(DonViQuyDoi.ma_vach)).where(func.upper(DonViQuyDoi.ma_vach).in_(set(can.values())))
+    # Đơn vị của sản phẩm đã xóa mềm không giữ chỗ: xóa là cuối cùng (không có khôi phục) mà mã vạch in trên hộp thuốc.
+    stmt = (
+        select(func.upper(DonViQuyDoi.ma_vach))
+        .join(SanPham, SanPham.id == DonViQuyDoi.san_pham_id)
+        .where(SanPham.deleted_at.is_(None), func.upper(DonViQuyDoi.ma_vach).in_(set(can.values())))
+    )
     if san_pham_id is not None:
         stmt = stmt.where(DonViQuyDoi.san_pham_id != san_pham_id)
     da_co = set((await db.execute(stmt)).scalars())
@@ -512,14 +520,18 @@ async def xoa(db: AsyncSession, actor: NhanVien, san_pham_id: int, phien_ban: st
     """Xóa mềm. Từ chối khi còn lô có tồn, đang giữ hoặc biệt trữ (đưa về 0 qua kho trước)."""
     await dam_bao_la_admin(db, actor)
     sp, _ = await khoa_va_kiem_tra(db, san_pham_id, phien_ban)
-    con_hang = await db.scalar(
-        select(func.count())
-        .select_from(LoThuoc)
-        .where(
-            LoThuoc.san_pham_id == sp.id,
-            and_(or_(LoThuoc.so_luong_ton > 0, LoThuoc.so_luong_giu > 0, LoThuoc.so_luong_biet_tru > 0)),
+    # Khóa mọi lô của sản phẩm (FOR UPDATE, id tăng dần) TRƯỚC khi xét tồn: nhập kho đang chạy trên một lô xong rồi mới
+    # tới lượt ta (và ta thấy tồn mới); nhập kho đến sau phải chờ, rồi gặp `deleted_at`
+    # (`ton_kho.kiem_tra_san_pham_chua_xoa`).
+    cac_lo = (
+        await db.execute(
+            select(LoThuoc.so_luong_ton, LoThuoc.so_luong_giu, LoThuoc.so_luong_biet_tru)
+            .where(LoThuoc.san_pham_id == sp.id)
+            .order_by(LoThuoc.id)
+            .with_for_update()
         )
-    )
+    ).all()
+    con_hang = sum(1 for ton, giu, biet_tru in cac_lo if ton > 0 or giu > 0 or biet_tru > 0)
     if con_hang:
         raise LoiNghiepVu(
             "SAN_PHAM_CON_TON_KHO",

@@ -14,10 +14,12 @@ from pydantic import BaseModel, BeforeValidator, ConfigDict, Field, StringConstr
 
 from app.core.kieu_du_lieu import kieu_ten, van_ban_tuy_chon
 from app.core.slug import bo_dau, tao_slug
-from app.core.tien import Tien
+from app.core.tien import Tien, TienDoc
 from app.models.enums import LoaiSanPham, TrangThaiKinhDoanh
 
 SO_ANH_TOI_DA = 20
+SO_DON_VI_TOI_DA = 50
+SO_THANH_PHAN_TOI_DA = 50
 
 IdSql = Annotated[int, Field(ge=1, le=2_147_483_647)]
 PhienBan = Annotated[str, StringConstraints(pattern=r"^[0-9a-f]{16}$")]
@@ -146,8 +148,8 @@ class SanPhamTao(BaseModel):
     so_luong_toi_da_moi_don: Annotated[int, Field(ge=1, le=1_000_000_000, strict=True)] | None = None
     la_noi_bat: bool = False
     trang_thai: TrangThaiKinhDoanh = TrangThaiKinhDoanh.dang_kinh_doanh
-    don_vi: list[DonViVao]
-    thanh_phan: list[ThanhPhanVao] = []
+    don_vi: Annotated[list[DonViVao], Field(max_length=SO_DON_VI_TOI_DA)]
+    thanh_phan: Annotated[list[ThanhPhanVao], Field(max_length=SO_THANH_PHAN_TOI_DA)] = []
 
     _ten_co_chu = field_validator("ten")(_ten_phai_co_chu)
     _kiem_tra_don_vi = field_validator("don_vi")(kiem_tra_danh_sach_don_vi)
@@ -217,7 +219,7 @@ class ThayDonVi(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     phien_ban: PhienBan
-    don_vi: list[DonViVao]
+    don_vi: Annotated[list[DonViVao], Field(max_length=SO_DON_VI_TOI_DA)]
 
     _kiem_tra = field_validator("don_vi")(kiem_tra_danh_sach_don_vi)
 
@@ -226,7 +228,7 @@ class ThayThanhPhan(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     phien_ban: PhienBan
-    thanh_phan: list[ThanhPhanVao]
+    thanh_phan: Annotated[list[ThanhPhanVao], Field(max_length=SO_THANH_PHAN_TOI_DA)]
 
     _kiem_tra = field_validator("thanh_phan")(kiem_tra_danh_sach_thanh_phan)
 
@@ -251,7 +253,7 @@ class DonViDoc(BaseModel):
     id: int
     ten_don_vi: str
     he_so: int
-    gia_ban: Tien
+    gia_ban: TienDoc
     ban_online: bool
     la_mac_dinh: bool
     ma_vach: str | None
@@ -283,7 +285,7 @@ class SanPhamTomTat(BaseModel):
     trang_thai: TrangThaiKinhDoanh
     la_noi_bat: bool
     don_vi_co_so: str
-    gia_mac_dinh: Tien | None
+    gia_mac_dinh: TienDoc | None
     anh_chinh_url: str | None
     created_at: datetime
 
