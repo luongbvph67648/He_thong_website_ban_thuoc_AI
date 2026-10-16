@@ -669,7 +669,7 @@ _Giỏ hàng, máy trạng thái, đặt hàng giữ hàng FEFO, thanh toán, x�
   - [x] Trang lịch sử mua có nút "Mua lại".
 - **Ghi chú triển khai:**
   - HT08 (`ban_hang/tu_hoan_tat.py`, QĐ-31): job `ht08_tu_hoan_tat` mỗi 15 phút; dòng 29 và dòng 21 đi qua `chuyen_trang_thai` trong savepoint riêng. Mốc hạn lấy từ lịch sử trạng thái; yêu cầu đổi trả chưa `tu_choi`/`hoan_tat` chặn tự hoàn tất.
-  - Chưa làm (đã ghi trong tiêu chí): nhả khóa đơn thuốc quá hạn (T5.3) và đóng chat không hoạt động (T7.4).
+  - Phần nhả khóa đơn thuốc quá hạn làm ở T5.3, đóng chat không hoạt động ở T7.4.
   - Lịch sử mua dùng lại `GET /toi/don-hang` (KTV06, đã phân trang). Thêm `POST /toi/don-hang/{ma_don}/mua-lai` (spec 06 mục 3.27) dựa trên `gop_gio`; dòng bỏ qua trả kèm lý do.
   - Giao diện: nút "Mua lại" ở danh sách và chi tiết đơn; hộp thoại liệt kê dòng không thêm được (có tên sản phẩm ở trang chi tiết). `NHAN_LY_DO` chuyển sang `gio-hang/gioHang.ts` dùng chung.
 
@@ -847,17 +847,17 @@ _Kho tri thức, tìm kiếm lai, chatbot RAG, chuyển dược sĩ, đọc ản
   - [x] Widget chat nổi trên mọi trang cửa hàng, hiển thị stream, thẻ sản phẩm, nút "Gặp dược sĩ", nút báo sai.
 - **Ghi chú triển khai:** `ai/chatbot.py` (AI02, AI03, 6 tool, `chay_luot`), `ai/dau_hieu.py`, `ai/prompts/`, `modules/tu_van/`, `ai/danh_gia.py` + `tests/ai/bo_cau_hoi.yaml` (40 câu); `core/db.lay_tao_phien` cho SSE; API spec 06 mục 3.41; QĐ-44. Giao diện `WidgetChat` trên mọi trang cửa hàng (stream, thẻ sản phẩm, báo sai; nút "Gặp dược sĩ" nối ở T7.4). Test `tests/ai/test_chatbot.py` (17), `test_danh_gia.py` (3), `WidgetChat.test.tsx`, `sse.test.ts`. CHƯA chạy được với Claude thật; nhóm cần chạy `python -m app.ai.danh_gia` để đo hai nhóm bắt buộc 100%.
 
-### [ ] T7.4 · Chuyển dược sĩ và chat trực tiếp
+### [x] T7.4 · Chuyển dược sĩ và chat trực tiếp
 - **Chức năng:** AI04 (Tóm tắt, chuyển dược sĩ), KTV12 (Chat trực tiếp với dược sĩ), DS06 (Tư vấn trực tiếp)
 - **Phụ thuộc:** T7.3
 - **Bảng:** `hoi_thoai`, `tin_nhan`
 - **Tiêu chí chấp nhận:**
-  - [ ] AI04: tóm tắt hội thoại (`goi_json`) khi chuyển; trong giờ làm việc → `cho_duoc_si`, ngoài giờ → `cho_goi_lai` + SĐT.
-  - [ ] WebSocket `/api/v1/tu-van/ws` cho khách và dược sĩ (xác thực bằng token, chỉ thành viên phiên mới vào được); dược sĩ nhận phiên → `duoc_si_dang_xu_ly`.
-  - [ ] HT08 đóng phiên không hoạt động.
+  - [x] AI04: tóm tắt hội thoại (`goi_json`) khi chuyển; trong giờ làm việc → `cho_duoc_si`, ngoài giờ → `cho_goi_lai` + SĐT.
+  - [x] WebSocket `/api/v1/tu-van/ws` cho khách và dược sĩ (xác thực bằng token, chỉ thành viên phiên mới vào được); dược sĩ nhận phiên → `duoc_si_dang_xu_ly`.
+  - [x] HT08 đóng phiên không hoạt động.
 - **Giao diện:**
-  - [ ] Hàng chờ chat và cửa sổ chat cho dược sĩ; widget chat chuyển chế độ "đang chat với dược sĩ".
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Hàng chờ chat và cửa sổ chat cho dược sĩ; widget chat chuyển chế độ "đang chat với dược sĩ".
+- **Ghi chú triển khai:** `ai/tom_tat.py` (AI04, dự phòng theo luật), `modules/tu_van/{chuyen_duoc_si,hub,ws,router_noi_bo}.py`, `POST /tu-van/gap-duoc-si`, WebSocket `/tu-van/ws`, `/noi-bo/tu-van/*` (5 route vào registry phân quyền); HT08 đóng phiên không hoạt động nằm trong `tu_hoan_tat`. API spec 06 mục 3.42; QĐ-45. Giao diện: `lib/phongChat.ts` (hook WebSocket), `khu/nhan-vien/tu-van/TrangTuVan.tsx` (hàng chờ + chat), nút "Gặp dược sĩ" và chế độ chat trực tiếp trong `WidgetChat`; Vite proxy bật `ws`. Test `tests/ai/test_chuyen_duoc_si.py` (11), `phongChat.test.tsx`, `TrangTuVan.test.tsx`, `WidgetChat.test.tsx`. Hub một process (xem QĐ-45).
 
 ### [ ] T7.5 · Tra cứu thuốc bằng ảnh
 - **Chức năng:** KVL06 (Tra cứu thuốc bằng ảnh), AI05 (Nhận diện hộp thuốc từ ảnh)

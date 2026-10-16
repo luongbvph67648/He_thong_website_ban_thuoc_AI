@@ -10,7 +10,7 @@ export default defineConfig({
     strictPort: true,
     // Chuyển /api sang backend FastAPI khi dev, nên trình duyệt không gặp lỗi CORS.
     proxy: {
-      '/api': { target: 'http://localhost:8000', changeOrigin: true },
+      '/api': { target: 'http://localhost:8000', changeOrigin: true, ws: true },
     },
   },
   test: {

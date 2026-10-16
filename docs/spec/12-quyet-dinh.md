@@ -426,3 +426,11 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **Ngữ cảnh sức khỏe** đưa vào cuối tin nhắn khách (không đổi system prompt, giữ prompt caching).
 - **Bộ đánh giá chưa chạy với Claude thật** (cần khóa, tốn phí); kết quả ghi vào QĐ khi nhóm chạy.
 
+## QĐ-45 · Chuyển dược sĩ, chat trực tiếp (T7.4)
+- **WebSocket xác thực bằng message đầu**, không đặt token trên URL (URL vào log/lịch sử). Quá 10 giây không xác thực thì đóng `4401`.
+- **Hub trong bộ nhớ một process** (`tu_van/hub.py`): đủ cho 1 nhà thuốc chạy một worker API. Nhiều worker sẽ cần Redis pub/sub; tin vẫn lưu DB nên khách tải lại thấy đủ, chỉ mất phát thời gian thực giữa các process.
+- **Hồ sơ sức khỏe trong màn dược sĩ** chỉ gồm năm sinh, mang thai/cho con bú, tên hoạt chất dị ứng, và chỉ khi dược sĩ đang xử lý phiên của khách đã đồng ý; đi qua hàm cổng nên mỗi lần đọc có nhật ký. Không đưa bệnh nền.
+- **Tóm tắt dự phòng theo luật** khi AI04 lỗi/từ chối: chuyển dược sĩ không phụ thuộc AI.
+- **Đóng phiên không hoạt động (HT08):** 30 phút với `dang_mo`, 120 phút với `duoc_si_dang_xu_ly`, tính từ tin nhắn cuối (hoặc lúc tạo nếu chưa có tin).
+- **Test WebSocket** dùng đối tượng WebSocket giả trong cùng event loop (DB test dùng chung một kết nối nên xác thực hai kết nối phải tuần tự).
+

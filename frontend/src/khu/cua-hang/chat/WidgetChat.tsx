@@ -1,8 +1,11 @@
 import { CloseOutlined, DislikeOutlined, MessageOutlined, SendOutlined } from '@ant-design/icons'
 import { Alert, Button, FloatButton, Input, Space, Typography } from 'antd'
+import { usePhien } from '../../../stores/phien'
+import { usePhongChat } from '../../../lib/phongChat'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { api } from '../../../api/client'
+import { goi, thongDiepChung } from '../../../api/goi'
 import type { components } from '../../../api/schema'
 import { dinhDangTien } from '../../../lib/dinhDang'
 import { docSse } from './sse'
@@ -42,6 +45,13 @@ export default function WidgetChat() {
   const [dang, setDang] = useState(false)
   const [loi, setLoi] = useState<string | null>(null)
   const maPhien = useRef<string>('')
+  const token = usePhien((st) => st.accessToken)
+  const loaiPhien = usePhien((st) => st.loai)
+  const [truc, setTruc] = useState<null | { maPhien: string; trangThai: 'cho_duoc_si' | 'cho_goi_lai'; thongDiep: string }>(null)
+  const [hoiSdt, setHoiSdt] = useState(false)
+  const [sdt, setSdt] = useState('')
+  const [dangGap, setDangGap] = useState(false)
+  const phong = usePhongChat({ maPhien: truc?.trangThai === 'cho_duoc_si' ? truc.maPhien : null, vaiTro: 'khach', token: loaiPhien === 'khach' ? token : null })
   const khoaTiep = useRef(1)
   const cuoi = useRef<HTMLDivElement>(null)
   useEffect(() => { cuoi.current?.scrollIntoView?.({ block: 'end' }) }, [tin, mo])
@@ -51,6 +61,10 @@ export default function WidgetChat() {
   async function gui() {
     const noiDung = nhap.trim()
     if (!noiDung || dang) return
+    if (truc?.trangThai === 'cho_duoc_si') {
+      if (phong.gui(noiDung)) setNhap('')
+      return
+    }
     maPhien.current ||= layMaPhien()
     setLoi(null)
     setNhap('')
@@ -79,6 +93,22 @@ export default function WidgetChat() {
     } finally {
       setDang(false)
     }
+  }
+
+  async function gapDuocSi(soDt?: string) {
+    maPhien.current ||= layMaPhien()
+    setDangGap(true)
+    setLoi(null)
+    const r = await goi(() => api.POST('/api/v1/tu-van/gap-duoc-si', { body: { ma_phien: maPhien.current, ...(soDt ? { so_dien_thoai: soDt } : {}) } }))
+    setDangGap(false)
+    if (!r.ok) {
+      const can = (r.loi?.chi_tiet as { truong?: string }[] | null)?.some?.((c) => c.truong === 'so_dien_thoai')
+      if (can) setHoiSdt(true)
+      setLoi(can ? 'Hiện ngoài giờ làm việc của dược sĩ, vui lòng để lại số điện thoại để được gọi lại.' : thongDiepChung(r.loi))
+      return
+    }
+    setHoiSdt(false)
+    setTruc({ maPhien: maPhien.current, trangThai: r.data.trang_thai, thongDiep: r.data.thong_diep })
   }
 
   async function baoSai(t: TinNhan) {
@@ -118,11 +148,28 @@ export default function WidgetChat() {
                 )}
               </div>
             ))}
+            {truc && <Alert type="success" showIcon style={{ marginBottom: 8 }} title={truc.thongDiep} />}
+            {phong.tin.map((t) => (
+              <div key={t.khoa} style={{ display: 'flex', flexDirection: 'column', alignItems: t.vaiTro === 'khach' ? 'flex-end' : 'flex-start', marginBottom: 8 }}>
+                <Typography.Text type="secondary" style={{ fontSize: 12 }}>{t.vaiTro === 'duoc_si' ? 'Dược sĩ' : t.vaiTro === 'khach' ? 'Bạn' : 'Hệ thống'}</Typography.Text>
+                <div style={{ maxWidth: '90%', padding: '6px 10px', borderRadius: 8, whiteSpace: 'pre-wrap', background: t.vaiTro === 'khach' ? '#e6f4ff' : '#f5f5f5' }}>{t.noiDung}</div>
+              </div>
+            ))}
+            {phong.doiPhuongDangGo && <Typography.Text type="secondary">Dược sĩ đang nhập…</Typography.Text>}
             <div ref={cuoi} />
           </div>
           {loi && <Alert type="error" showIcon title={loi} style={{ margin: '0 12px' }} />}
+          {hoiSdt && (
+            <Space.Compact style={{ margin: '8px 12px 0' }}>
+              <Input aria-label="Số điện thoại để dược sĩ gọi lại" inputMode="tel" maxLength={20} placeholder="Số điện thoại" value={sdt} onChange={(e) => setSdt(e.target.value)} />
+              <Button type="primary" loading={dangGap} disabled={!sdt.trim()} onClick={() => void gapDuocSi(sdt.trim())}>Gửi</Button>
+            </Space.Compact>
+          )}
+          {!truc && !hoiSdt && tin.some((t) => t.vaiTro === 'khach') && (
+            <Button type="link" style={{ alignSelf: 'flex-start' }} loading={dangGap} onClick={() => void gapDuocSi()}>Gặp dược sĩ</Button>
+          )}
           <footer style={{ display: 'flex', gap: 8, padding: 12, borderTop: '1px solid #f0f0f0' }}>
-            <Input aria-label="Tin nhắn" value={nhap} maxLength={1000} placeholder="Nhập câu hỏi…" onChange={(e) => setNhap(e.target.value)} onPressEnter={() => void gui()} disabled={dang} />
+            <Input aria-label="Tin nhắn" value={nhap} maxLength={1000} placeholder="Nhập câu hỏi…" onPressEnter={() => void gui()} disabled={dang || truc?.trangThai === 'cho_goi_lai'} onChange={(e) => { setNhap(e.target.value); if (truc?.trangThai === 'cho_duoc_si') phong.baoDangGo() }} />
             <Button type="primary" aria-label="Gửi" icon={<SendOutlined />} loading={dang} disabled={!nhap.trim()} onClick={() => void gui()} />
           </footer>
         </section>
