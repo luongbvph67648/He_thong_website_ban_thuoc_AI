@@ -2,6 +2,7 @@
 
 import hashlib
 import hmac
+import secrets
 from decimal import Decimal
 from typing import Any
 
@@ -50,4 +51,4 @@ class CongGia:
         )
 
     async def hoan_tien(self, giao_dich_goc: ThanhToan, so_tien: Decimal, ly_do: str) -> KetQuaHoan:
-        return KetQuaHoan(True, f"GIA-HOAN-{giao_dich_goc.id}")
+        return KetQuaHoan(True, f"GIA-HOAN-{giao_dich_goc.id}-{secrets.token_hex(4)}")  # mỗi lần hoàn một mã riêng

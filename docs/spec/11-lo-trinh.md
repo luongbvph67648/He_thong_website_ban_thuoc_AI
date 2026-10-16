@@ -753,16 +753,16 @@ _Đổi trả, biệt trữ, hoàn tiền, đánh giá, hỏi đáp, thông báo
   - [x] Màn nhận hàng trả/hoàn cho kho.
 - **Ghi chú triển khai:** `doi_tra/kho.py`, `schemas_kho.py`, 4 route `/noi-bo/nhan-hang/...` (spec 06 mục 3.33), quyết định QĐ-37 (đơn vị theo dòng đơn, hàng khách trả luôn vào biệt trữ, hoàn tiền theo số thực nhận). Hàng hoàn: hoàn nhập đúng lô hoặc biệt trữ, rồi dòng 27 qua HT06 (hook tạo hoàn tiền). Giao diện `/hang-tra-ve`. Test `tests/doi_tra/test_nhan_hang_tra.py` (8), `TrangHangTraVe.test.tsx` (2).
 
-### [ ] T6.3 · Xác nhận hoàn tiền
+### [x] T6.3 · Xác nhận hoàn tiền
 - **Chức năng:** AD17 (Xác nhận hoàn tiền)
 - **Phụ thuộc:** T6.1
 - **Bảng:** `thanh_toan`, `don_hang`, `yeu_cau_doi_tra`
 - **Tiêu chí chấp nhận:**
-  - [ ] Danh sách giao dịch hoàn tiền `khoi_tao`; VNPay/MoMo gọi API hoàn tiền của adapter theo `thanh_toan_goc_id`; COD/tiền mặt: nhập chứng từ chuyển khoản.
-  - [ ] Người xác nhận ≠ dược sĩ duyệt đổi trả; cập nhật `trang_thai_tt` (`da_hoan_tien`/`hoan_tien_mot_phan`), thông báo khách, ẩn danh hóa `thong_tin_nhan_hoan` sau khi xong.
+  - [x] Danh sách giao dịch hoàn tiền `khoi_tao`; VNPay/MoMo gọi API hoàn tiền của adapter theo `thanh_toan_goc_id`; COD/tiền mặt: nhập chứng từ chuyển khoản.
+  - [x] Người xác nhận ≠ dược sĩ duyệt đổi trả; cập nhật `trang_thai_tt` (`da_hoan_tien`/`hoan_tien_mot_phan`), thông báo khách, ẩn danh hóa `thong_tin_nhan_hoan` sau khi xong.
 - **Giao diện:**
-  - [ ] Màn hoàn tiền cho Admin.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Màn hoàn tiền cho Admin.
+- **Ghi chú triển khai:** `modules/hoan_tien/` (`dich_vu`, `router`, `schemas`); API spec 06 mục 3.34; QĐ-38 (hoàn do hủy đơn không bắt buộc tài khoản khách, ẩn danh hóa còn 4 số cuối, cổng lỗi giữ `khoi_tao`). Sửa bản giả của cổng: mã hoàn có hậu tố ngẫu nhiên (hoàn một phần nhiều lần bị trùng `ma_giao_dich_cong`). Giao diện `/quan-tri/hoan-tien`. Test `tests/hoan_tien/test_xac_nhan_hoan_tien.py` (6), `TrangHoanTien.test.tsx` (3).
 
 ### [ ] T6.4 · Đánh giá và hỏi đáp sản phẩm
 - **Chức năng:** KTV10 (Đánh giá sản phẩm), KTV15 (Đặt câu hỏi về sản phẩm), DS11 (Kiểm duyệt đánh giá, hỏi đáp)

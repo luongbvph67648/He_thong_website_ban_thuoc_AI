@@ -2721,6 +2721,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/noi-bo/hoan-tien": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Giao dịch hoàn tiền (AD17) */
+        get: operations["danh_sach_api_v1_noi_bo_hoan_tien_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/hoan-tien/{gd_id}/xac-nhan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Xác nhận hoàn tiền: gọi cổng (VNPay/MoMo) hoặc đính kèm chứng từ chuyển khoản (AD17) */
+        post: operations["xac_nhan_api_v1_noi_bo_hoan_tien__gd_id__xac_nhan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/noi-bo/don-thuoc": {
         parameters: {
             query?: never;
@@ -3620,6 +3654,14 @@ export interface components {
              * @description Ảnh jpeg, png hoặc webp, tối đa 5 MB
              */
             tep: string;
+        };
+        /** Body_xac_nhan_api_v1_noi_bo_hoan_tien__gd_id__xac_nhan_post */
+        Body_xac_nhan_api_v1_noi_bo_hoan_tien__gd_id__xac_nhan_post: {
+            /**
+             * Chung Tu
+             * @description Ảnh chứng từ chuyển khoản (jpeg/png/webp, 5 MB)
+             */
+            chung_tu?: string | null;
         };
         /** CanhBao */
         CanhBao: {
@@ -5230,6 +5272,47 @@ export interface components {
             tien_thua: string | null;
             /** Co Thuoc Ke Don */
             co_thuoc_ke_don: boolean;
+        };
+        /** HoanTienRa */
+        HoanTienRa: {
+            /** Id */
+            id: number;
+            /** Ma Don */
+            ma_don: string;
+            /** Ten Khach */
+            ten_khach: string | null;
+            /** So Tien */
+            so_tien: string;
+            cong_thanh_toan: components["schemas"]["PhuongThucThanhToan"];
+            trang_thai: components["schemas"]["TrangThaiGiaoDich"];
+            /**
+             * Nguon
+             * @enum {string}
+             */
+            nguon: "huy_don" | "doi_tra";
+            /** Ma Yeu Cau */
+            ma_yeu_cau: string | null;
+            /** Tong Da Thanh Toan */
+            tong_da_thanh_toan: string;
+            /** Tu Dong Qua Cong */
+            tu_dong_qua_cong: boolean;
+            /** Thong Tin Nhan Hoan */
+            thong_tin_nhan_hoan: {
+                [key: string]: unknown;
+            } | null;
+            /** Thieu Tai Khoan */
+            thieu_tai_khoan: boolean;
+            /** Chung Tu */
+            chung_tu: string | null;
+            /** Ghi Chu */
+            ghi_chu: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Xu Ly Luc */
+            xu_ly_luc: string | null;
         };
         /** HoanVeKhoRa */
         HoanVeKhoRa: {
@@ -13938,6 +14021,72 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["KetQuaKiemHoan"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    danh_sach_api_v1_noi_bo_hoan_tien_get: {
+        parameters: {
+            query?: {
+                trang_thai?: components["schemas"]["TrangThaiGiaoDich"] | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HoanTienRa"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    xac_nhan_api_v1_noi_bo_hoan_tien__gd_id__xac_nhan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                gd_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_xac_nhan_api_v1_noi_bo_hoan_tien__gd_id__xac_nhan_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HoanTienRa"];
                 };
             };
             /** @description Validation Error */

@@ -462,6 +462,15 @@ Mã quyền `return.receive` (chỉ nhân viên kho; service chốt thêm vai tr
 - `POST /noi-bo/nhan-hang/hoan-ve/{don_id} {dong: [{ct_don_hang_id, tinh_trang: nguyen_niem_phong | hu_hong}], ghi_chu?}` -> `{ma_don, trang_thai, cho_hoan_tien, so_luong_hoan_nhap, so_luong_biet_tru}`: nguyên niêm phong thì hoàn nhập đúng lô (`hoan_nhap`), hư hỏng vào biệt trữ (`nhan_tra_ve`), rồi đơn sang `da_huy` qua dòng 27; đơn đã thanh toán tự có giao dịch hoàn tiền `khoi_tao`.
 - Ở DS09, hoàn tiền và đơn thay thế tính theo số THỰC NHẬN; kho không nhận được hàng nào thì chỉ còn đường từ chối.
 
+### 3.34 Xác nhận hoàn tiền (AD17, T6.3)
+Mã quyền `refund.confirm` (Admin; service chốt thêm vai trò `ADMIN`).
+- `GET /noi-bo/hoan-tien?trang_thai=` (mặc định `khoi_tao`; còn `thanh_cong`) -> `[{id, ma_don, ten_khach, so_tien, cong_thanh_toan, trang_thai, nguon: huy_don | doi_tra, ma_yeu_cau, tong_da_thanh_toan, tu_dong_qua_cong, thong_tin_nhan_hoan, thieu_tai_khoan, chung_tu, ghi_chu, created_at, xu_ly_luc}]`.
+- `POST /noi-bo/hoan-tien/{gd_id}/xac-nhan` (`multipart`, tệp `chung_tu` ảnh ≤ 5 MB):
+  - VNPay/MoMo: gọi `CongThanhToan.hoan_tien` theo giao dịch gốc (`thanh_toan_goc_id`, cần `ma_giao_dich_cong`); cổng lỗi hoặc từ chối là `502 LOI_DOI_TAC` và giao dịch vẫn `khoi_tao` để thử lại.
+  - COD/tiền mặt/chuyển khoản: bắt buộc `chung_tu` (`400` nếu thiếu hoặc sai kiểu), lưu vùng `rieng_tu` vào `chung_tu_url`; hoàn do đổi trả còn cần khách đã nhập tài khoản nhận hoàn (`409`).
+  - Người xác nhận trùng dược sĩ duyệt yêu cầu đổi trả: `403 TU_DUYET_KHONG_DUOC`. Đã xử lý: `409`. Tổng hoàn vượt tổng đã thanh toán: `422 HOAN_VUOT_SO_DA_TRA`.
+  - Thành công: giao dịch `thanh_cong`, ghi `nhan_vien_xu_ly_id`, `thong_tin_nhan_hoan` chỉ còn ngân hàng và 4 số cuối; `trang_thai_tt` của đơn là `cho_hoan_tien` nếu còn giao dịch hoàn khác đang chờ, ngược lại `da_hoan_tien` (hoàn đủ) hoặc `hoan_tien_mot_phan`; yêu cầu đổi trả `kho_da_nhan` sang `hoan_tat`; báo khách.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

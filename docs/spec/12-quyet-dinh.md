@@ -376,3 +376,10 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **Hàng hoàn kiểm theo từng dòng đơn** (nguyên niêm phong hoặc hư hỏng); hàng đã qua tay vận chuyển nhưng niêm phong nguyên vẹn thì hoàn nhập đúng lô.
 - **Kho không thấy thông tin khách** trong màn nhận hàng.
 
+## QĐ-38: Xác nhận hoàn tiền (2026-10-16, task T6.3)
+- **Hoàn do hủy đơn** không có yêu cầu đổi trả nên khách không có chỗ nhập tài khoản: Admin chuyển về tài khoản đã dùng khi thanh toán và đính kèm chứng từ. Chỉ hoàn do đổi trả mới bắt buộc tài khoản khách nhập (QĐ-36).
+- **Chứng từ** là ảnh (jpeg/png/webp, 5 MB) ở vùng `rieng_tu`, chỉ Admin xem qua URL ký.
+- **Ẩn danh hóa:** sau khi hoàn xong `thong_tin_nhan_hoan` chỉ giữ ngân hàng và 4 số cuối, bỏ tên chủ tài khoản.
+- **Mã hoàn của bản giả** có hậu tố ngẫu nhiên: nhiều lần hoàn một phần trên cùng giao dịch gốc không đụng ràng buộc duy nhất của `ma_giao_dich_cong`.
+- **Cổng lỗi** không đổi trạng thái gì (giao dịch vẫn `khoi_tao`, Admin thử lại được). Không có thao tác "từ chối hoàn" vì spec không định nghĩa.
+

@@ -66,6 +66,8 @@ REGISTRY: dict[tuple[str, str], tuple[str, str]] = {
     ("POST", f"{TIEN_TO_NOI_BO}/doi-tra/{{yc_id}}/tu-choi"): ("return.review", "day_du"),
     ("POST", f"{TIEN_TO_NOI_BO}/doi-tra/{{yc_id}}/hoan-tien"): ("return.review", "day_du"),
     ("POST", f"{TIEN_TO_NOI_BO}/doi-tra/{{yc_id}}/thay-the"): ("return.review", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/hoan-tien"): ("refund.confirm", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/hoan-tien/{{gd_id}}/xac-nhan"): ("refund.confirm", "day_du"),
     ("GET", f"{TIEN_TO_NOI_BO}/nhan-hang/doi-tra"): ("return.receive", "day_du"),
     ("POST", f"{TIEN_TO_NOI_BO}/nhan-hang/doi-tra/{{yc_id}}"): ("return.receive", "day_du"),
     ("GET", f"{TIEN_TO_NOI_BO}/nhan-hang/hoan-ve"): ("return.receive", "day_du"),
