@@ -234,3 +234,14 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
   - **Giao diện dược sĩ duyệt** `/nhan-vien/bai-viet-cho-duyet` (mã `content.approve`), đọc toàn văn đã render rồi mới bấm duyệt.
 - **Hệ quả:** spec 06 mục 3.12 (thân duyệt), 3.14; spec 09 mục 2.1, 2.2, 2.3; `modules/noi_dung_web/`; `backend/CLAUDE.md`, `frontend/CLAUDE.md`.
 
+
+## QĐ-22: Nhà cung cấp, phiếu nhập và dịch vụ tồn kho (2026-10-16, task T3.1)
+- **Quyết định:**
+  - **Cùng số lô nhưng khác hạn sử dụng bị CHẶN** (`409 TRUNG_DU_LIEU`), theo lộ trình T3.1; KHO02 ở spec 05 chỉ nói "cảnh báo". Số lô của nhà sản xuất chỉ có một hạn, khác nhau gần như chắc là nhập nhầm và hạn sai là rủi ro an toàn thuốc.
+  - **Hạn sử dụng ngắn là cảnh báo cần xác nhận** (`409 CAN_XAC_NHAN_CANH_BAO`, gửi lại với `xac_nhan_canh_bao = true`), không chặn. Hạn đã qua là `400`.
+  - **Giá vốn một đơn vị cơ sở làm tròn về đồng** (`lam_tron_vnd`, CLAUDE.md quy tắc 5, như seed); thuốc viên rất rẻ mất một ít độ chính xác. Giá bình quân gia quyền lấy trọng số `so_luong_ton` (hàng đang bán); lô chưa có hàng bán lấy giá dòng nhập.
+  - **Nhà cung cấp:** ngừng hợp tác là xóa mềm có `hop-tac-lai` để sửa nhầm (mã số thuế duy nhất kể cả với nhà cung cấp đã ngừng).
+  - **Tra cứu sản phẩm cho phiếu nhập** (`/phieu-nhap/tra-cuu-san-pham`, quyền `stock.import`) để kho chọn dòng và quét mã vạch mà không cần quyền quản lý sản phẩm.
+  - **`ton_kho.giu_hang_nhieu`:** đơn nhiều dòng giữ hàng trong MỘT lần khóa mọi lô ứng viên theo id tăng dần (FEFO chỉ quyết định thứ tự lấy sau khi đã khóa), thiếu hàng ở dòng nào thì không đổi gì. Bất biến 4 và 5 (liên quan đơn hàng) thêm vào `tests/bat_bien` ở T4.4.
+  - **Rà soát nghiệp vụ gộp theo giai đoạn** (một lần cho T3.1 đến T3.5) để tiết kiệm chi phí, theo yêu cầu của người dùng.
+- **Hệ quả:** spec 06 mục 3.15 và bảng mã lỗi (`CAN_XAC_NHAN_CANH_BAO`, `LO_KHONG_NHAP_DUOC`); `modules/kho/`; `tests/bat_bien/`.

@@ -22,6 +22,9 @@ import TrangBaiVietChoDuyet from './khu/nhan-vien/chuyen-mon/TrangBaiVietChoDuye
 import TrangNoiDungChuyenMon from './khu/nhan-vien/chuyen-mon/TrangNoiDungChuyenMon'
 import TrangSoanNoiDung from './khu/nhan-vien/chuyen-mon/TrangSoanNoiDung'
 import TrangTuongTac from './khu/nhan-vien/chuyen-mon/TrangTuongTac'
+import TrangNhaCungCap from './khu/nhan-vien/kho/TrangNhaCungCap'
+import TrangPhieuNhap from './khu/nhan-vien/kho/TrangPhieuNhap'
+import TrangTaoPhieuNhap from './khu/nhan-vien/kho/TrangTaoPhieuNhap'
 import { MUC_NHAN_VIEN } from './khu/nhan-vien/menu'
 import TrangDangNhapNoiBo from './khu/nhan-vien/TrangDangNhap'
 import TrangTaiKhoanNoiBo from './khu/nhan-vien/TrangTaiKhoan'
@@ -71,6 +74,9 @@ const TRANG_NHAN_VIEN_THAT: Record<string, ReactNode> = {
   '/noi-dung-chuyen-mon/:id': <TrangSoanNoiDung />,
   '/tuong-tac': <TrangTuongTac />,
   '/bai-viet-cho-duyet': <TrangBaiVietChoDuyet />,
+  '/nha-cung-cap': <TrangNhaCungCap />,
+  '/phieu-nhap': <TrangPhieuNhap />,
+  '/phieu-nhap/tao': <TrangTaoPhieuNhap />,
 }
 
 /** Trang khu quản trị đã làm thật (khóa là đường dẫn trong `MUC_QUAN_TRI`); còn lại là trang giữ chỗ. */

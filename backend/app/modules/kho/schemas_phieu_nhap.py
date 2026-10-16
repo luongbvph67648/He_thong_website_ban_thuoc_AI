@@ -104,3 +104,12 @@ class PhieuNhapChiTiet(PhieuNhapTomTat):
     ghi_chu: str | None
     dong: list[DongNhapRa]
     canh_bao: list[CanhBao] = []
+
+
+class DonViTraCuu(DonViRut):
+    ma_vach: str | None
+
+
+class SanPhamTraCuu(SanPhamRut):
+    don_vi: list[DonViTraCuu]
+    don_vi_mac_dinh_id: int | None

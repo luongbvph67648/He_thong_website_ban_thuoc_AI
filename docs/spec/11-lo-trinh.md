@@ -417,18 +417,23 @@ _Danh mục, sản phẩm, nội dung chuyên môn, trang cửa hàng, tìm ki�
 
 _Nhập kho theo lô, thẻ kho, cảnh báo, kiểm kê, hủy, xuất trả, báo cáo nhập - xuất - tồn._
 
-### [ ] T3.1 · Nhà cung cấp, phiếu nhập và dịch vụ tồn kho
+### [x] T3.1 · Nhà cung cấp, phiếu nhập và dịch vụ tồn kho
 - **Chức năng:** KHO01 (Quản lý nhà cung cấp), KHO02 (Lập phiếu nhập kho)
 - **Phụ thuộc:** T2.2
 - **Bảng:** `nha_cung_cap`, `phieu_nhap`, `ct_phieu_nhap`, `lo_thuoc`, `bien_dong_kho`
 - **Tiêu chí chấp nhận:**
-  - [ ] `kho/ton_kho.py` là nơi DUY NHẤT đổi tồn: `nhap_kho`, `giu_hang`, `nha_giu`, `xuat_theo_phan_bo`, `hoan_nhap`, `vao_biet_tru`, `tru_ton` (hủy/xuất trả/điều chỉnh); khóa lô `FOR UPDATE`, ghi `bien_dong_kho` (spec 04 mục 3).
-  - [ ] CRUD nhà cung cấp (ngừng hợp tác = xóa mềm).
-  - [ ] Lập phiếu nhập: quy đổi về đơn vị cơ sở; tạo lô mới hoặc cộng vào lô cũ (tính lại giá nhập bình quân gia quyền); cảnh báo HSD < `han_su_dung_toi_thieu_nhap_ngay`, chặn số lô trùng khác HSD; phiếu đã lưu không sửa/xóa.
-  - [ ] Test bất biến tồn kho (spec 10 mục 4) cho nhập kho.
+  - [x] `kho/ton_kho.py` là nơi DUY NHẤT đổi tồn: `nhap_kho`, `giu_hang`, `nha_giu`, `xuat_theo_phan_bo`, `hoan_nhap`, `vao_biet_tru`, `tru_ton` (hủy/xuất trả/điều chỉnh); khóa lô `FOR UPDATE`, ghi `bien_dong_kho` (spec 04 mục 3).
+  - [x] CRUD nhà cung cấp (ngừng hợp tác = xóa mềm).
+  - [x] Lập phiếu nhập: quy đổi về đơn vị cơ sở; tạo lô mới hoặc cộng vào lô cũ (tính lại giá nhập bình quân gia quyền); cảnh báo HSD < `han_su_dung_toi_thieu_nhap_ngay`, chặn số lô trùng khác HSD; phiếu đã lưu không sửa/xóa.
+  - [x] Test bất biến tồn kho (spec 10 mục 4) cho nhập kho.
 - **Giao diện:**
-  - [ ] Danh sách nhà cung cấp; form phiếu nhập nhiều dòng có quét mã vạch.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Danh sách nhà cung cấp; form phiếu nhập nhiều dòng có quét mã vạch.
+- **Ghi chú triển khai:**
+  - Quyết định ở QĐ-22 (cùng số lô khác HSD bị chặn, cảnh báo HSD ngắn cần xác nhận, giá vốn làm tròn đồng, `giu_hang_nhieu`). Thêm hàm `giu_hang_nhieu` và `dieu_chinh` ngoài danh sách tiêu chí.
+  - Backend: `modules/kho/` (`ton_kho`, `nha_cung_cap`, `phieu_nhap`, `lo`), 9 route nội bộ trong registry, spec 06 mục 3.15. `tests/bat_bien/kiem_tra.py` (bất biến 1 đến 3) tự chạy cuối mọi test `tests/kho` (fixture `db` ghi đè); test tranh chấp giữ hàng (lô còn 1, khóa ngược thứ tự).
+  - Frontend: `/nhan-vien/nha-cung-cap`, `/phieu-nhap`, `/phieu-nhap/tao` (quét mã vạch bằng Enter ở ô tìm; hạn ngắn hỏi xác nhận).
+  - Chưa làm: gửi phiếu nhập trùng do bấm hai lần (chưa có `Idempotency-Key`, nút lưu có trạng thái loading); rà soát nghiệp vụ gộp sau T3.5.
+
 
 ### [ ] T3.2 · Tra cứu tồn, cảnh báo và job lô
 - **Chức năng:** KHO05 (Tra cứu tồn kho), KHO06 (Xem cảnh báo), HT01 (Cập nhật trạng thái lô hằng ngày), HT02 (Cảnh báo tồn thấp, cận hạn)

@@ -9,6 +9,17 @@ TIEN_TO_NOI_BO = "/api/v1/noi-bo"
 
 # {(PHƯƠNG THỨC, đường dẫn mẫu): (mã quyền, mức)}
 REGISTRY: dict[tuple[str, str], tuple[str, str]] = {
+    # KHO01, KHO02: kho ghi, Admin xem.
+    ("GET", f"{TIEN_TO_NOI_BO}/nha-cung-cap"): ("supplier.manage", "xem"),
+    ("POST", f"{TIEN_TO_NOI_BO}/nha-cung-cap"): ("supplier.manage", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/nha-cung-cap/{{nha_cung_cap_id}}"): ("supplier.manage", "xem"),
+    ("PATCH", f"{TIEN_TO_NOI_BO}/nha-cung-cap/{{nha_cung_cap_id}}"): ("supplier.manage", "day_du"),
+    ("DELETE", f"{TIEN_TO_NOI_BO}/nha-cung-cap/{{nha_cung_cap_id}}"): ("supplier.manage", "day_du"),
+    ("POST", f"{TIEN_TO_NOI_BO}/nha-cung-cap/{{nha_cung_cap_id}}/hop-tac-lai"): ("supplier.manage", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/phieu-nhap"): ("stock.import", "xem"),
+    ("POST", f"{TIEN_TO_NOI_BO}/phieu-nhap"): ("stock.import", "day_du"),
+    ("GET", f"{TIEN_TO_NOI_BO}/phieu-nhap/tra-cuu-san-pham"): ("stock.import", "xem"),
+    ("GET", f"{TIEN_TO_NOI_BO}/phieu-nhap/{{phieu_id}}"): ("stock.import", "xem"),
     # NV01, NV02: mọi nhân viên có `profile.self` ở mức đầy đủ.
     ("GET", f"{TIEN_TO_NOI_BO}/toi"): ("profile.self", "xem"),
     ("PATCH", f"{TIEN_TO_NOI_BO}/toi"): ("profile.self", "day_du"),

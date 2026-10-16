@@ -1440,6 +1440,112 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/noi-bo/nha-cung-cap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Danh sách nhà cung cấp (KHO01) */
+        get: operations["danh_sach_api_v1_noi_bo_nha_cung_cap_get"];
+        put?: never;
+        /** Thêm nhà cung cấp (KHO01) */
+        post: operations["tao_api_v1_noi_bo_nha_cung_cap_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/nha-cung-cap/{nha_cung_cap_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chi tiết nhà cung cấp (KHO01) */
+        get: operations["chi_tiet_api_v1_noi_bo_nha_cung_cap__nha_cung_cap_id__get"];
+        put?: never;
+        post?: never;
+        /** Ngừng hợp tác = xóa mềm (KHO01) */
+        delete: operations["ngung_api_v1_noi_bo_nha_cung_cap__nha_cung_cap_id__delete"];
+        options?: never;
+        head?: never;
+        /** Sửa nhà cung cấp (KHO01) */
+        patch: operations["sua_api_v1_noi_bo_nha_cung_cap__nha_cung_cap_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/noi-bo/nha-cung-cap/{nha_cung_cap_id}/hop-tac-lai": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hợp tác lại (KHO01) */
+        post: operations["hop_tac_lai_api_v1_noi_bo_nha_cung_cap__nha_cung_cap_id__hop_tac_lai_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/phieu-nhap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Danh sách phiếu nhập (KHO02) */
+        get: operations["danh_sach_api_v1_noi_bo_phieu_nhap_get"];
+        put?: never;
+        /** Lập phiếu nhập kho (KHO02) */
+        post: operations["tao_api_v1_noi_bo_phieu_nhap_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/phieu-nhap/tra-cuu-san-pham": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Tìm sản phẩm để nhập, gồm quét mã vạch */
+        get: operations["tra_cuu_san_pham_api_v1_noi_bo_phieu_nhap_tra_cuu_san_pham_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/phieu-nhap/{phieu_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Chi tiết phiếu nhập (KHO02) */
+        get: operations["chi_tiet_api_v1_noi_bo_phieu_nhap__phieu_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1774,6 +1880,22 @@ export interface components {
              */
             tep: string;
         };
+        /** CanhBao */
+        CanhBao: {
+            /** Dong */
+            dong: number;
+            /** Loai */
+            loai: string;
+            /**
+             * Han Su Dung
+             * Format: date
+             */
+            han_su_dung: string;
+            /** So Ngay Con Lai */
+            so_ngay_con_lai: number;
+            /** Toi Thieu */
+            toi_thieu: number;
+        };
         /**
          * CapNhatHoSoYeuCau
          * @description Chỉ gửi trường cần đổi. `so_dien_thoai = null` (hoặc rỗng) là xóa số. Email do Admin quản lý (AD01): gửi lên
@@ -2088,6 +2210,26 @@ export interface components {
             /** Ma Vach */
             ma_vach: string | null;
         };
+        /** DonViRut */
+        DonViRut: {
+            /** Id */
+            id: number;
+            /** Ten Don Vi */
+            ten_don_vi: string;
+            /** He So */
+            he_so: number;
+        };
+        /** DonViTraCuu */
+        DonViTraCuu: {
+            /** Id */
+            id: number;
+            /** Ten Don Vi */
+            ten_don_vi: string;
+            /** He So */
+            he_so: number;
+            /** Ma Vach */
+            ma_vach: string | null;
+        };
         /** DonViVao */
         DonViVao: {
             /** Id */
@@ -2110,6 +2252,50 @@ export interface components {
             la_mac_dinh: boolean;
             /** Ma Vach */
             ma_vach?: string | null;
+        };
+        /** DongNhapRa */
+        DongNhapRa: {
+            /** Lo Id */
+            lo_id: number;
+            san_pham: components["schemas"]["app__modules__kho__schemas_phieu_nhap__SanPhamRut"];
+            /** So Lo */
+            so_lo: string;
+            /** Ngay San Xuat */
+            ngay_san_xuat: string | null;
+            /**
+             * Han Su Dung
+             * Format: date
+             */
+            han_su_dung: string;
+            don_vi: components["schemas"]["DonViRut"];
+            /** So Luong */
+            so_luong: number;
+            /** So Luong Co So */
+            so_luong_co_so: number;
+            /** Gia Nhap */
+            gia_nhap: string;
+            /** Thanh Tien */
+            thanh_tien: string;
+        };
+        /** DongNhapVao */
+        DongNhapVao: {
+            /** San Pham Id */
+            san_pham_id: number;
+            /** Don Vi Id */
+            don_vi_id: number;
+            /** So Lo */
+            so_lo: string;
+            /** Ngay San Xuat */
+            ngay_san_xuat?: string | null;
+            /**
+             * Han Su Dung
+             * Format: date
+             */
+            han_su_dung: string;
+            /** So Luong */
+            so_luong: number;
+            /** Gia Nhap */
+            gia_nhap: number | string;
         };
         /**
          * DongNoiDung
@@ -2316,6 +2502,74 @@ export interface components {
             /** Ho Ten */
             ho_ten: string;
         };
+        /** NhaCungCapRa */
+        NhaCungCapRa: {
+            /** Id */
+            id: number;
+            /** Ten */
+            ten: string;
+            /** Ma So Thue */
+            ma_so_thue: string | null;
+            /** Dia Chi */
+            dia_chi: string | null;
+            /** Nguoi Lien He */
+            nguoi_lien_he: string | null;
+            /** So Dien Thoai */
+            so_dien_thoai: string | null;
+            /** Email */
+            email: string | null;
+            /** Dang Hop Tac */
+            dang_hop_tac: boolean;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Phien Ban */
+            phien_ban: string;
+        };
+        /** NhaCungCapRut */
+        NhaCungCapRut: {
+            /** Id */
+            id: number;
+            /** Ten */
+            ten: string;
+        };
+        /**
+         * NhaCungCapSua
+         * @description Chỉ các trường gửi lên được đổi; `null` ở trường tùy chọn là xóa giá trị, `null` ở `ten` là lỗi.
+         */
+        NhaCungCapSua: {
+            /** Phien Ban */
+            phien_ban: string;
+            /** Ten */
+            ten?: string | null;
+            /** Ma So Thue */
+            ma_so_thue?: string | null;
+            /** Dia Chi */
+            dia_chi?: string | null;
+            /** Nguoi Lien He */
+            nguoi_lien_he?: string | null;
+            /** So Dien Thoai */
+            so_dien_thoai?: string | null;
+            /** Email */
+            email?: string | null;
+        };
+        /** NhaCungCapTao */
+        NhaCungCapTao: {
+            /** Ten */
+            ten: string;
+            /** Ma So Thue */
+            ma_so_thue?: string | null;
+            /** Dia Chi */
+            dia_chi?: string | null;
+            /** Nguoi Lien He */
+            nguoi_lien_he?: string | null;
+            /** So Dien Thoai */
+            so_dien_thoai?: string | null;
+            /** Email */
+            email?: string | null;
+        };
         /** NhaSanXuatDoc */
         NhaSanXuatDoc: {
             /** Id */
@@ -2402,6 +2656,15 @@ export interface components {
             created_at: string;
             /** Updated At */
             updated_at: string | null;
+        };
+        /** NhanVienRut */
+        NhanVienRut: {
+            /** Id */
+            id: number;
+            /** Ma Nhan Vien */
+            ma_nhan_vien: string;
+            /** Ho Ten */
+            ho_ten: string;
         };
         /**
          * NhanVienSua
@@ -2523,7 +2786,7 @@ export interface components {
          * @description Toàn bộ phiên bản của một sản phẩm (mới nhất trước) và phiên bản đang hiển thị.
          */
         NoiDungSanPham: {
-            san_pham: components["schemas"]["SanPhamRut"];
+            san_pham: components["schemas"]["app__modules__chuyen_mon__schemas_noi_dung__SanPhamRut"];
             /** Phien Ban Hien Thi */
             phien_ban_hien_thi: number | null;
             /** Phien Ban */
@@ -2639,6 +2902,71 @@ export interface components {
             /** Het Han Giay */
             het_han_giay: number;
             nhan_vien: components["schemas"]["NhanVienToi"];
+        };
+        /** PhieuNhapChiTiet */
+        PhieuNhapChiTiet: {
+            /** Id */
+            id: number;
+            /** Ma Phieu */
+            ma_phieu: string;
+            nha_cung_cap: components["schemas"]["NhaCungCapRut"];
+            /** So Hoa Don Ncc */
+            so_hoa_don_ncc: string | null;
+            nhan_vien: components["schemas"]["NhanVienRut"];
+            /**
+             * Ngay Nhap
+             * Format: date-time
+             */
+            ngay_nhap: string;
+            /** Tong Tien */
+            tong_tien: string;
+            /** So Dong */
+            so_dong: number;
+            /** Ghi Chu */
+            ghi_chu: string | null;
+            /** Dong */
+            dong: components["schemas"]["DongNhapRa"][];
+            /**
+             * Canh Bao
+             * @default []
+             */
+            canh_bao: components["schemas"]["CanhBao"][];
+        };
+        /** PhieuNhapTao */
+        PhieuNhapTao: {
+            /** Nha Cung Cap Id */
+            nha_cung_cap_id: number;
+            /** So Hoa Don Ncc */
+            so_hoa_don_ncc?: string | null;
+            /** Ghi Chu */
+            ghi_chu?: string | null;
+            /** Dong */
+            dong: components["schemas"]["DongNhapVao"][];
+            /**
+             * Xac Nhan Canh Bao
+             * @default false
+             */
+            xac_nhan_canh_bao: boolean;
+        };
+        /** PhieuNhapTomTat */
+        PhieuNhapTomTat: {
+            /** Id */
+            id: number;
+            /** Ma Phieu */
+            ma_phieu: string;
+            nha_cung_cap: components["schemas"]["NhaCungCapRut"];
+            /** So Hoa Don Ncc */
+            so_hoa_don_ncc: string | null;
+            nhan_vien: components["schemas"]["NhanVienRut"];
+            /**
+             * Ngay Nhap
+             * Format: date-time
+             */
+            ngay_nhap: string;
+            /** Tong Tien */
+            tong_tien: string;
+            /** So Dong */
+            so_dong: number;
         };
         /**
          * QuyenTrongVaiTro
@@ -2760,16 +3088,6 @@ export interface components {
             danh_gia: components["schemas"]["TongHopDanhGia"];
             /** Tuong Tu */
             tuong_tu: components["schemas"]["SanPhamThe"][];
-        };
-        /** SanPhamRut */
-        SanPhamRut: {
-            /** Id */
-            id: number;
-            /** Sku */
-            sku: string;
-            /** Ten */
-            ten: string;
-            loai_san_pham: components["schemas"]["LoaiSanPham"];
         };
         /**
          * SanPhamSua
@@ -2916,6 +3234,19 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** SanPhamTraCuu */
+        SanPhamTraCuu: {
+            /** Id */
+            id: number;
+            /** Sku */
+            sku: string;
+            /** Ten */
+            ten: string;
+            /** Don Vi */
+            don_vi: components["schemas"]["DonViTraCuu"][];
+            /** Don Vi Mac Dinh Id */
+            don_vi_mac_dinh_id: number | null;
         };
         /** SoChuaDoc */
         SoChuaDoc: {
@@ -3162,6 +3493,17 @@ export interface components {
             /** Kich Thuoc */
             kich_thuoc: number;
         };
+        /** Trang[NhaCungCapRa] */
+        Trang_NhaCungCapRa_: {
+            /** Du Lieu */
+            du_lieu: components["schemas"]["NhaCungCapRa"][];
+            /** Tong */
+            tong: number;
+            /** Trang */
+            trang: number;
+            /** Kich Thuoc */
+            kich_thuoc: number;
+        };
         /** Trang[NhaSanXuatDoc] */
         Trang_NhaSanXuatDoc_: {
             /** Du Lieu */
@@ -3188,6 +3530,17 @@ export interface components {
         Trang_NhatKyDoc_: {
             /** Du Lieu */
             du_lieu: components["schemas"]["NhatKyDoc"][];
+            /** Tong */
+            tong: number;
+            /** Trang */
+            trang: number;
+            /** Kich Thuoc */
+            kich_thuoc: number;
+        };
+        /** Trang[PhieuNhapTomTat] */
+        Trang_PhieuNhapTomTat_: {
+            /** Du Lieu */
+            du_lieu: components["schemas"]["PhieuNhapTomTat"][];
             /** Tong */
             tong: number;
             /** Trang */
@@ -3374,6 +3727,25 @@ export interface components {
             danh_muc_cha_id: number | null;
             /** Vi Tri */
             vi_tri: number;
+        };
+        /** SanPhamRut */
+        app__modules__chuyen_mon__schemas_noi_dung__SanPhamRut: {
+            /** Id */
+            id: number;
+            /** Sku */
+            sku: string;
+            /** Ten */
+            ten: string;
+            loai_san_pham: components["schemas"]["LoaiSanPham"];
+        };
+        /** SanPhamRut */
+        app__modules__kho__schemas_phieu_nhap__SanPhamRut: {
+            /** Id */
+            id: number;
+            /** Sku */
+            sku: string;
+            /** Ten */
+            ten: string;
         };
     };
     responses: never;
@@ -6759,6 +7131,336 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BaiVietCongKhai"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    danh_sach_api_v1_noi_bo_nha_cung_cap_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                trang_thai?: "dang_hop_tac" | "ngung" | "tat_ca";
+                /** @description Số trang, bắt đầu từ 1 */
+                trang?: number;
+                /** @description Số dòng mỗi trang */
+                kich_thuoc?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Trang_NhaCungCapRa_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tao_api_v1_noi_bo_nha_cung_cap_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NhaCungCapTao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NhaCungCapRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chi_tiet_api_v1_noi_bo_nha_cung_cap__nha_cung_cap_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nha_cung_cap_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NhaCungCapRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ngung_api_v1_noi_bo_nha_cung_cap__nha_cung_cap_id__delete: {
+        parameters: {
+            query: {
+                phien_ban: string;
+            };
+            header?: never;
+            path: {
+                nha_cung_cap_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sua_api_v1_noi_bo_nha_cung_cap__nha_cung_cap_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nha_cung_cap_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NhaCungCapSua"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NhaCungCapRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hop_tac_lai_api_v1_noi_bo_nha_cung_cap__nha_cung_cap_id__hop_tac_lai_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                nha_cung_cap_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NhaCungCapRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    danh_sach_api_v1_noi_bo_phieu_nhap_get: {
+        parameters: {
+            query?: {
+                q?: string | null;
+                nha_cung_cap_id?: number | null;
+                tu_ngay?: string | null;
+                den_ngay?: string | null;
+                /** @description Số trang, bắt đầu từ 1 */
+                trang?: number;
+                /** @description Số dòng mỗi trang */
+                kich_thuoc?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Trang_PhieuNhapTomTat_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tao_api_v1_noi_bo_phieu_nhap_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PhieuNhapTao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhieuNhapChiTiet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tra_cuu_san_pham_api_v1_noi_bo_phieu_nhap_tra_cuu_san_pham_get: {
+        parameters: {
+            query?: {
+                q?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SanPhamTraCuu"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    chi_tiet_api_v1_noi_bo_phieu_nhap__phieu_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                phieu_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PhieuNhapChiTiet"];
                 };
             };
             /** @description Validation Error */
