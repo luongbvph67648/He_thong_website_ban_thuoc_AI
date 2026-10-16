@@ -23,6 +23,7 @@ export const MUC_NHAN_VIEN: readonly MucDieuHuong[] = [
   { duong: '/phieu-nhap', nhan: 'Nhập kho', nhom: 'Kho', quyen: ['stock.import'], chucNang: ['KHO02'] },
   { duong: '/phieu-nhap/tao', nhan: 'Lập phiếu nhập', quyen: ['stock.import'], chucNang: ['KHO02'], trongMenu: false },
   { duong: '/soan-hang', nhan: 'Soạn hàng, đóng gói', nhom: 'Kho', quyen: ['order.pick', 'shipment.create'], chucNang: ['KHO03', 'KHO04'] },
+  { duong: '/soan-hang/:id', nhan: 'Phiếu soạn hàng', quyen: ['order.pick', 'shipment.create'], chucNang: ['KHO03', 'KHO04'], trongMenu: false },
   { duong: '/ton-kho', nhan: 'Tồn kho', nhom: 'Kho', quyen: ['stock.view'], chucNang: ['KHO05'] },
   { duong: '/canh-bao', nhan: 'Cảnh báo kho', nhom: 'Kho', quyen: ['stock.alert.view'], chucNang: ['KHO06'] },
   { duong: '/kiem-ke', nhan: 'Kiểm kê', nhom: 'Kho', quyen: ['stocktake.manage'], chucNang: ['KHO07'] },

@@ -50,10 +50,11 @@ class CongThanhToan(Protocol):
 ```python
 class DonViVanChuyen(Protocol):
     async def tinh_phi(self, dia_chi: DiaChiGiao, khoi_luong_gram: int, gia_tri: Decimal) -> Decimal: ...
-    async def tao_van_don(self, don: DonHang, loai: Literal["giao_hang", "tra_hang"]) -> KetQuaVanDon: ...
+    async def tao_van_don(self, don: DonHang, loai: Literal["giao_hang", "tra_hang"], khoi_luong_gram: int) -> KetQuaVanDon: ...
     async def huy_van_don(self, ma_van_don: str) -> None: ...
-    def xac_thuc_webhook(self, headers: dict, body: dict) -> SuKienVanChuyen: ...   # ma_van_don, trang_thai_doi_tac
+    def xac_thuc_webhook(self, headers: dict, body: dict) -> SuKienVanChuyen: ...   # ma_van_don, trang_thai_doi_tac; sai token: WebhookKhongHopLe
 ```
+- **Chọn adapter:** `VAN_CHUYEN_CHE_DO` = `gia` (mặc định) hoặc `ghn`; thuộc tính `ten` ghi vào `van_don.don_vi_van_chuyen`. Webhook GHN xác thực bằng header `Token` = `GHN_WEBHOOK_TOKEN`.
 - **Môi trường:** GHN có môi trường dev/sandbox riêng (`GHN_URL`). Header gồm `Token`, `ShopId`. Dùng API v2: tính phí, tạo đơn, hủy đơn, master data tỉnh/xã.
 - **Ánh xạ trạng thái đối tác → hành động** (để trong `tich_hop/van_chuyen/ghn.py`, có test):
 

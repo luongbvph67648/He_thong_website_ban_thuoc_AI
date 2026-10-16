@@ -62,6 +62,7 @@ export default function TrangChiTietDonCuaToi() {
         <Descriptions.Item label="Thanh toán">{don.phuong_thuc_tt ? (NHAN_PHUONG_THUC[don.phuong_thuc_tt as 'cod' | 'vnpay' | 'momo'] ?? don.phuong_thuc_tt) : '—'}</Descriptions.Item>
         <Descriptions.Item label="Người nhận">{[don.ten_nguoi_nhan, don.sdt_nguoi_nhan].filter(Boolean).join(' · ') || '—'}</Descriptions.Item>
         <Descriptions.Item label="Địa chỉ giao">{don.dia_chi_giao ?? 'Nhận tại nhà thuốc'}</Descriptions.Item>
+        {don.van_don.length > 0 && <Descriptions.Item label="Mã vận đơn">{don.van_don.map((v) => `${v.don_vi_van_chuyen} ${v.ma_van_don ?? ''}`.trim()).join(', ')}</Descriptions.Item>}
         {don.ghi_chu && <Descriptions.Item label="Ghi chú">{don.ghi_chu}</Descriptions.Item>}
       </Descriptions>
       <Table

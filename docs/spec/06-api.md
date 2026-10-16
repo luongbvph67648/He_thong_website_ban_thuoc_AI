@@ -364,6 +364,20 @@ Quyền `report.inventory` (`xem`: kho và Admin). Tính hoàn toàn từ `bien_
   - `POST /noi-bo/don-hang/{id}/huy` (`order.cancel`, chỉ dược sĩ) thân `{ly_do}` **bắt buộc**: dòng 15 (`cho_xac_nhan`, `da_xac_nhan`) và 19 (`dang_soan_hang`, `cho_lay_hang`: hàng đã xuất được hoàn nhập đúng lô). Cả hai trả `DonNoiBoChiTiet`.
 - **Hủy đơn đã thanh toán:** hook của các dòng hủy 14, 15, 19, 21, 27 tạo `thanh_toan` loại `hoan_tien`, `khoi_tao`, `thanh_toan_goc_id` = giao dịch thành công gần nhất, `so_tien` = số tiền đã trả, cổng như giao dịch gốc, và đặt `trang_thai_tt = cho_hoan_tien`. Admin xác nhận hoàn ở AD17 (T6.3). Đơn chưa thanh toán không tạo giao dịch hoàn.
 
+### 3.25 Soạn hàng, đóng gói, vận chuyển (KHO03, KHO04, HT05, KTV05, T4.7)
+- **Hàng đợi:** dùng `GET /noi-bo/don-hang?trang_thai=da_xac_nhan|dang_soan_hang|cho_lay_hang` (mục 3.24; kho chỉ thấy đơn từ "Đã xác nhận").
+- **Nội bộ, chỉ kho** (`/noi-bo/soan-hang/{don_id}`; đơn chưa xác nhận hoặc không có là `404`):
+  - `GET` (`order.pick`, xem) -> `{id, ma_don, trang_thai, hinh_thuc_nhan, ten_nguoi_nhan, sdt_nguoi_nhan, dia_chi_giao, ghi_chu, created_at, dong: [{ct_don_hang_id, san_pham_id, ten_san_pham, ten_don_vi, he_so, so_luong, ma_vach, phan_bo: [{id, lo_id, so_lo, han_su_dung, so_luong_co_so, trang_thai, ly_do_doi_lo}], goi_y: [{lo_id, so_lo, han_su_dung, kha_dung}]}], van_don: [{ma_van_don, don_vi_van_chuyen, created_at}], che_do_van_chuyen_gia}`. `goi_y` là tối đa 5 lô còn bán được theo FEFO, chỉ có khi đơn còn "Đã xác nhận".
+  - `POST .../doi-lo` (`order.pick`) `{phan_bo_lo_id, lo_id, ly_do}`: chỉ khi đơn "Đã xác nhận". Nhả phân bổ cũ (`da_nha`) và giữ nguyên số lượng đó trên lô mới (`dang_giu`, `ly_do_doi_lo`) trong cùng transaction, khóa cả hai lô theo id tăng dần. Lô mới phải cùng sản phẩm, `dang_ban`, còn hạn và đủ khả dụng (`400 DU_LIEU_KHONG_HOP_LE`, thiếu hàng `409 HET_HANG`); `ly_do` trống là `400`.
+  - `POST .../bat-dau` (`order.pick`): dòng 16, chốt lô, trừ `so_luong_ton` và `so_luong_giu`, thẻ kho `xuat_ban`. Lô đang giữ hết hạn hoặc không còn `dang_ban` thì `409` (phải đổi lô trước). Bấm hai lần: lần hai `409`, chỉ trừ một lần.
+  - `POST .../dong-goi` (`shipment.create`): đơn phải `dang_soan_hang`. Giao tận nơi: gọi `tao_van_don` của adapter (lỗi đối tác `502 LOI_DOI_TAC`, đơn giữ nguyên để thử lại), ghi `van_don` (`giao_hang`, mã, phí, khối lượng ước tính) rồi dòng 17 sang `cho_lay_hang`; nếu bước ghi lỗi thì `huy_van_don` ở đối tác. Nhận tại nhà thuốc: dòng 18, không có vận đơn.
+- **Khách (KTV05):** `GET /toi/don-hang/{ma_don}` có `lich_su` (dòng thời gian) và `van_don: [{ma_van_don, don_vi_van_chuyen, created_at}]`; chi tiết nội bộ cũng có `van_don`.
+- **Webhook (HT05, `/api/v1/webhook`):**
+  - `POST /ghn`: header `Token` phải bằng `GHN_WEBHOOK_TOKEN` (so sánh thời gian hằng; chưa cấu hình token thì từ chối tất cả); sai là `401`. Thân GHN `{OrderCode, Status, ...}`. Trả `200` cả khi mã vận đơn không có (để GHN không gọi lại mãi).
+  - `POST /gia-van-chuyen` `{ma_van_don, trang_thai_doi_tac}`: chỉ gắn khi `VAN_CHUYEN_CHE_DO=gia`, không cần token (không có đối tác thật); dùng cho màn "Giả lập vận chuyển".
+  - Xử lý chung: ghi `van_don.trang_thai_doi_tac` và `du_lieu_webhook`, khóa đơn, ánh xạ theo spec 08 mục 5 rồi đi qua `chuyen_trang_thai` (nguồn `webhook_van_chuyen`) từng bước hợp lệ: sự kiện mất (đã giao mà chưa nhận "đã lấy hàng") vẫn đưa đơn tới đúng chỗ, sự kiện cũ so với trạng thái hiện tại bị bỏ qua, sự kiện lặp không đổi gì. Chỉ vận đơn giao hàng mới nhất của đơn được đổi trạng thái đơn.
+  - COD giao thành công (dòng 23): hook ghi `thanh_toan` loại `thanh_toan`, cổng `cod`, `thanh_cong`, và `trang_thai_tt = da_thanh_toan` (một lần).
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

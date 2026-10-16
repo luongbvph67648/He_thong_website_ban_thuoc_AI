@@ -188,6 +188,7 @@ async def chi_tiet_noi_bo(db: AsyncSession, nv: NhanVien, don_id: int) -> DonNoi
     if don.ma_giam_gia_id is not None:
         ma_text = await db.scalar(select(MaGiamGia.ma).where(MaGiamGia.id == don.ma_giam_gia_id))
     ra = dat_hang.don_ra(don, ma_text)
+    ra.van_don = await dat_hang.van_don_giao_hang(db, don.id)
     lich_su = await _lich_su_noi_bo(db, don.id)
     giao_dich = (
         []

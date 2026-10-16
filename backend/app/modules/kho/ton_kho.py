@@ -279,6 +279,46 @@ async def nha_giu(db: AsyncSession, phan_bo: PhanBoLo | Sequence[PhanBoLo]) -> N
     await db.flush()
 
 
+async def doi_lo(db: AsyncSession, phan_bo: PhanBoLo, lo_moi_id: int, ly_do: str) -> PhanBoLo:
+    """Kho đổi lô khi soạn (KHO03): nhả phân bổ cũ (`dang_giu -> da_nha`) và giữ đúng số lượng đó trên lô mới trong
+    cùng transaction. Lô mới cùng sản phẩm, đang bán, còn hạn và đủ khả dụng; `ly_do` bắt buộc (ghi vào phân bổ mới)."""
+    ly_do = (ly_do or "").strip()
+    if not ly_do:
+        raise ValueError("Đổi lô bắt buộc có lý do")
+    if phan_bo.lo_id == lo_moi_id:
+        raise LoiNghiepVu("DU_LIEU_KHONG_HOP_LE", "Lô mới trùng lô đang giữ")
+    try:
+        lo_thuoc = {lo.id: lo for lo in await khoa_cac_lo(db, [phan_bo.lo_id, lo_moi_id])}  # cả hai lô, id tăng dần
+    except LookupError:
+        raise LoiNghiepVu("KHONG_TIM_THAY", "Không tìm thấy lô mới") from None
+    await _khoa_phan_bo(db, phan_bo, TrangThaiPhanBo.dang_giu, "đổi lô")
+    lo_cu, lo_moi = lo_thuoc[phan_bo.lo_id], lo_thuoc[lo_moi_id]
+    if lo_moi.san_pham_id != lo_cu.san_pham_id:
+        raise LoiNghiepVu("DU_LIEU_KHONG_HOP_LE", "Lô mới phải cùng sản phẩm")
+    if not _duoc_ban(lo_moi, hom_nay_vn(), False):
+        raise LoiNghiepVu("DU_LIEU_KHONG_HOP_LE", f"Lô {lo_moi.so_lo} không được bán (hết hạn, cận hạn hoặc hết hàng)")
+    if lo_moi.so_luong_ton - lo_moi.so_luong_giu < phan_bo.so_luong_co_so:
+        raise _het_hang(lo_moi, lo_moi.so_luong_ton - lo_moi.so_luong_giu, "nhận phần đổi sang")
+    bay_gio = bay_gio_utc()
+    lo_cu.so_luong_giu -= phan_bo.so_luong_co_so
+    lo_cu.updated_at = bay_gio
+    phan_bo.trang_thai = TrangThaiPhanBo.da_nha
+    phan_bo.updated_at = bay_gio
+    lo_moi.so_luong_giu += phan_bo.so_luong_co_so
+    lo_moi.updated_at = bay_gio
+    moi = PhanBoLo(
+        ct_don_hang_id=phan_bo.ct_don_hang_id,
+        lo_id=lo_moi.id,
+        so_luong_co_so=phan_bo.so_luong_co_so,
+        gia_von=lo_moi.gia_nhap,
+        trang_thai=TrangThaiPhanBo.dang_giu,
+        ly_do_doi_lo=ly_do,
+    )
+    db.add(moi)
+    await db.flush()
+    return moi
+
+
 async def xuat_theo_phan_bo(
     db: AsyncSession, phan_bo: PhanBoLo | Sequence[PhanBoLo], chung_tu: ChungTu
 ) -> list[BienDongKho]:

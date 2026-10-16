@@ -43,6 +43,12 @@ class Settings(BaseSettings):
     MOMO_ENDPOINT: str = ""
     MOMO_RETURN_URL: str = ""
     MOMO_IPN_URL: str = ""
+    # Vận chuyển (spec 08 mục 5): `gia` chạy offline kèm webhook giả; `ghn` gọi GHN thật.
+    VAN_CHUYEN_CHE_DO: Literal["gia", "ghn"] = "gia"
+    GHN_TOKEN: SecretStr = SecretStr("")
+    GHN_SHOP_ID: str = ""
+    GHN_URL: str = ""
+    GHN_WEBHOOK_TOKEN: SecretStr = SecretStr("")
     # Thư mục lưu file (spec 08 mục 6). Đường dẫn tương đối tính từ `backend/`, không phụ thuộc thư mục đang chạy.
     LUU_TRU_THU_MUC: str = "./storage"
 

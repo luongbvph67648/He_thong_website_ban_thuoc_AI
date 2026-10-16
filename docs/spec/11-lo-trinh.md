@@ -623,18 +623,24 @@ _Giỏ hàng, máy trạng thái, đặt hàng giữ hàng FEFO, thanh toán, x�
   - Test: 12 backend (`tests/ban_hang/test_xu_ly_don.py`: hủy trả lượt mã và nhả giữ, đơn người khác 404, hủy khi đang soạn bị chặn, hoàn tiền khi hủy đơn đã thanh toán và không hoàn khi chưa trả, hoàn nhập đúng lô, lý do bắt buộc, phân quyền kho/Admin, lọc, kho giới hạn đơn); 11 frontend + `lib/donHang`.
   - Chưa làm: thông báo cho khách khi dược sĩ hủy (T4.7 cùng hệ thống thông báo); trang Admin xem đơn (AD16); mua lại, đổi trả ở trang đơn của khách (KTV08, KTV09).
 
-### [ ] T4.7 · Soạn hàng, đóng gói, vận chuyển, theo dõi đơn
+### [x] T4.7 · Soạn hàng, đóng gói, vận chuyển, theo dõi đơn
 - **Chức năng:** KHO03 (Soạn hàng, xuất kho theo đơn), KHO04 (Đóng gói, bàn giao vận chuyển), HT05 (Nhận webhook vận chuyển), KTV05 (Theo dõi đơn hàng)
 - **Phụ thuộc:** T4.6
 - **Bảng:** `don_hang`, `phan_bo_lo`, `lo_thuoc`, `bien_dong_kho`, `van_don`, `thanh_toan`, `lich_su_trang_thai`
 - **Tiêu chí chấp nhận:**
-  - [ ] Danh sách đơn chờ soạn; gợi ý lô FEFO; đổi lô bắt buộc lý do; chuyển `dang_soan_hang` → chốt lô, trừ tồn, ghi thẻ kho; in phiếu soạn hàng.
-  - [ ] Đóng gói: adapter GHN tạo vận đơn (giao tận nơi) → `cho_lay_hang`; đơn nhận tại nhà thuốc chỉ đóng gói.
-  - [ ] Webhook GHN (HT05): kiểm token, ánh xạ trạng thái đối tác → trạng thái đơn qua HT06; COD giao thành công ghi `thanh_toan` COD.
-  - [ ] Khách xem dòng thời gian trạng thái và mã vận đơn.
+  - [x] Danh sách đơn chờ soạn; gợi ý lô FEFO; đổi lô bắt buộc lý do; chuyển `dang_soan_hang` → chốt lô, trừ tồn, ghi thẻ kho; in phiếu soạn hàng.
+  - [x] Đóng gói: adapter GHN tạo vận đơn (giao tận nơi) → `cho_lay_hang`; đơn nhận tại nhà thuốc chỉ đóng gói.
+  - [x] Webhook GHN (HT05): kiểm token, ánh xạ trạng thái đối tác → trạng thái đơn qua HT06; COD giao thành công ghi `thanh_toan` COD.
+  - [x] Khách xem dòng thời gian trạng thái và mã vận đơn.
 - **Giao diện:**
-  - [ ] Màn soạn hàng cho kho (quét mã vạch xác nhận), in phiếu/nhãn; trang chi tiết đơn của khách.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Màn soạn hàng cho kho (quét mã vạch xác nhận), in phiếu/nhãn; trang chi tiết đơn của khách.
+- **Ghi chú triển khai:**
+  - Spec 06 mục 3.25, spec 08 mục 5, QĐ-29. `modules/ban_hang/soan_hang.py` + `router_kho.py` (`/noi-bo/soan-hang/{id}`: chi tiết kèm lô giữ và gợi ý FEFO, `doi-lo`, `bat-dau`, `dong-goi`), `ton_kho.doi_lo` (khóa cả hai lô id tăng dần, lý do bắt buộc).
+  - Adapter vận chuyển: `tich_hop/van_chuyen/` thêm `tao_van_don`, `huy_van_don`, `xac_thuc_webhook`; bản giả (`gia.py`) và GHN (`ghn.py`, httpx, **chưa thử với sandbox thật**: tên trường theo tài liệu GHN v2, cần đối chiếu khi bật `VAN_CHUYEN_CHE_DO=ghn`); chọn theo `VAN_CHUYEN_CHE_DO`. `anh_xa.py` ánh xạ trạng thái đối tác và tìm đường đi qua các bước hợp lệ.
+  - HT05: `modules/van_chuyen/` (`POST /webhook/ghn` kiểm token, `POST /webhook/gia-van-chuyen` chỉ ở chế độ giả); hook dòng 23 ghi COD `thanh_cong` + `da_thanh_toan`.
+  - Khách thấy `lich_su` và `van_don` ở chi tiết đơn; kho có hàng đợi `/soan-hang`, phiếu `/soan-hang/:id` (quét mã vạch, đổi lô, in phiếu, nút giả lập vận chuyển).
+  - Test: 34 backend (`test_soan_hang.py`, `test_van_chuyen.py`), 8 frontend.
+  - Chưa làm: thông báo cho khách ở dòng 18, 24 (hệ thống thông báo khách là KTV13, task sau); tạo lại vận đơn khi giao thất bại (dòng 25 phía kho); báo kho khi GHN hủy vận đơn (hiện chỉ ghi `van_don`); nhãn vận chuyển in từ GHN (hiện in phiếu soạn có mã vận đơn).
 
 ### [ ] T4.8 · Đơn qua điện thoại và nhận tại nhà thuốc
 - **Chức năng:** DS07 (Tạo đơn hộ khách), DS15 (Giao đơn nhận tại nhà thuốc)

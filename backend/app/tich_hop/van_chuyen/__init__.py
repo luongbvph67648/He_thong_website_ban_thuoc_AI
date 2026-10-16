@@ -1,8 +1,8 @@
-"""Đơn vị vận chuyển (spec 08 mục 5, 8): địa giới (T4.1), tính phí (T4.4); vận đơn và webhook ở T4.7."""
+"""Đơn vị vận chuyển (spec 08 mục 5, 8): địa giới (T4.1), tính phí (T4.4), vận đơn và webhook (T4.7)."""
 
 from decimal import Decimal
 from functools import lru_cache
-from typing import Protocol, runtime_checkable
+from typing import Any, Literal, Protocol, runtime_checkable
 
 from pydantic import BaseModel
 
@@ -37,16 +37,50 @@ class DiaChiGiao(BaseModel):
     dia_chi_chi_tiet: str
 
 
+class KetQuaVanDon(BaseModel):
+    ma_van_don: str
+    phi: Decimal
+
+
+class SuKienVanChuyen(BaseModel):
+    """Sự kiện webhook đã xác thực: mã vận đơn, trạng thái gốc của đối tác và payload thô."""
+
+    ma_van_don: str
+    trang_thai_doi_tac: str
+    du_lieu: dict[str, Any]
+
+
+class WebhookKhongHopLe(Exception):
+    """Token webhook sai hoặc thân không đúng định dạng."""
+
+
 @runtime_checkable
 class DonViVanChuyen(Protocol):
+    ten: str  # ghi vào `van_don.don_vi_van_chuyen`
+
     async def tinh_phi(self, dia_chi: DiaChiGiao, khoi_luong_gram: int, gia_tri: Decimal) -> Decimal:
         """Phí giao hàng (đồng). Lỗi đối tác thì ném ngoại lệ; nơi gọi dùng `phi_ship_mac_dinh`."""
         ...
 
+    async def tao_van_don(self, don: Any, loai: Literal["giao_hang", "tra_hang"], khoi_luong_gram: int) -> KetQuaVanDon:
+        """Tạo vận đơn cho `DonHang` (đã nạp `chi_tiet`). Lỗi đối tác thì ném ngoại lệ."""
+        ...
 
-@lru_cache(maxsize=1)
+    async def huy_van_don(self, ma_van_don: str) -> None: ...
+
+    def xac_thuc_webhook(self, headers: dict[str, str], body: dict[str, Any]) -> SuKienVanChuyen:
+        """Kiểm token và tách sự kiện; sai thì ném `WebhookKhongHopLe`."""
+        ...
+
+
 def lay_don_vi_van_chuyen() -> DonViVanChuyen:
-    """Bản giả (công thức cố định). Bản GHN thay vào đây ở T4.7."""
+    """Adapter theo `VAN_CHUYEN_CHE_DO`: `gia` (mặc định, offline) hoặc `ghn` (thật)."""
+    from app.core.config import settings
+
+    if settings.VAN_CHUYEN_CHE_DO == "ghn":
+        from app.tich_hop.van_chuyen.ghn import VanChuyenGhn
+
+        return VanChuyenGhn()
     from app.tich_hop.van_chuyen.gia import VanChuyenGia
 
     return VanChuyenGia()

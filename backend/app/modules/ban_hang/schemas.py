@@ -48,6 +48,14 @@ class MocTrangThai(BaseModel):
     ghi_chu: str | None
 
 
+class VanDonRa(BaseModel):
+    """Vận đơn giao hàng của đơn (KTV05): mã để khách tra cứu với đơn vị vận chuyển."""
+
+    ma_van_don: str | None
+    don_vi_van_chuyen: str
+    created_at: datetime
+
+
 class DonHangRa(BaseModel):
     ma_don: str
     trang_thai: TrangThaiDon
@@ -68,6 +76,7 @@ class DonHangRa(BaseModel):
     created_at: datetime
     dong: list[DongDonRa]
     lich_su: list[MocTrangThai] = []
+    van_don: list[VanDonRa] = []
 
 
 class XemTruocRa(BaseModel):

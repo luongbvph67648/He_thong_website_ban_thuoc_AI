@@ -338,6 +338,24 @@ async def _tao_hoan_tien_khi_huy(db: AsyncSession, don: DonHang, tac_nhan: TacNh
     don.trang_thai_tt = TrangThaiThanhToan.cho_hoan_tien
 
 
+async def _ghi_nhan_cod(db: AsyncSession, don: DonHang, tac_nhan: TacNhan) -> None:
+    """Dòng 23: COD giao thành công thì ghi giao dịch `thanh_toan` cod thành công và đơn `da_thanh_toan`."""
+    if don.phuong_thuc_tt != PhuongThucThanhToan.cod or don.trang_thai_tt != TrangThaiThanhToan.chua_thanh_toan:
+        return
+    db.add(
+        ThanhToan(
+            don_hang_id=don.id,
+            loai=LoaiGiaoDich.thanh_toan,
+            cong_thanh_toan=PhuongThucThanhToan.cod,
+            so_tien=don.tong_tien,
+            trang_thai=TrangThaiGiaoDich.thanh_cong,
+            ghi_chu="Thu tiền khi giao hàng",
+        )
+    )
+    don.trang_thai_tt = TrangThaiThanhToan.da_thanh_toan
+
+
+dang_ky_hook(23, _ghi_nhan_cod)
 for _so in (10, 11):
     dang_ky_hook(_so, _danh_dau_da_thanh_toan)
 for _so in (9, 12, 14, 15):

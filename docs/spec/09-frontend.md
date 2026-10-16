@@ -59,6 +59,7 @@ Trang tài khoản cá nhân `/nhan-vien/tai-khoan` (hồ sơ: họ tên, số �
 | `/nha-cung-cap` | Nhà cung cấp | KHO01 | `supplier.manage` |
 | `/phieu-nhap`, `/phieu-nhap/tao` | Nhập kho | KHO02 | `stock.import` |
 | `/soan-hang` | Soạn hàng, đóng gói | KHO03, KHO04 | `order.pick`, `shipment.create` |
+| `/soan-hang/:id` | Phiếu soạn hàng | KHO03, KHO04 | `order.pick`, `shipment.create` |
 | `/ton-kho`, `/canh-bao` | Tồn kho, cảnh báo | KHO05, KHO06 | `stock.view`, `stock.alert.view` |
 | `/kiem-ke`, `/dieu-chinh` | Kiểm kê, điều chỉnh | KHO07, KHO08 | `stocktake.manage`, `stock_adjust.create` |
 | `/phieu-huy`, `/xuat-tra` | Hủy, xuất trả | KHO09, KHO11 | `disposal.create`, `supplier_return.create` |

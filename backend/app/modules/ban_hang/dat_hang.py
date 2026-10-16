@@ -20,16 +20,17 @@ from app.core.loi import LoiNghiepVu
 from app.core.ma_chung_tu import ma_don_hang
 from app.core.thoi_gian import bay_gio_utc
 from app.core.tien import cong, lam_tron_vnd
-from app.models.ban_hang import CtDonHang, DonHang, LichSuTrangThai, MaGiamGia
+from app.models.ban_hang import CtDonHang, DonHang, LichSuTrangThai, MaGiamGia, VanDon
 from app.models.enums import (
     HinhThucNhan,
     KenhBan,
     LoaiSanPham,
+    LoaiVanDon,
     PhuongThucThanhToan,
     TrangThaiDon,
 )
 from app.models.khach_hang import DiaChi, KhachHang
-from app.modules.ban_hang.schemas import DatHangVao, DongDonRa, DonHangRa, MocTrangThai, XemTruocRa
+from app.modules.ban_hang.schemas import DatHangVao, DongDonRa, DonHangRa, MocTrangThai, VanDonRa, XemTruocRa
 from app.modules.ban_hang.trang_thai import NGUON_NGUOI_DUNG, TacNhan, khoi_tao_trang_thai
 from app.modules.cua_hang.hien_thi import nap_cay_hien_thi
 from app.modules.gio_hang import dich_vu as dich_vu_gio
@@ -286,6 +287,17 @@ async def dat_hang(db: AsyncSession, khach: KhachHang, vao: DatHangVao, khoa: st
     return ra
 
 
+async def van_don_giao_hang(db: AsyncSession, don_id: int) -> list[VanDonRa]:
+    ds = (
+        await db.execute(
+            select(VanDon).where(VanDon.don_hang_id == don_id, VanDon.loai == LoaiVanDon.giao_hang).order_by(VanDon.id)
+        )
+    ).scalars()
+    return [
+        VanDonRa(ma_van_don=v.ma_van_don, don_vi_van_chuyen=v.don_vi_van_chuyen, created_at=v.created_at) for v in ds
+    ]
+
+
 async def lich_su_don(db: AsyncSession, don_id: int) -> list[LichSuTrangThai]:
     return list(
         (
@@ -312,4 +324,6 @@ async def don_cua_khach(db: AsyncSession, khach: KhachHang, ma_don: str) -> DonH
     ma_text = None
     if don.ma_giam_gia_id is not None:
         ma_text = await db.scalar(select(MaGiamGia.ma).where(MaGiamGia.id == don.ma_giam_gia_id))
-    return don_ra(don, ma_text, await lich_su_don(db, don.id))
+    ra = don_ra(don, ma_text, await lich_su_don(db, don.id))
+    ra.van_don = await van_don_giao_hang(db, don.id)
+    return ra

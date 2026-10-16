@@ -305,3 +305,15 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
   - Dòng thời gian phía khách không lộ nhân viên nào xử lý; phía nội bộ có `nguoi_thuc_hien` (tên nhân viên, khách, hoặc "Hệ thống").
 - **Hệ quả:** spec 06 mục 3.24; spec 04 mục 1.1; `modules/ban_hang/{dich_vu_don,router_noi_bo}.py`, hook `_tao_hoan_tien_khi_huy` ở `trang_thai.py`; `tests/ban_hang/test_xu_ly_don.py`; `frontend/src/khu/{cua-hang,nhan-vien}/don-hang/`.
 
+## QĐ-29: Soạn hàng, vận đơn và webhook vận chuyển (2026-10-16, task T4.7)
+- **Quyết định:**
+  - Hàng đợi của kho dùng lại `GET /noi-bo/don-hang` (đã giới hạn đơn từ "Đã xác nhận" theo QĐ-28), API riêng `/noi-bo/soan-hang/{id}` chỉ cho chi tiết lô, đổi lô, bắt đầu soạn và đóng gói. Đóng gói cần `shipment.create`, còn lại `order.pick`.
+  - Đổi lô chỉ khi đơn còn "Đã xác nhận", dời trọn phân bổ sang một lô khác (không tách lô), vì sang "Đang soạn hàng" lô đã chốt và tồn đã trừ. Muốn đổi sau đó phải hủy rồi lập lại đơn.
+  - Tạo vận đơn gọi đối tác bên ngoài nên xảy ra sau khi khóa đơn và kiểm trạng thái; lỗi đối tác là `502` và đơn giữ nguyên; bước ghi lỗi sau khi đã tạo thì hủy vận đơn ở đối tác (cố gắng tối đa). Khối lượng ước tính theo `GRAM_MOI_DON_VI_CO_SO` vì schema chưa có khối lượng sản phẩm.
+  - Webhook vận chuyển chịu được lặp, trễ, sai thứ tự: luôn ghi trạng thái đối tác, còn đơn đi theo đường ngắn nhất qua các bước hợp lệ (dòng 22 đến 26); sự kiện cũ không có đường đi thì bỏ qua. Chỉ vận đơn giao hàng mới nhất của đơn được đổi trạng thái đơn. Mã vận đơn không có vẫn trả `200`.
+  - Trạng thái trung gian sau giao thất bại (`storing`, `sorting`...) không đưa đơn về "Đang giao"; chỉ `delivering` mới là giao lại.
+  - COD giao thành công ghi `thanh_toan` COD bằng hook dòng 23, nên mọi đường dẫn tới `da_giao` bằng webhook đều ghi đúng một lần. Thu tiền khi khách nhận tại quầy (dòng 20) thuộc T4.8.
+  - Màn "Giả lập vận chuyển" là bộ nút ngay trên phiếu soạn hàng khi `che_do_van_chuyen_gia` (route `/webhook/gia-van-chuyen` chỉ có ở chế độ giả).
+  - Quét mã vạch là kiểm tra phía giao diện (đếm theo từng dòng, đủ số lượng mới đóng gói); backend không lưu kết quả quét. In phiếu dùng `window.print()` với CSS in.
+- **Hệ quả:** spec 06 mục 3.25; spec 08 mục 5; spec 09 (`/soan-hang/:id`); `tich_hop/van_chuyen/{ghn,gia,anh_xa}.py`, `modules/ban_hang/{soan_hang,router_kho}.py`, `modules/van_chuyen/`, `ton_kho.doi_lo`; `tests/ban_hang/test_soan_hang.py`, `tests/tich_hop/test_van_chuyen.py`; `frontend/src/khu/nhan-vien/kho/{TrangSoanHang,TrangPhieuSoan,soanHang}`.
+

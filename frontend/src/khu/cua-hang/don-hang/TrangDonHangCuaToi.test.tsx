@@ -18,6 +18,7 @@ const DON = (rieng: object = {}) => ({
   created_at: '2026-10-16T01:00:00Z',
   dong: [{ san_pham_id: 1, ten_san_pham: 'Paracetamol', ten_don_vi: 'viên', so_luong: 2, don_gia: '10000.00', giam_gia_phan_bo: '0.00', thanh_tien: '20000.00' }],
   lich_su: [{ tu_trang_thai: null, den_trang_thai: 'cho_xac_nhan', thoi_diem: '2026-10-16T01:00:00Z', ghi_chu: null }],
+  van_don: [],
   ...rieng,
 })
 

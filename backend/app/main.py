@@ -10,6 +10,7 @@ from app.core.loi import dang_ky_xu_ly_loi
 from app.core.middleware import HEADER_REQUEST_ID, GioiHanKichThuocThan, QuyTacThanRequest, RequestIdMiddleware
 from app.health import router as health_router
 from app.modules.ban_hang.router_khach import router as don_hang_khach_router
+from app.modules.ban_hang.router_kho import router as soan_hang_router
 from app.modules.ban_hang.router_noi_bo import router as don_hang_noi_bo_router
 from app.modules.chuyen_mon.router_bai_viet import router as bai_viet_duyet_router
 from app.modules.chuyen_mon.router_noi_dung import router as noi_dung_chuyen_mon_router
@@ -44,6 +45,8 @@ from app.modules.thanh_toan.router_webhook import router as webhook_router
 from app.modules.thanh_toan.router_webhook import router_gia as webhook_gia_router
 from app.modules.thong_bao.router_noi_bo import router as thong_bao_noi_bo_router
 from app.modules.vai_tro.router_noi_bo import router as vai_tro_noi_bo_router
+from app.modules.van_chuyen.router_webhook import router as webhook_van_chuyen_router
+from app.modules.van_chuyen.router_webhook import router_gia as webhook_van_chuyen_gia_router
 
 # Mọi route nhận tệp phải có quy tắc ở đây (test `test_moi_route_nhan_tep_deu_co_quy_tac_gioi_han` duyệt OpenAPI).
 # Mức = kích thước tệp tối đa cộng phần đầu multipart.
@@ -130,6 +133,10 @@ def create_app() -> FastAPI:
     app.include_router(webhook_router, prefix="/api/v1")
     if settings.THANH_TOAN_CHE_DO == "gia":
         app.include_router(webhook_gia_router, prefix="/api/v1")
+    app.include_router(webhook_van_chuyen_router, prefix="/api/v1")
+    if settings.VAN_CHUYEN_CHE_DO == "gia":
+        app.include_router(webhook_van_chuyen_gia_router, prefix="/api/v1")
+    app.include_router(soan_hang_router, prefix="/api/v1")
     app.include_router(dia_chi_router, prefix="/api/v1")
     app.include_router(kiem_ke_router, prefix="/api/v1")
     app.include_router(phieu_huy_xuat_tra_router, prefix="/api/v1")

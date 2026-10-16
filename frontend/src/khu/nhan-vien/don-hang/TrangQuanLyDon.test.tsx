@@ -17,7 +17,7 @@ const CT = (rieng: object = {}) => ({
   ten_nguoi_nhan: 'Nguyễn An', sdt_nguoi_nhan: '0912345678', dia_chi_giao: '12 Lê Lợi', ghi_chu: null, ly_do_huy: null, created_at: '2026-10-16T01:00:00Z',
   dong: [{ san_pham_id: 1, ten_san_pham: 'Paracetamol', ten_don_vi: 'viên', so_luong: 2, don_gia: '10000.00', giam_gia_phan_bo: '0.00', thanh_tien: '20000.00' }],
   lich_su: [{ tu_trang_thai: null, den_trang_thai: 'cho_xac_nhan', thoi_diem: '2026-10-16T01:00:00Z', ghi_chu: null, nguon: 'nguoi_dung', nguoi_thuc_hien: 'Nguyễn An' }],
-  giao_dich: [], ...rieng,
+  giao_dich: [], van_don: [], ...rieng,
 })
 const TOM_TAT = { id: 9, ma_don: 'DHABCD2345', trang_thai: 'cho_xac_nhan', trang_thai_tt: 'chua_thanh_toan', phuong_thuc_tt: 'cod', tong_tien: '45000.00', so_san_pham: 1, created_at: '2026-10-16T01:00:00Z', kenh_ban: 'online', ten_nguoi_nhan: 'Nguyễn An', sdt_nguoi_nhan: '0912345678' }
 const DUOC_SI = { 'order.view': 'day_du', 'order.confirm': 'day_du', 'order.cancel': 'day_du' } as const
