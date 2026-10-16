@@ -16,6 +16,7 @@ export default function TrangTaiKhoan() {
       <Descriptions bordered size="small" column={1} items={[{ key: 'ten', label: 'Họ tên', children: hoSo?.hoTen }]} />
       <Link to="/tai-khoan/don-hang">Đơn hàng của tôi</Link>
       <Link to="/tai-khoan/doi-tra">Đổi trả của tôi</Link>
+      <Link to="/tai-khoan/danh-gia">Đánh giá và hỏi đáp</Link>
       <Link to="/tai-khoan/don-thuoc">Đơn thuốc của tôi</Link>
       <Link to="/tai-khoan/suc-khoe">Hồ sơ sức khỏe</Link>
       <SoDiaChi />

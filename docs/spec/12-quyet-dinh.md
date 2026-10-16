@@ -383,3 +383,10 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **Mã hoàn của bản giả** có hậu tố ngẫu nhiên: nhiều lần hoàn một phần trên cùng giao dịch gốc không đụng ràng buộc duy nhất của `ma_giao_dich_cong`.
 - **Cổng lỗi** không đổi trạng thái gì (giao dịch vẫn `khoi_tao`, Admin thử lại được). Không có thao tác "từ chối hoàn" vì spec không định nghĩa.
 
+## QĐ-39: Đánh giá và hỏi đáp (2026-10-16, task T6.4)
+- **Hậu kiểm:** đánh giá hiện ngay, dược sĩ ẩn khi vi phạm; ẩn không xóa dữ liệu và khách thấy nhãn "đang bị ẩn".
+- **Đánh giá không sửa/xóa** bởi khách (spec chỉ cho phép một lần); câu hỏi sửa/xóa được khi chưa trả lời.
+- **Dược sĩ phản hồi đánh giá** dùng cột `phan_hoi` có sẵn; trả lời lại câu hỏi là sửa câu trả lời và không báo khách lần nữa.
+- **Giới hạn:** 10 câu hỏi/khách/24 giờ; ảnh đánh giá 3 ảnh, 5 MB, công khai.
+- **Chỉ dược sĩ** kiểm duyệt (Admin có mã quyền cũng bị chặn ở service, spec 03 mục 7).
+

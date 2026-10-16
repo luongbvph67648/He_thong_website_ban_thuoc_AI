@@ -471,6 +471,17 @@ Mã quyền `refund.confirm` (Admin; service chốt thêm vai trò `ADMIN`).
   - Người xác nhận trùng dược sĩ duyệt yêu cầu đổi trả: `403 TU_DUYET_KHONG_DUOC`. Đã xử lý: `409`. Tổng hoàn vượt tổng đã thanh toán: `422 HOAN_VUOT_SO_DA_TRA`.
   - Thành công: giao dịch `thanh_cong`, ghi `nhan_vien_xu_ly_id`, `thong_tin_nhan_hoan` chỉ còn ngân hàng và 4 số cuối; `trang_thai_tt` của đơn là `cho_hoan_tien` nếu còn giao dịch hoàn khác đang chờ, ngược lại `da_hoan_tien` (hoàn đủ) hoặc `hoan_tien_mot_phan`; yêu cầu đổi trả `kho_da_nhan` sang `hoan_tat`; báo khách.
 
+### 3.35 Đánh giá và hỏi đáp (KTV10, KTV15, DS11, T6.4)
+Khách (token):
+- `GET /toi/danh-gia/cho`: dòng đơn `da_giao`/`hoan_tat` chưa đánh giá. `GET /toi/danh-gia`: đánh giá của tôi.
+- `POST /toi/danh-gia` (`multipart`: `ct_don_hang_id`, `so_sao` 1-5, `noi_dung?`, `tep` tối đa 3 ảnh ≤ 5 MB) -> 201. Dòng của người khác `404`; đơn chưa giao/hoàn tất `409`; đã đánh giá `409 TRUNG_DU_LIEU`. Hiện ngay (`dang_hien = true`), dược sĩ ẩn sau (hậu kiểm); ảnh lưu vùng công khai `danh-gia/`.
+- `GET /san-pham/{slug}/hoi-dap?trang=` (công khai, chỉ `dang_hien`, tên rút gọn). `POST /san-pham/{slug}/hoi-dap {cau_hoi 5-1000}` cần đăng nhập, tối đa 10 câu/24 giờ (`429 QUA_GIOI_HAN`).
+- `GET /toi/hoi-dap`; `PUT`/`DELETE /toi/hoi-dap/{id}` chỉ khi chưa được trả lời (`409`), của người khác `404`.
+Dược sĩ (service chốt vai trò `PHARMACIST`):
+- `review.moderate`: `GET /noi-bo/kiem-duyet/danh-gia?dang_hien=&so_sao=`, `PUT .../{id}/hien-thi {dang_hien}`, `PUT .../{id}/phan-hoi {phan_hoi}`.
+- `qa.answer`: `GET /noi-bo/kiem-duyet/hoi-dap?chua_tra_loi=`, `POST .../{id}/tra-loi {tra_loi}` (lần đầu thông báo khách, nội dung trả lời không nằm trong thông báo), `PUT .../{id}/hien-thi {dang_hien}`.
+- Chi tiết sản phẩm: `danh_gia.moi_nhat[].anh` là URL ảnh khách đính kèm.
+
 ## 4. Định dạng phản hồi và lỗi
 - **Thành công:** trả đối tượng hoặc trang dữ liệu (mục 5).
 - **Lỗi:** luôn trả dạng:

@@ -764,16 +764,16 @@ _Đổi trả, biệt trữ, hoàn tiền, đánh giá, hỏi đáp, thông báo
   - [x] Màn hoàn tiền cho Admin.
 - **Ghi chú triển khai:** `modules/hoan_tien/` (`dich_vu`, `router`, `schemas`); API spec 06 mục 3.34; QĐ-38 (hoàn do hủy đơn không bắt buộc tài khoản khách, ẩn danh hóa còn 4 số cuối, cổng lỗi giữ `khoi_tao`). Sửa bản giả của cổng: mã hoàn có hậu tố ngẫu nhiên (hoàn một phần nhiều lần bị trùng `ma_giao_dich_cong`). Giao diện `/quan-tri/hoan-tien`. Test `tests/hoan_tien/test_xac_nhan_hoan_tien.py` (6), `TrangHoanTien.test.tsx` (3).
 
-### [ ] T6.4 · Đánh giá và hỏi đáp sản phẩm
+### [x] T6.4 · Đánh giá và hỏi đáp sản phẩm
 - **Chức năng:** KTV10 (Đánh giá sản phẩm), KTV15 (Đặt câu hỏi về sản phẩm), DS11 (Kiểm duyệt đánh giá, hỏi đáp)
 - **Phụ thuộc:** T4.9
 - **Bảng:** `danh_gia`, `ct_don_hang`, `hoi_dap`
 - **Tiêu chí chấp nhận:**
-  - [ ] Đánh giá 1-5 sao cho dòng đơn `da_giao`/`hoan_tat`, mỗi dòng 1 lần, có ảnh; câu hỏi sản phẩm (cần đăng nhập).
-  - [ ] Dược sĩ ẩn đánh giá/câu hỏi vi phạm, trả lời câu hỏi (thông báo cho khách).
+  - [x] Đánh giá 1-5 sao cho dòng đơn `da_giao`/`hoan_tat`, mỗi dòng 1 lần, có ảnh; câu hỏi sản phẩm (cần đăng nhập).
+  - [x] Dược sĩ ẩn đánh giá/câu hỏi vi phạm, trả lời câu hỏi (thông báo cho khách).
 - **Giao diện:**
-  - [ ] Khối đánh giá và hỏi đáp trên trang chi tiết; màn kiểm duyệt cho dược sĩ.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Khối đánh giá và hỏi đáp trên trang chi tiết; màn kiểm duyệt cho dược sĩ.
+- **Ghi chú triển khai:** `modules/danh_gia/`; API spec 06 mục 3.35; QĐ-39 (hậu kiểm, giới hạn 10 câu hỏi/ngày, chỉ dược sĩ kiểm duyệt). Giao diện: tab Hỏi đáp và ảnh đánh giá ở trang sản phẩm, `/tai-khoan/danh-gia`, `/nhan-vien/kiem-duyet`. Test `tests/danh_gia` (7), `TrangKiemDuyet.test.tsx` (2).
 
 ### [ ] T6.5 · Thông báo và nhắc mua lại
 - **Chức năng:** KTV13 (Nhận thông báo), HT07 (Gửi thông báo, nhắc mua lại), KTV14 (Nhắc mua lại)
