@@ -17,6 +17,8 @@ const { GET, POST, GET_MAC_DINH } = vi.hoisted(() => {
   const macDinh = async (duong: string): Promise<{ data?: unknown; error?: unknown }> => {
     if (duong.endsWith('/so-chua-doc')) return { data: { so_chua_doc: 0 } }
     if (duong.endsWith('/noi-bo/toi')) return { error: { ma_loi: 'LOI_HE_THONG', thong_diep: 'x', chi_tiet: null } }
+    if (duong === '/api/v1/trang-chu') return { data: { banner_chinh: [], banner_phu: [], noi_bat: [], ban_chay: [] } }
+    if (duong === '/api/v1/danh-muc') return { data: [] }
     return { data: { du_lieu: [], tong: 0, trang: 1, kich_thuoc: 10 } }
   }
   return {

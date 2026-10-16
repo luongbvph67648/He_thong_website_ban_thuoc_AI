@@ -21,7 +21,7 @@ from app.core.slug import tao_slug
 from app.core.thoi_gian import bay_gio_utc, hom_nay_vn
 from app.core.tien import cong, lam_tron_vnd
 from app.models.ban_hang import KhuyenMai, MaGiamGia
-from app.models.he_thong import CauHinh, NhanVien, VaiTro
+from app.models.he_thong import Banner, CauHinh, NhanVien, VaiTro
 from app.models.khach_hang import DiaChi, KhachHang
 from app.models.kho import CtPhieuNhap, LoThuoc, NhaCungCap, PhieuNhap
 from app.models.san_pham import (
@@ -31,6 +31,7 @@ from app.models.san_pham import (
     NhaSanXuat,
     SanPham,
     ThanhPhan,
+    ThongTinChuyenMon,
     ThuongHieu,
     TuongTacHoatChat,
 )
@@ -176,6 +177,44 @@ async def _nap_tuong_tac(db: AsyncSession, id_hoat_chat: dict[str, int], dem: Co
             },
         )
         dem["tuong_tac_hoat_chat"] += moi
+
+
+async def _nap_noi_dung_chuyen_mon(
+    db: AsyncSession, san_pham: Sequence[tuple[SanPhamMau, SanPham]], duoc_si: NhanVien, dem: Counter
+) -> None:
+    """Phiên bản 1 đã duyệt cho vài sản phẩm để trang chi tiết có nội dung chuyên môn. Sản phẩm đã có phiên bản nào
+    (kể cả nháp do dược sĩ thật soạn) thì bỏ qua, không đè lên công việc của người dùng."""
+    for sp_mau, sp in san_pham:
+        noi_dung = catalog.NOI_DUNG_CHUYEN_MON.get(sp_mau.ma)
+        if noi_dung is None:
+            continue
+        da_co = await db.scalar(select(ThongTinChuyenMon.id).where(ThongTinChuyenMon.san_pham_id == sp.id).limit(1))
+        if da_co is not None:
+            continue
+        db.add(
+            ThongTinChuyenMon(
+                san_pham_id=sp.id,
+                phien_ban=1,
+                trang_thai="da_duyet",
+                nguoi_soan_id=duoc_si.id,
+                duoc_si_duyet_id=duoc_si.id,
+                ngay_duyet=bay_gio_utc(),
+                **noi_dung,
+            )
+        )
+        dem["noi_dung_chuyen_mon"] += 1
+    await db.flush()
+
+
+async def _nap_banner(db: AsyncSession, dem: Counter) -> None:
+    for tieu_de, anh_url, lien_ket, vi_tri, thu_tu in catalog.BANNER_MAU:
+        _, moi = await _lay_hoac_tao(
+            db,
+            Banner,
+            {"anh_url": anh_url},
+            {"tieu_de": tieu_de, "lien_ket": lien_ket, "vi_tri": vi_tri, "thu_tu": thu_tu},
+        )
+        dem["banner"] += moi
 
 
 async def _nap_nhan_vien(db: AsyncSession, vai_tro_id: dict[str, int], dem: Counter) -> dict[str, NhanVien]:
@@ -427,6 +466,8 @@ async def seed_mau(db: AsyncSession, *, hom_nay: date | None = None) -> dict[str
     ]
     await _nap_tuong_tac(db, id_hoat_chat, dem)
     nhan_vien = await _nap_nhan_vien(db, vai_tro_id, dem)
+    await _nap_noi_dung_chuyen_mon(db, san_pham, nhan_vien["PHARMACIST"], dem)
+    await _nap_banner(db, dem)
     nha_cung_cap = await _nap_nha_cung_cap(db, dem)
     await _nap_ton_kho(db, san_pham, nha_cung_cap, nhan_vien["WAREHOUSE"], dem, hom_nay or hom_nay_vn())
     await _nap_khach_hang(db, dem)

@@ -4,12 +4,13 @@ import { Button, Input, Layout, Skeleton, Space, Typography } from 'antd'
 import { Link, Outlet, useNavigate } from 'react-router-dom'
 import { dangXuatKhach } from '../../api/dangXuat'
 import { usePhien } from '../../stores/phien'
+import { MenuDanhMuc } from './MenuDanhMuc'
 
 const { Header, Content, Footer } = Layout
 
 /**
- * Layout khu cửa hàng (`/`): header gồm logo, tìm kiếm, giỏ hàng, tài khoản. Menu danh mục 3 cấp (cần API danh mục,
- * T2.x), widget chat nổi (T6.x) và số lượng trên giỏ hàng (T4.x) sẽ gắn vào đây khi có dữ liệu.
+ * Layout khu cửa hàng (`/`): header gồm logo, tìm kiếm, giỏ hàng, tài khoản, kèm thanh danh mục 3 cấp. Widget chat nổi
+ * (T6.x) và số lượng trên giỏ hàng (T4.x) sẽ gắn vào đây khi có dữ liệu.
  */
 export default function CuaHangLayout() {
   const khachDaDangNhap = usePhien((s) => s.loai === 'khach')
@@ -74,6 +75,7 @@ export default function CuaHangLayout() {
           )}
         </Space>
       </Header>
+      <MenuDanhMuc />
       <Content style={{ padding: 16, maxWidth: 1200, width: '100%', margin: '0 auto' }}>
         <Outlet />
       </Content>

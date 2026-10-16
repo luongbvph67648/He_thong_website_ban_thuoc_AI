@@ -523,7 +523,7 @@ async def test_mau_chay_lai_khong_nhan_ban(co_mau):
     bang = [
         "danh_muc", "thuong_hieu", "nha_san_xuat", "hoat_chat", "san_pham", "thanh_phan", "don_vi_quy_doi",
         "tuong_tac_hoat_chat", "nha_cung_cap", "phieu_nhap", "ct_phieu_nhap", "lo_thuoc", "bien_dong_kho",
-        "nhan_vien", "khach_hang", "dia_chi", "khuyen_mai", "ma_giam_gia",
+        "nhan_vien", "khach_hang", "dia_chi", "khuyen_mai", "ma_giam_gia", "thong_tin_chuyen_mon", "banner",
     ]  # fmt: skip
     lan_1 = {b: await dem(co_mau, b) for b in bang}
     assert all(n > 0 for n in lan_1.values()), lan_1
@@ -601,3 +601,41 @@ async def test_mau_chay_lai_sau_khi_khach_sua_dia_chi_va_nha_san_xuat_khong_loi(
     truoc = {b: await dem(co_mau, b) for b in ("dia_chi", "nha_san_xuat")}
     assert await seed_mau(co_mau) == {}
     assert {b: await dem(co_mau, b) for b in truoc} == truoc
+
+
+async def test_mau_noi_dung_chuyen_mon_da_duyet_cho_vai_san_pham_ke_ca_thuoc_ke_don(co_mau):
+    dong = await hang(
+        co_mau,
+        "SELECT sp.sku, sp.loai_san_pham, t.phien_ban, t.trang_thai, t.nguoi_soan_id, t.duoc_si_duyet_id, t.ngay_duyet,"
+        " t.chi_dinh FROM thong_tin_chuyen_mon t JOIN san_pham sp ON sp.id = t.san_pham_id ORDER BY sp.sku",
+    )
+    assert len(dong) >= 5
+    assert all(d[2] == 1 and d[3] == "da_duyet" and d[4] == d[5] and d[6] is not None and d[7] for d in dong)
+    assert {d[1] for d in dong} >= {"thuoc_ke_don", "thuoc_khong_ke_don", "thuc_pham_chuc_nang"}
+    nguoi = (await hang(co_mau, "SELECT email FROM nhan_vien WHERE id = :id", id=dong[0][4]))[0][0]
+    assert nguoi == "duocsi@example.com"
+
+
+async def test_mau_khong_de_len_noi_dung_dang_co_cua_nguoi_dung(co_mau):
+    """Sản phẩm đã có phiên bản (ví dụ dược sĩ thật đã soạn nháp) thì seed chạy lại không thêm gì."""
+    truoc = await dem(co_mau, "thong_tin_chuyen_mon")
+    await co_mau.execute(
+        text("DELETE FROM thong_tin_chuyen_mon WHERE phien_ban = 1 AND chi_dinh LIKE 'Giảm đau từ nhẹ%'")
+    )
+    assert await dem(co_mau, "thong_tin_chuyen_mon") == truoc - 1
+    assert (await seed_mau(co_mau)) == {"noi_dung_chuyen_mon": 1}  # chỉ bù đúng sản phẩm bị thiếu
+    await co_mau.execute(
+        text("UPDATE thong_tin_chuyen_mon SET trang_thai = 'luu_tru' WHERE chi_dinh LIKE 'Giảm đau từ nhẹ%'")
+    )
+    assert await seed_mau(co_mau) == {}  # có phiên bản (kể cả đã lưu trữ) thì không tạo lại
+
+
+async def test_mau_banner_dung_vi_tri_va_anh_co_trong_frontend(co_mau):
+    dong = await hang(co_mau, "SELECT vi_tri, anh_url, lien_ket, dang_hien FROM banner ORDER BY vi_tri, thu_tu")
+    assert [d[0] for d in dong].count("trang_chu_chinh") >= 2 and [d[0] for d in dong].count("trang_chu_phu") >= 2
+    thu_muc = Path(__file__).resolve().parents[2] / "frontend" / "public"
+    for _, anh_url, lien_ket, dang_hien in dong:
+        assert dang_hien and (thu_muc / anh_url.lstrip("/")).is_file(), anh_url
+        assert lien_ket.startswith("/danh-muc/")
+    slug = {d[0] for d in await hang(co_mau, "SELECT slug FROM danh_muc")}
+    assert all(d[2].removeprefix("/danh-muc/") in slug for d in dong)  # banner không dẫn tới danh mục không có

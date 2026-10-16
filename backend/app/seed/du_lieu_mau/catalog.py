@@ -335,3 +335,70 @@ SAN_PHAM: list[SanPhamMau] = [
     _sp(41, "Băng cuộn y tế 5cm x 2m", TB_YT, "khau-trang-gang-tay-bang-gac", "Vật tư", "Gói 1 cuộn", "cuộn", MT, N_MT, NL, [], mot_don_vi("Cuộn", 6500)),
     _sp(42, "Gạc vô trùng 10cm x 10cm", TB_YT, "khau-trang-gang-tay-bang-gac", "Vật tư", "Gói 10 miếng", "miếng", MT, N_MT, NL, [], nho_lon("Miếng", 1800, "Gói", 10, 16500)),
 ]  # fmt: skip
+
+
+# --- Nội dung chuyên môn mẫu (theo mã sản phẩm), nạp thành phiên bản 1 đã duyệt ---------------------------------------
+# Chỉ để minh họa trang chi tiết; chưa được dược sĩ thật thẩm định, không dùng cho mục đích y khoa.
+
+NOI_DUNG_CHUYEN_MON: dict[int, dict[str, str]] = {
+    1: {
+        "chi_dinh": "Nhiễm khuẩn đường hô hấp, tai mũi họng, tiết niệu do vi khuẩn nhạy cảm (mẫu minh họa).",
+        "chong_chi_dinh": "Tiền sử dị ứng với nhóm penicillin hoặc cephalosporin.",
+        "lieu_dung_tham_khao": "Chỉ dùng theo đơn và hướng dẫn của bác sĩ; không tự ý đổi liều hay ngưng thuốc.",
+        "than_trong": "Báo bác sĩ nếu có bệnh thận, tiền sử dị ứng thuốc hoặc đang dùng thuốc chống đông.",
+        "bao_quan": "Nơi khô, dưới 30°C, tránh ánh sáng.",
+    },
+    8: {
+        "chi_dinh": "Giảm đau từ nhẹ đến vừa (đau đầu, đau răng, đau cơ); hạ sốt.",
+        "chong_chi_dinh": "Quá mẫn với paracetamol; suy gan nặng.",
+        "lieu_dung_tham_khao": "Người lớn: 500 mg đến 1000 mg mỗi lần, cách nhau tối thiểu 4 đến 6 giờ, không quá 4 g mỗi ngày.",
+        "tac_dung_phu": "Hiếm: phát ban, buồn nôn. Dùng quá liều có thể gây tổn thương gan.",
+        "than_trong": "Không dùng chung với thuốc khác có chứa paracetamol. Hạn chế rượu bia.",
+        "tuong_tac_thuoc": "Warfarin: dùng paracetamol liều cao kéo dài có thể làm tăng tác dụng chống đông.",
+        "phu_nu_co_thai_cho_con_bu": "Dùng được ở liều khuyến cáo khi cần thiết; hỏi ý kiến dược sĩ hoặc bác sĩ.",
+        "tre_em": "Dùng theo cân nặng; chế phẩm này dành cho trẻ từ 12 tuổi trở lên hoặc theo chỉ dẫn.",
+        "qua_lieu_xu_tri": "Đến cơ sở y tế ngay; thuốc giải độc đặc hiệu cần dùng sớm.",
+        "bao_quan": "Nơi khô ráo, nhiệt độ dưới 30°C.",
+    },
+    10: {
+        "chi_dinh": "Giảm đau, hạ sốt, kháng viêm trong đau đầu, đau khớp, đau bụng kinh.",
+        "chong_chi_dinh": "Loét dạ dày tá tràng tiến triển; suy tim, suy gan, suy thận nặng; quá mẫn với NSAID.",
+        "lieu_dung_tham_khao": "Người lớn: 200 đến 400 mg mỗi lần, uống sau ăn, cách nhau 6 đến 8 giờ.",
+        "tac_dung_phu": "Đau thượng vị, buồn nôn, chóng mặt; hiếm gặp chảy máu tiêu hóa.",
+        "than_trong": "Uống sau ăn no. Dùng thời gian ngắn nhất có thể.",
+        "tuong_tac_thuoc": "Aspirin và thuốc chống đông: tăng nguy cơ chảy máu.",
+        "phu_nu_co_thai_cho_con_bu": "Tránh dùng trong 3 tháng cuối thai kỳ.",
+    },
+    12: {
+        "chi_dinh": "Viêm mũi dị ứng, mày đay, ngứa do dị ứng.",
+        "chong_chi_dinh": "Quá mẫn với loratadin.",
+        "lieu_dung_tham_khao": "Người lớn và trẻ em từ 12 tuổi: 10 mg mỗi ngày một lần.",
+        "tac_dung_phu": "Có thể gây khô miệng, đau đầu, buồn ngủ nhẹ.",
+        "tre_em": "Trẻ dưới 12 tuổi dùng theo cân nặng và chỉ dẫn của dược sĩ.",
+    },
+    16: {
+        "chi_dinh": "Trào ngược dạ dày thực quản, loét dạ dày tá tràng.",
+        "chong_chi_dinh": "Quá mẫn với omeprazol hoặc các thuốc cùng nhóm.",
+        "lieu_dung_tham_khao": "Người lớn: 20 mg mỗi ngày một lần, uống trước bữa ăn sáng.",
+        "than_trong": "Không dùng kéo dài không có chỉ định; gặp dấu hiệu nuốt đau, sụt cân cần đi khám.",
+    },
+    22: {
+        "chi_dinh": "Bổ sung vitamin C khi chế độ ăn không đủ.",
+        "lieu_dung_tham_khao": "Hòa tan 1 viên trong một cốc nước, uống mỗi ngày một lần.",
+        "than_trong": "Người có sỏi thận hoặc bệnh thận nên hỏi ý kiến dược sĩ trước khi dùng.",
+        "bao_quan": "Đậy kín nắp sau khi dùng, nơi khô ráo.",
+    },
+    24: {
+        "chi_dinh": "Bổ sung canxi và vitamin D3 cho người thiếu hụt, phụ nữ sau mãn kinh.",
+        "lieu_dung_tham_khao": "Uống 1 viên mỗi ngày sau bữa ăn.",
+        "than_trong": "Người có tiền sử sỏi thận hoặc tăng canxi máu cần hỏi ý kiến thầy thuốc.",
+    },
+}
+
+# (tiêu đề, ảnh trong frontend/public, liên kết, vị trí, thứ tự)
+BANNER_MAU: list[tuple[str, str, str | None, str, int]] = [
+    ("Chăm sóc sức khỏe mỗi ngày", "/banner/chinh-1.svg", "/danh-muc/thuc-pham-chuc-nang", "trang_chu_chinh", 1),
+    ("Dược sĩ tư vấn tận tình", "/banner/chinh-2.svg", "/danh-muc/thuoc", "trang_chu_chinh", 2),
+    ("Dược mỹ phẩm chính hãng", "/banner/phu-1.svg", "/danh-muc/duoc-my-pham", "trang_chu_phu", 1),
+    ("Thiết bị y tế cho gia đình", "/banner/phu-2.svg", "/danh-muc/thiet-bi-y-te", "trang_chu_phu", 2),
+]
