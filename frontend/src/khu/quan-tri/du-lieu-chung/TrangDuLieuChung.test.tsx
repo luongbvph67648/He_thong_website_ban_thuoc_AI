@@ -243,22 +243,26 @@ describe('TrangDuLieuChung: xóa', () => {
     expect(await screen.findByText('Đã xóa “Chưa dùng”')).toBeInTheDocument()
   })
 
-  it('máy chủ từ chối vì đang được dùng: hiện thông điệp chung và tải lại số liệu', async () => {
+  it('số liệu cũ: máy chủ từ chối vì đã có sản phẩm gắn vào thì hiện thông điệp và tải lại số liệu', async () => {
     const nguoi = userEvent.setup()
-    DELETE.mockResolvedValue(loi(409, 'DU_LIEU_DANG_DUOC_SU_DUNG', 'Không xóa được vì hoạt chất này đang được sử dụng trong hệ thống'))
-    dung('/du-lieu-chung?nhom=hoat-chat')
-    const hang = await dong('Penicillin') // 0 sản phẩm nhưng có thể nằm trong dị ứng của khách mà Admin không thấy
+    DELETE.mockResolvedValue(loi(409, 'DU_LIEU_DANG_DUOC_SU_DUNG', 'Không xóa được vì thương hiệu này đang được gắn với sản phẩm'))
+    dung()
+    const hang = await dong('Chưa dùng') // trên màn hình là 0 sản phẩm, nhưng vừa có người gắn vào
     const truoc = GET.mock.calls.length
     await nguoi.click(within(hang).getByRole('button', { hidden: true, name: 'Xóa' }))
     await nguoi.click(screen.getAllByRole('button', { hidden: true, name: 'Xóa' }).at(-1)!)
-    expect(await screen.findByText(/đang được sử dụng trong hệ thống/)).toBeInTheDocument()
+    expect(await screen.findByText(/đang được gắn với sản phẩm/)).toBeInTheDocument()
     await waitFor(() => expect(GET.mock.calls.length).toBeGreaterThan(truoc))
   })
 
-  it('hoạt chất có sản phẩm vẫn để máy chủ quyết định (không tắt nút), vì còn tương tác và dị ứng không đếm được', async () => {
+  it('hoạt chất không có nút Xóa (có thể nằm trong dị ứng của khách mà Admin không được thấy), vẫn có Sửa', async () => {
     dung('/du-lieu-chung?nhom=hoat-chat')
-    const hang = await dong('Paracetamol')
-    expect(within(hang).getByRole('button', { hidden: true, name: 'Xóa' })).toBeEnabled()
+    for (const ten of ['Paracetamol', 'Penicillin']) {
+      const hang = await dong(ten)
+      expect(within(hang).queryByText('Xóa')).not.toBeInTheDocument()
+      expect(within(hang).getByText('Sửa')).toBeInTheDocument()
+    }
+    expect(DELETE).not.toHaveBeenCalled()
   })
 })
 

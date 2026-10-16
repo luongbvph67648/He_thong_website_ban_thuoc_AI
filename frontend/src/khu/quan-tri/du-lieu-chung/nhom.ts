@@ -35,8 +35,11 @@ export interface CauHinhNhom {
   /** Danh từ số ít trong thông điệp và tiêu đề hộp thoại, ví dụ "thương hiệu". */
   danhTu: string
   truong: readonly TruongForm[]
-  /** Nhóm mà `so_san_pham` đếm đủ lý do chặn xóa (hoạt chất còn có thể nằm trong tương tác và hồ sơ dị ứng mà Admin không thấy). */
-  dem_du_de_chan_xoa: boolean
+  /**
+   * Có xóa được không. Hoạt chất KHÔNG: nó có thể nằm trong hồ sơ dị ứng của khách mà Admin không được thấy, và kết quả
+   * của một lần xóa sẽ cho biết điều đó (QĐ-16). Nhập nhầm thì sửa tên.
+   */
+  choPhepXoa: boolean
 }
 
 export const CAC_NHOM: readonly CauHinhNhom[] = [
@@ -48,7 +51,7 @@ export const CAC_NHOM: readonly CauHinhNhom[] = [
       { ten: 'ten', nhan: 'Tên thương hiệu', loai: 'ten', toiDa: 150 },
       { ten: 'logo_url', nhan: 'Đường dẫn logo (không bắt buộc)', loai: 'url', toiDa: 500 },
     ],
-    dem_du_de_chan_xoa: true,
+    choPhepXoa: true,
   },
   {
     ma: 'nha-san-xuat',
@@ -58,7 +61,7 @@ export const CAC_NHOM: readonly CauHinhNhom[] = [
       { ten: 'ten', nhan: 'Tên nhà sản xuất', loai: 'ten', toiDa: 200 },
       { ten: 'quoc_gia', nhan: 'Quốc gia (không bắt buộc)', loai: 'van_ban', toiDa: 100 },
     ],
-    dem_du_de_chan_xoa: true,
+    choPhepXoa: true,
   },
   {
     ma: 'hoat-chat',
@@ -69,7 +72,7 @@ export const CAC_NHOM: readonly CauHinhNhom[] = [
       { ten: 'ten_khac', nhan: 'Tên khác (không bắt buộc, dùng để tìm kiếm)', loai: 'van_ban', toiDa: 1000 },
       { ten: 'mo_ta', nhan: 'Mô tả (không bắt buộc)', loai: 'nhieu_dong', toiDa: 2000 },
     ],
-    dem_du_de_chan_xoa: false,
+    choPhepXoa: false,
   },
 ]
 
@@ -88,5 +91,8 @@ export function docSapXep(gia: string | null): { truong: TruongSapXep; giam: boo
 
 /** Lý do không xóa được dựa trên số liệu đang hiển thị, hoặc `null` (backend vẫn quyết định cuối cùng). */
 export function lyDoKhongXoa(nhom: CauHinhNhom, ban: Pick<BanGhi, 'so_san_pham'>): string | null {
-  return nhom.dem_du_de_chan_xoa && ban.so_san_pham > 0 ? `Đang gắn với ${ban.so_san_pham} sản phẩm` : null
+  return nhom.choPhepXoa && ban.so_san_pham > 0 ? `Đang gắn với ${ban.so_san_pham} sản phẩm` : null
 }
+
+/** Nhóm có thao tác xóa (hoạt chất không có). */
+export type MaNhomXoa = Exclude<MaNhom, 'hoat-chat'>

@@ -1,6 +1,7 @@
 """Dữ liệu dùng chung của Admin (AD05): `/api/v1/noi-bo/{thuong-hieu,nha-san-xuat,hoat-chat}`. Cần `master_data.manage`.
 
 Ba nhóm cùng một khuôn nên route được dựng bằng `tao_router`; tên hàm route kèm tên nhóm để `operation_id` không trùng.
+Hoạt chất không có `DELETE` (có thể nằm trong dị ứng của khách mà Admin không được thấy, QĐ-16).
 """
 
 from typing import Annotated
@@ -70,9 +71,10 @@ def tao_router(duong_dan: str, tag: str, nhom: Nhom, doc, tao_schema, sua_schema
         "", tao, methods=["POST"], status_code=201, response_model=doc, summary=f"Thêm {nhom.nhan} (AD05)"
     )
     router.add_api_route("/{ban_ghi_id}", sua, methods=["PATCH"], response_model=doc, summary=f"Sửa {nhom.nhan} (AD05)")
-    router.add_api_route(
-        "/{ban_ghi_id}", xoa, methods=["DELETE"], status_code=204, summary=f"Xóa {nhom.nhan} chưa được dùng (AD05)"
-    )
+    if nhom.cho_phep_xoa:  # hoạt chất không có DELETE (xem docstring của `du_lieu_chung`)
+        router.add_api_route(
+            "/{ban_ghi_id}", xoa, methods=["DELETE"], status_code=204, summary=f"Xóa {nhom.nhan} chưa được dùng (AD05)"
+        )
     return router
 
 

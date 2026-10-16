@@ -1,7 +1,7 @@
 import { api } from '../../../api/client'
 import { goi, type KetQuaGoi } from '../../../api/goi'
 import { chuoiHoacNull, gonTen } from '../../../lib/duLieuChung'
-import type { BanGhi, GiaTriForm, MaNhom } from './nhom'
+import type { BanGhi, GiaTriForm, MaNhom, MaNhomXoa } from './nhom'
 
 export interface ThamSoDanhSach {
   q?: string
@@ -69,14 +69,12 @@ export function sua(ma: MaNhom, id: number, g: GiaTriForm): Promise<KetQuaGoi<Ba
   }
 }
 
-export function xoa(ma: MaNhom, id: number): Promise<KetQuaGoi<undefined>> {
+export function xoa(ma: MaNhomXoa, id: number): Promise<KetQuaGoi<undefined>> {
   const params = { path: { ban_ghi_id: id } }
   switch (ma) {
     case 'thuong-hieu':
       return goi(() => api.DELETE('/api/v1/noi-bo/thuong-hieu/{ban_ghi_id}', { params })).then((k) => chung<undefined>(k))
     case 'nha-san-xuat':
       return goi(() => api.DELETE('/api/v1/noi-bo/nha-san-xuat/{ban_ghi_id}', { params })).then((k) => chung<undefined>(k))
-    case 'hoat-chat':
-      return goi(() => api.DELETE('/api/v1/noi-bo/hoat-chat/{ban_ghi_id}', { params })).then((k) => chung<undefined>(k))
   }
 }

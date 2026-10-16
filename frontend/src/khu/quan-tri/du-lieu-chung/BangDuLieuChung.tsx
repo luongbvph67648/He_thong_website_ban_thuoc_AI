@@ -64,7 +64,10 @@ export function BangDuLieuChung({ nhom }: { nhom: CauHinhNhom }) {
   }
 
   const xoaBan = useMutation({
-    mutationFn: (ban: BanGhi) => xoa(nhom.ma, ban.id),
+    mutationFn: (ban: BanGhi) => {
+      if (nhom.ma === 'hoat-chat') throw new Error('Hoạt chất không có thao tác xóa') // nút Xóa không hiện ở nhóm này
+      return xoa(nhom.ma, ban.id)
+    },
     onSuccess: async (kq, ban) => {
       if (!kq.ok) void message.error(thongDiepChung(kq.loi))
       else void message.success(`Đã xóa “${ban.ten}”`)
@@ -99,23 +102,25 @@ export function BangDuLieuChung({ nhom }: { nhom: CauHinhNhom }) {
               <Button type="link" size="small" onClick={() => setMo({ ban: b })}>
                 Sửa
               </Button>
-              <Tooltip title={lyDo}>
-                <span>
-                  <Popconfirm
-                    title={`Xóa ${nhom.danhTu} “${b.ten}”?`}
-                    description="Chỉ xóa được khi chưa được dùng ở đâu."
-                    okText="Xóa"
-                    okButtonProps={{ danger: true }}
-                    cancelText="Hủy"
-                    disabled={lyDo !== null}
-                    onConfirm={() => xoaBan.mutate(b)}
-                  >
-                    <Button type="link" size="small" danger disabled={lyDo !== null || xoaBan.isPending}>
-                      Xóa
-                    </Button>
-                  </Popconfirm>
-                </span>
-              </Tooltip>
+              {nhom.choPhepXoa && (
+                <Tooltip title={lyDo}>
+                  <span>
+                    <Popconfirm
+                      title={`Xóa ${nhom.danhTu} “${b.ten}”?`}
+                      description="Chỉ xóa được khi chưa được dùng ở đâu."
+                      okText="Xóa"
+                      okButtonProps={{ danger: true }}
+                      cancelText="Hủy"
+                      disabled={lyDo !== null}
+                      onConfirm={() => xoaBan.mutate(b)}
+                    >
+                      <Button type="link" size="small" danger disabled={lyDo !== null || xoaBan.isPending}>
+                        Xóa
+                      </Button>
+                    </Popconfirm>
+                  </span>
+                </Tooltip>
+              )}
             </Space>
           </YeuCauQuyen>
         )

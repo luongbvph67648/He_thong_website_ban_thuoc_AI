@@ -325,6 +325,26 @@ async def test_dat_dung_vi_tri_hien_tai_khong_ghi_nhat_ky(dang_nhap_admin, db):
     assert len(ghi) == 1 and ghi[0].gia_tri_moi["vi_tri"] == 1 and ghi[0].gia_tri_cu["vi_tri"] == 0
 
 
+async def test_chuyen_len_dau_ghi_nhat_ky_cac_anh_em_bi_danh_lai_thu_tu_va_cap_nhat_updated_at(dang_nhap_admin, db):
+    a = await tao_danh_muc(db, "A", thu_tu=0)
+    b = await tao_danh_muc(db, "B", thu_tu=1)
+    c = await tao_danh_muc(db, "C", thu_tu=2)
+    d = await tao_danh_muc(db, "D", thu_tu=3)
+    assert (await dat_vi_tri(dang_nhap_admin, d.id, None, 0)).status_code == 200
+    for dong in (a, b, c, d):
+        await db.refresh(dong)
+    assert [x.thu_tu for x in (d, a, b, c)] == [0, 1, 2, 3]
+    assert all(x.updated_at is not None for x in (a, b, c, d))
+    ghi = [g for g in await nhat_ky(db, dang_nhap_admin.tai_khoan.id, "sua") if g.ban_ghi_id == str(d.id)]
+    assert len(ghi) == 1 and ghi[0].gia_tri_moi["anh_em_doi_thu_tu"] == sorted([a.id, b.id, c.id])
+    # Đặt đúng chỗ cũ (C đang ở cuối, vị trí 3) thì không động vào ai, kể cả `updated_at`.
+    truoc = {x.id: x.updated_at for x in (a, b, c)}
+    assert (await dat_vi_tri(dang_nhap_admin, c.id, None, 3)).status_code == 200
+    for dong in (a, b, c):
+        await db.refresh(dong)
+        assert dong.updated_at == truoc[dong.id]
+
+
 async def test_khong_duoc_chuyen_vao_chinh_no_hoac_danh_muc_con_chau(dang_nhap_admin, db):
     thuoc, giam_dau, para, _ = await tao_cay_ba_cap(db)
     for cha in (thuoc.id, giam_dau.id, para.id):

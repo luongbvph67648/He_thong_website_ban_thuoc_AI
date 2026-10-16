@@ -30,6 +30,9 @@ interface DuLieuForm {
 export function FormDanhMuc({ mo, dangLuu, onLuu, onDong }: Props) {
   const [form] = Form.useForm<DuLieuForm>()
 
+  // Điền giá trị ban đầu CHỈ khi hộp thoại mở (hoặc chuyển sang danh mục khác). `mo` là đối tượng dựng mới ở mỗi lần
+  // trang render lại, nên nếu phụ thuộc vào nó thì mỗi lần máy chủ báo lỗi hay dữ liệu làm mới sẽ xóa chữ đang gõ.
+  const khoaMo = mo === null ? null : mo.kieu === 'sua' ? `sua-${mo.ban.id}` : 'tao'
   useEffect(() => {
     if (!mo) return
     form.setFieldsValue(
@@ -37,7 +40,8 @@ export function FormDanhMuc({ mo, dangLuu, onLuu, onDong }: Props) {
         ? { ten: mo.ban.ten, anh_url: mo.ban.anh_url ?? '', dang_hien_thi: mo.ban.dang_hien_thi }
         : { ten: '', anh_url: '', dang_hien_thi: true },
     )
-  }, [mo, form])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [khoaMo, form])
 
   const gui = async (giaTri: DuLieuForm) => {
     const loi = await onLuu({ ten: gonTen(giaTri.ten), anh_url: chuoiHoacNull(giaTri.anh_url), dang_hien_thi: giaTri.dang_hien_thi })

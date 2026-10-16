@@ -47,7 +47,7 @@ REGISTRY: dict[tuple[str, str], tuple[str, str]] = {
     ("PATCH", f"{TIEN_TO_NOI_BO}/danh-muc/{{danh_muc_id}}"): ("category.manage", "day_du"),
     ("PUT", f"{TIEN_TO_NOI_BO}/danh-muc/{{danh_muc_id}}/vi-tri"): ("category.manage", "day_du"),
     ("DELETE", f"{TIEN_TO_NOI_BO}/danh-muc/{{danh_muc_id}}"): ("category.manage", "day_du"),
-    # AD05: Admin day_du, dược sĩ chi_xem (`master_data.manage` không chỉ-ADMIN).
+    # AD05: Admin day_du, dược sĩ chi_xem (`master_data.manage` không chỉ-ADMIN). Hoạt chất không có DELETE (QĐ-16).
     ("GET", f"{TIEN_TO_NOI_BO}/thuong-hieu"): ("master_data.manage", "xem"),
     ("GET", f"{TIEN_TO_NOI_BO}/thuong-hieu/{{ban_ghi_id}}"): ("master_data.manage", "xem"),
     ("POST", f"{TIEN_TO_NOI_BO}/thuong-hieu"): ("master_data.manage", "day_du"),
@@ -62,7 +62,6 @@ REGISTRY: dict[tuple[str, str], tuple[str, str]] = {
     ("GET", f"{TIEN_TO_NOI_BO}/hoat-chat/{{ban_ghi_id}}"): ("master_data.manage", "xem"),
     ("POST", f"{TIEN_TO_NOI_BO}/hoat-chat"): ("master_data.manage", "day_du"),
     ("PATCH", f"{TIEN_TO_NOI_BO}/hoat-chat/{{ban_ghi_id}}"): ("master_data.manage", "day_du"),
-    ("DELETE", f"{TIEN_TO_NOI_BO}/hoat-chat/{{ban_ghi_id}}"): ("master_data.manage", "day_du"),
 }
 
 # Route nội bộ cố ý KHÔNG cần quyền vì chạy trước khi có phiên (đăng nhập) hoặc chỉ dựa vào cookie refresh.

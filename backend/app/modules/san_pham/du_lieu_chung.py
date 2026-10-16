@@ -4,10 +4,12 @@ Ba nhóm cùng một khuôn, khác nhau ở bảng, khóa trùng và cách đế
 - Trùng tên không phân biệt hoa thường và dấu (DB chỉ cấm trùng đúng từng ký tự, và với nhà sản xuất bỏ qua `quoc_gia`
   NULL), nên service kiểm tra và tuần tự hóa tạo/đổi tên bằng một khóa tư vấn riêng của nhóm: hai request cùng tạo
   "Sanofi" và "SANOFI" không lọt cả hai.
-- Xóa là xóa cứng, dựa vào khóa ngoại: còn được tham chiếu (sản phẩm, thành phần, tương tác, dị ứng) thì DB từ chối và
-  service trả `DU_LIEU_DANG_DUOC_SU_DUNG` với thông điệp chung. Không đếm trước rồi xóa vì như vậy có khe hở với giao
-  dịch đang thêm tham chiếu; cũng không cho biết bản ghi nào đang dùng nó, vì hoạt chất có thể nằm trong dị ứng của
-  khách (dữ liệu sức khỏe mà Admin không được đọc, CLAUDE.md quy tắc 7).
+- Thương hiệu và nhà sản xuất xóa cứng, dựa vào khóa ngoại: còn sản phẩm tham chiếu thì DB từ chối và service trả
+  `DU_LIEU_DANG_DUOC_SU_DUNG`. Không đếm trước rồi xóa vì như vậy có khe hở với giao dịch đang thêm tham chiếu.
+- HOẠT CHẤT KHÔNG CÓ XÓA (`Nhom.cho_phep_xoa = False`, không có route DELETE): nó có thể nằm trong hồ sơ dị ứng của
+  khách (dữ liệu sức khỏe mà Admin không được đọc, CLAUDE.md quy tắc 7). Nếu cho xóa thì kết quả 204 hay 409 cho Admin
+  biết có khách nào dị ứng hoạt chất đó, và chỉ cần tạo hoạt chất mồi rồi thử xóa là dò được từng hoạt chất (rà soát
+  T2.1). Nhập nhầm thì sửa tên; muốn gỡ hẳn cần cờ "ngừng dùng" qua `/doi-schema`.
 - Ghi đòi `master_data.manage` mức đầy đủ (ở router); quyền này không chỉ-ADMIN nên không có chốt thêm theo vai trò.
 """
 
@@ -47,6 +49,8 @@ class Nhom:
     """Biểu thức đếm (truy vấn con tương quan) số sản phẩm gắn với bản ghi."""
     khoa_trung: tuple[str, ...] = ("ten",)
     """Các trường tạo nên khóa trùng (không phân biệt hoa thường và dấu; trống cũng là một giá trị)."""
+    cho_phep_xoa: bool = True
+    """`False`: không có thao tác xóa nào (xem docstring của module)."""
 
 
 def _dem_theo(cot_tham_chieu: Any, mo_hinh: Any) -> Callable[[], ColumnElement[Any]]:
@@ -77,6 +81,7 @@ HOAT_CHAT = Nhom(
     ("ten", "ten_khac", "mo_ta"),
     ("ten", "ten_khac"),
     _dem_theo(ThanhPhan.hoat_chat_id, HoatChat),
+    cho_phep_xoa=False,
 )
 
 
@@ -203,7 +208,9 @@ async def sua(
 
 
 async def xoa(db: AsyncSession, actor: NhanVien, nhom: Nhom, ban_ghi_id: int, *, ip: str) -> None:
-    """Xóa cứng bản ghi chưa ai tham chiếu; ngược lại `DU_LIEU_DANG_DUOC_SU_DUNG` (thông điệp chung, xem docstring)."""
+    """Xóa cứng bản ghi chưa ai tham chiếu; ngược lại `DU_LIEU_DANG_DUOC_SU_DUNG`."""
+    if not nhom.cho_phep_xoa:  # route không được dựng cho nhóm này; chốt phòng gọi nhầm từ nơi khác
+        raise RuntimeError(f"Nhóm {nhom.bang} không cho xóa")
     mh = nhom.mo_hinh
     cu = (await db.execute(select(mh).where(mh.id == ban_ghi_id))).scalar_one_or_none()
     if cu is None:
@@ -216,7 +223,7 @@ async def xoa(db: AsyncSession, actor: NhanVien, nhom: Nhom, ban_ghi_id: int, *,
         if getattr(loi.orig, "sqlstate", None) != MA_VI_PHAM_KHOA_NGOAI:
             raise
         raise LoiNghiepVu(
-            "DU_LIEU_DANG_DUOC_SU_DUNG", f"Không xóa được vì {nhom.nhan} này đang được sử dụng trong hệ thống"
+            "DU_LIEU_DANG_DUOC_SU_DUNG", f"Không xóa được vì {nhom.nhan} này đang được gắn với sản phẩm"
         ) from loi
     if ket_qua.rowcount == 0:  # đã bị xóa bởi request khác ngay trước đó
         raise _khong_tim_thay(nhom)

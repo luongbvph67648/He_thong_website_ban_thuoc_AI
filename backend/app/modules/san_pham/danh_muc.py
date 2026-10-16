@@ -267,11 +267,16 @@ async def dat_vi_tri(
     bay_gio = bay_gio_utc()
     dong.danh_muc_cha_id = cha_moi_id
     dong.updated_at = bay_gio
-    for i, a in enumerate(anh_em_moi):
-        a.thu_tu = i
+    doi_thu_tu: list[int] = []  # anh em bị đánh lại thứ tự theo (không tính chính danh mục được chuyển)
+    danh_sach_dich = list(enumerate(anh_em_moi))
     if cha_cu_id != cha_moi_id:
-        for i, a in enumerate(a for a in theo_cha.get(cha_cu_id, []) if a.id != danh_muc_id):
+        danh_sach_dich += list(enumerate(a for a in theo_cha.get(cha_cu_id, []) if a.id != danh_muc_id))
+    for i, a in danh_sach_dich:
+        if a.thu_tu != i:
             a.thu_tu = i
+            if a.id != dong.id:
+                a.updated_at = bay_gio
+                doi_thu_tu.append(a.id)
     await db.flush()
     await ghi_nhat_ky(
         db,
@@ -280,7 +285,7 @@ async def dat_vi_tri(
         bang=BANG,
         ban_ghi_id=dong.id,
         gia_tri_cu={"danh_muc_cha_id": cha_cu_id, "vi_tri": vi_tri_cu},
-        gia_tri_moi={"danh_muc_cha_id": cha_moi_id, "vi_tri": chi_so},
+        gia_tri_moi={"danh_muc_cha_id": cha_moi_id, "vi_tri": chi_so, "anh_em_doi_thu_tu": sorted(doi_thu_tu)},
         ip=ip,
     )
     return await cay(db)

@@ -152,6 +152,21 @@ describe('TrangDanhMuc', () => {
     expect(await h.findByText('Đã có danh mục cùng tên trong cùng danh mục cha')).toBeInTheDocument()
   })
 
+  it('máy chủ báo lỗi (hoặc dữ liệu làm mới) không xóa chữ người dùng đang gõ trong hộp thoại', async () => {
+    const nguoi = userEvent.setup()
+    POST.mockResolvedValue(loi(409, 'TRUNG_DU_LIEU', 'Đã có danh mục cùng tên trong cùng danh mục cha', { truong: 'ten' }))
+    dung()
+    await dong('Thuốc')
+    await nguoi.click(screen.getByRole('button', { name: 'Thêm danh mục gốc' }))
+    const h = await hopThoai()
+    await nguoi.type(h.getByLabelText('Tên danh mục'), 'Dụng cụ')
+    await nguoi.type(h.getByLabelText(/Đường dẫn ảnh/), '/anh/dung-cu.png')
+    await nguoi.click(h.getByRole('button', { name: 'Thêm' }))
+    expect(await h.findByText('Đã có danh mục cùng tên trong cùng danh mục cha')).toBeInTheDocument()
+    expect(h.getByLabelText('Tên danh mục')).toHaveValue('Dụng cụ') // trước đây về rỗng vì effect chạy lại khi trang render lại
+    expect(h.getByLabelText(/Đường dẫn ảnh/)).toHaveValue('/anh/dung-cu.png')
+  })
+
   it('sửa: điền sẵn, đường dẫn ảnh sai bị chặn, PATCH đúng id', async () => {
     const nguoi = userEvent.setup()
     PATCH.mockResolvedValue(ok(nut(4, 'Ho khan', 2, 1)))

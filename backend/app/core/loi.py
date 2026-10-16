@@ -82,6 +82,8 @@ _LOI_VALIDATE_TIENG_VIET = {
     "json_invalid": "JSON không hợp lệ",
     "string_too_short": "Quá ngắn",
     "string_too_long": "Quá dài",
+    "too_short": "Quá ngắn",  # chuỗi đã qua BeforeValidator được Pydantic đếm như dãy phần tử
+    "too_long": "Quá dài",
     "string_pattern_mismatch": "Sai định dạng",
     "literal_error": "Giá trị không hợp lệ",
     "enum": "Giá trị không hợp lệ",

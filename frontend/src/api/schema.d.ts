@@ -790,8 +790,7 @@ export interface paths {
         get: operations["chi_tiet_hoat_chat_api_v1_noi_bo_hoat_chat__ban_ghi_id__get"];
         put?: never;
         post?: never;
-        /** Xóa hoạt chất chưa được dùng (AD05) */
-        delete: operations["xoa_hoat_chat_api_v1_noi_bo_hoat_chat__ban_ghi_id__delete"];
+        delete?: never;
         options?: never;
         head?: never;
         /** Sửa hoạt chất (AD05) */
@@ -3369,35 +3368,6 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["HoatChatDoc"];
                 };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    xoa_hoat_chat_api_v1_noi_bo_hoat_chat__ban_ghi_id__delete: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                ban_ghi_id: number;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            204: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content?: never;
             };
             /** @description Validation Error */
             422: {

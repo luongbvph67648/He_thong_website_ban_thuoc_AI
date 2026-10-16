@@ -32,6 +32,7 @@ URL = {
 }
 MO_HINH = {"thuong_hieu": ThuongHieu, "nha_san_xuat": NhaSanXuat, "hoat_chat": HoatChat}
 CAC_NHOM = tuple(URL)
+CAC_NHOM_XOA = ("thuong_hieu", "nha_san_xuat")  # hoạt chất không có xóa (QĐ-16)
 TRUONG_DOC = {
     "thuong_hieu": {"id", "ten", "logo_url", "created_at", "so_san_pham"},
     "nha_san_xuat": {"id", "ten", "quoc_gia", "created_at", "so_san_pham"},
@@ -117,12 +118,62 @@ async def test_tao_voi_truong_tuy_chon_va_chuoi_trong_la_null(dang_nhap_admin, d
         ("hoat_chat", {"ten": "Ok", "mo_ta": "a\x00b"}),
         ("hoat_chat", {"ten": "Ok", "mo_ta": "a\x07b"}),
         ("hoat_chat", {"ten": "Ok", "logo_url": "/x.png"}),
+        # Ký tự định dạng vô hình: hai tên trông giống hệt nhau mà không bị coi là trùng.
+        ("thuong_hieu", {"ten": "San\u200bofi"}),
+        ("thuong_hieu", {"ten": "\ufeffSanofi"}),
+        ("nha_san_xuat", {"ten": "Ok", "quoc_gia": "Vi\u200ft Nam"}),
+        ("hoat_chat", {"ten": "Ok", "ten_khac": "\u202eabc"}),
+        ("hoat_chat", {"ten": "Ok", "mo_ta": "a\u200bb"}),
+        ("thuong_hieu", {"ten": "Ok", "logo_url": "/a\u200b.png"}),
+        # `/\host` được trình duyệt hiểu như `//host`.
+        ("thuong_hieu", {"ten": "Ok", "logo_url": "/\\evil.example/a.png"}),
+        ("thuong_hieu", {"ten": "Ok", "logo_url": "/\\\\evil.example/a.png"}),
     ],
 )
 async def test_tao_du_lieu_sai_la_400_va_khong_tao_gi(dang_nhap_admin, db, bang, than):
     phan_hoi = await dang_nhap_admin.post(URL[bang], json=than)
     assert la_loi(phan_hoi, 400, "DU_LIEU_KHONG_HOP_LE"), phan_hoi.text
     assert (await db.execute(select(func.count()).select_from(MO_HINH[bang]))).scalar_one() == 0
+
+
+@pytest.mark.parametrize(
+    ("bang", "json_tho"),
+    [
+        ("thuong_hieu", '{"ten":"\\ud800"}'),
+        ("thuong_hieu", '{"ten":"abc\\udfff"}'),
+        ("thuong_hieu", '{"ten":"Ok","logo_url":"/a\\ud800"}'),
+        ("nha_san_xuat", '{"ten":"Ok","quoc_gia":"VN\\ud83d"}'),  # nửa đầu của một cặp surrogate, thiếu nửa sau
+        ("hoat_chat", '{"ten":"Ok","ten_khac":"x\\ud800"}'),
+        ("hoat_chat", '{"ten":"Ok","mo_ta":"a\\ud800b"}'),
+    ],
+)
+async def test_surrogate_don_le_trong_json_la_400_chu_khong_phai_500(dang_nhap_admin, db, bang, json_tho):
+    """`json.loads` chấp nhận `"\\ud800"` nhưng chuỗi đó không mã hóa được UTF-8 nên asyncpg báo lỗi (rà soát T2.1)."""
+    phan_hoi = await dang_nhap_admin.post(URL[bang], content=json_tho, headers={"Content-Type": "application/json"})
+    assert la_loi(phan_hoi, 400, "DU_LIEU_KHONG_HOP_LE"), phan_hoi.text
+    assert (await db.execute(select(func.count()).select_from(MO_HINH[bang]))).scalar_one() == 0
+    dong = await chen(db, bang, "Có sẵn")
+    sua = await dang_nhap_admin.patch(
+        f"{URL[bang]}/{dong.id}", content=json_tho, headers={"Content-Type": "application/json"}
+    )
+    assert la_loi(sua, 400, "DU_LIEU_KHONG_HOP_LE"), sua.text
+
+
+async def test_cap_surrogate_hop_le_la_emoji_va_van_luu_duoc(dang_nhap_admin):
+    phan_hoi = await dang_nhap_admin.post(
+        URL["hoat_chat"],
+        content='{"ten":"Ok","mo_ta":"Dễ chịu \\ud83d\\ude00"}',
+        headers={"Content-Type": "application/json"},
+    )
+    assert phan_hoi.status_code == 201 and phan_hoi.json()["mo_ta"] == "Dễ chịu \U0001f600"
+
+
+@nhom
+async def test_ten_rong_hoac_qua_dai_bao_loi_bang_tieng_viet(dang_nhap_admin, bang):
+    for ten in ("", "x" * 201):
+        phan_hoi = await tao(dang_nhap_admin, bang, ten)
+        loi = phan_hoi.json()["chi_tiet"][0]["loi"]
+        assert phan_hoi.status_code == 400 and loi in ("Quá dài", "Quá ngắn"), (ten[:3], phan_hoi.text)
 
 
 async def test_logo_duong_dan_hop_le_duoc_chap_nhan(dang_nhap_admin):
@@ -243,10 +294,12 @@ async def test_sua_xoa_xem_khong_ton_tai_la_404_id_ngoai_khoang_la_400(dang_nhap
     for id_ in (999_999, 2_000_000_000):
         assert la_loi(await dang_nhap_admin.get(f"{URL[bang]}/{id_}"), 404, "KHONG_TIM_THAY")
         assert la_loi(await dang_nhap_admin.patch(f"{URL[bang]}/{id_}", json={"ten": "X"}), 404, "KHONG_TIM_THAY")
-        assert la_loi(await dang_nhap_admin.delete(f"{URL[bang]}/{id_}"), 404, "KHONG_TIM_THAY")
+        if bang in CAC_NHOM_XOA:
+            assert la_loi(await dang_nhap_admin.delete(f"{URL[bang]}/{id_}"), 404, "KHONG_TIM_THAY")
     for id_ in (0, -1, 2_147_483_648):
         assert la_loi(await dang_nhap_admin.get(f"{URL[bang]}/{id_}"), 400, "DU_LIEU_KHONG_HOP_LE")
-        assert la_loi(await dang_nhap_admin.delete(f"{URL[bang]}/{id_}"), 400, "DU_LIEU_KHONG_HOP_LE")
+        if bang in CAC_NHOM_XOA:
+            assert la_loi(await dang_nhap_admin.delete(f"{URL[bang]}/{id_}"), 400, "DU_LIEU_KHONG_HOP_LE")
 
 
 # --- Danh sách -------------------------------------------------------------------------------------------------------------
@@ -363,7 +416,7 @@ async def test_phan_hoi_hoat_chat_khong_co_so_lieu_di_ung(dang_nhap_admin, db):
 # --- Xóa ---------------------------------------------------------------------------------------------------------------
 
 
-@nhom
+@pytest.mark.parametrize("bang", CAC_NHOM_XOA)
 async def test_xoa_ban_ghi_chua_dung_la_xoa_cung_204_va_ghi_nhat_ky(dang_nhap_admin, db, bang):
     dong = await chen(db, bang, "Sắp xóa")
     phan_hoi = await dang_nhap_admin.delete(f"{URL[bang]}/{dong.id}")
@@ -374,7 +427,7 @@ async def test_xoa_ban_ghi_chua_dung_la_xoa_cung_204_va_ghi_nhat_ky(dang_nhap_ad
     assert la_loi(await dang_nhap_admin.delete(f"{URL[bang]}/{dong.id}"), 404, "KHONG_TIM_THAY")
 
 
-@pytest.mark.parametrize("bang", ["thuong_hieu", "nha_san_xuat"])
+@pytest.mark.parametrize("bang", CAC_NHOM_XOA)
 async def test_ban_ghi_dang_gan_voi_san_pham_ke_ca_da_xoa_mem_khong_xoa_duoc(dang_nhap_admin, db, bang):
     dong = await chen(db, bang, "Đang dùng")
     await tao_san_pham(db, **{cot_lien_ket(bang): dong.id, "deleted_at": bay_gio_utc()})  # chỉ còn sản phẩm đã xóa mềm
@@ -385,8 +438,13 @@ async def test_ban_ghi_dang_gan_voi_san_pham_ke_ca_da_xoa_mem_khong_xoa_duoc(dan
     assert len(await nhat_ky(db, dang_nhap_admin.tai_khoan.id)) == truoc
 
 
-async def test_hoat_chat_dang_trong_thanh_phan_tuong_tac_hoac_di_ung_khong_xoa_duoc(dang_nhap_admin, db):
+async def test_hoat_chat_khong_co_xoa_nen_khong_do_duoc_hoat_chat_nao_nam_trong_di_ung(
+    dang_nhap_admin, db, clients_theo_vai_tro
+):
+    """Nếu có DELETE thì 204/409 cho Admin biết khách nào đó dị ứng hoạt chất đó, và tạo hoạt chất mồi rồi thử xóa là dò
+    được từng hoạt chất (rà soát T2.1). Không có DELETE: phản hồi giống hệt nhau cho mọi hoạt chất và không ghi gì."""
     sp = await tao_san_pham(db)
+    tu_do = await chen(db, "hoat_chat", "Tự do")
     trong_thanh_phan = await chen(db, "hoat_chat", "Trong thành phần")
     trong_tuong_tac = await chen(db, "hoat_chat", "Trong tương tác")
     doi_tac = await chen(db, "hoat_chat", "Đối tác tương tác")
@@ -397,17 +455,23 @@ async def test_hoat_chat_dang_trong_thanh_phan_tuong_tac_hoac_di_ung_khong_xoa_d
     khach = await tao_khach(db)
     db.add(DiUng(khach_hang_id=khach.id, hoat_chat_id=trong_di_ung.id))
     await db.flush()
-    thong_diep = set()
-    for hc in (trong_thanh_phan, trong_tuong_tac, doi_tac, trong_di_ung):
-        phan_hoi = await dang_nhap_admin.delete(f"{URL['hoat_chat']}/{hc.id}")
-        assert la_loi(phan_hoi, 409, "DU_LIEU_DANG_DUOC_SU_DUNG"), (hc.ten, phan_hoi.text)
-        thong_diep.add(phan_hoi.json()["thong_diep"])
-        assert phan_hoi.json().get("chi_tiet") in (None, [], {})
-    # Thông điệp giống hệt nhau và không nói ai/bảng nào đang dùng (đặc biệt không lộ dị ứng của khách).
-    assert len(thong_diep) == 1
-    chu = thong_diep.pop().lower()
-    assert not any(tu in chu for tu in ("dị ứng", "di ung", "khách", "khach", "tương tác", "thành phần", "sản phẩm"))
-    assert (await db.execute(select(func.count()).select_from(HoatChat))).scalar_one() == 4
+    truoc = len(await nhat_ky(db, dang_nhap_admin.tai_khoan.id))
+    phan_hoi = []
+    for hc in (tu_do, trong_thanh_phan, trong_tuong_tac, doi_tac, trong_di_ung):
+        for c in (dang_nhap_admin, clients_theo_vai_tro["PHARMACIST"]):
+            r = await c.delete(f"{URL['hoat_chat']}/{hc.id}")
+            assert la_loi(r, 405, "PHUONG_THUC_KHONG_DUOC_PHEP"), (hc.ten, r.status_code, r.text)
+            phan_hoi.append(r.json())
+    assert all(p == phan_hoi[0] for p in phan_hoi)  # giống hệt nhau, kể cả chi_tiet
+    assert (await db.execute(select(func.count()).select_from(HoatChat))).scalar_one() == 5
+    assert len(await nhat_ky(db, dang_nhap_admin.tai_khoan.id)) == truoc
+
+
+async def test_service_tu_choi_xoa_nhom_khong_cho_xoa(db):
+    admin = await tao_nhan_vien(db, "ADMIN")
+    hc = await chen(db, "hoat_chat", "Không xóa")
+    with pytest.raises(RuntimeError):
+        await dich_vu.xoa(db, admin, dich_vu.HOAT_CHAT, hc.id, ip="127.0.0.1")
 
 
 async def test_xoa_that_bai_vi_dang_dung_khong_lam_hong_transaction_cua_request_khac(db_that):
@@ -442,7 +506,7 @@ async def test_duoc_si_chi_doc_kho_va_khach_khong_vao_duoc(clients_theo_vai_tro,
         ghi = [
             ("post", URL[bang], {"ten": "Mới"}),
             ("patch", f"{URL[bang]}/{dong.id}", {"ten": "Đổi"}),
-            ("delete", f"{URL[bang]}/{dong.id}", None),
+            *([("delete", f"{URL[bang]}/{dong.id}", None)] if bang in CAC_NHOM_XOA else []),
         ]
         for phuong_thuc, duong, than in ghi:
             phan_hoi = await getattr(c, phuong_thuc)(duong, **({"json": than} if than is not None else {}))

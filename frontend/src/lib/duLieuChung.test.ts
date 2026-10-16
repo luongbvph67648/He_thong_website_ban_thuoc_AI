@@ -15,6 +15,11 @@ describe('duLieuChung (cùng bảng ca với backend tests/san_pham/test_sp_du_l
     expect(loiTen(`${'x'.repeat(100)}   ${'y'.repeat(49)}`, 150)).toBeNull() // gộp khoảng trắng: 150 ký tự
     expect(loiTen('Ok\u0000', 150)).toMatch(/ký tự điều khiển/)
     expect(loiTen('Ok\u0007', 150)).toMatch(/ký tự điều khiển/)
+    expect(loiTen('San\u200bofi', 150)).toMatch(/vô hình/) // ZWSP: trông giống "Sanofi" mà không bị coi là trùng
+    expect(loiTen('\u202eabc', 150)).toMatch(/vô hình/) // dấu bidi
+    expect(loiTen('\ud800', 150)).toMatch(/vô hình/) // surrogate đơn lẻ không mã hóa được UTF-8
+    expect(loiTen('abc\udfff', 150)).toMatch(/vô hình/)
+    expect(loiTen('Dễ chịu \ud83d\ude00', 150)).toBeNull() // cặp surrogate hợp lệ (emoji) là một ký tự bình thường
   })
 
   it('loiDuongDan: trống hợp lệ; chỉ nhận /... hoặc http(s)://... không khoảng trắng, tối đa 500', () => {
@@ -30,6 +35,10 @@ describe('duLieuChung (cùng bảng ca với backend tests/san_pham/test_sp_du_l
       'https://',
       `/${'a'.repeat(500)}`,
       '/a\u0000.png',
+      '/\\evil.example/a.png', // `/\host` trình duyệt hiểu như `//host`
+      '/\\\\evil.example/a.png',
+      '/a\u200b.png',
+      '/a\ud800',
     ]) {
       expect(loiDuongDan(sai), JSON.stringify(sai)).toMatch(/Đường dẫn phải/)
     }
@@ -43,6 +52,9 @@ describe('duLieuChung (cùng bảng ca với backend tests/san_pham/test_sp_du_l
     expect(loiVanBan('a\nb', 100, true)).toBeNull()
     expect(loiVanBan('a\u0000b', 100, true)).toMatch(/ký tự điều khiển/)
     expect(loiVanBan('a\u0007b', 100, true)).toMatch(/ký tự điều khiển/)
+    expect(loiVanBan('a\u200bb', 100, true)).toMatch(/vô hình/)
+    expect(loiVanBan('a\u200bb', 100)).toMatch(/vô hình/)
+    expect(loiVanBan('a\ud800b', 100, true)).toMatch(/vô hình/)
   })
 
   it('chuoiHoacNull: trống là null, ngược lại đã gọn', () => {
