@@ -114,14 +114,28 @@ async def lay_theo_san_pham(db: AsyncSession, san_pham_id: int) -> NoiDungSanPha
 
 
 async def noi_dung_da_duyet(db: AsyncSession, san_pham_id: int) -> PhienBanNoiDung | None:
-    """Phiên bản ĐANG HIỂN THỊ (đã duyệt) của sản phẩm, hoặc `None`. Khách và AI chỉ đọc nội dung chuyên môn từ đây."""
+    """Phiên bản ĐANG HIỂN THỊ (đã duyệt) của sản phẩm chưa xóa, hoặc `None`. Khách và AI chỉ đọc từ đây.
+
+    Sản phẩm đã xóa mềm coi như không có nội dung. Nếu dữ liệu nhập tay làm một sản phẩm có nhiều bản `da_duyet`
+    (DB chưa có ràng buộc, xem "Việc phát sinh" của lộ trình) thì lấy bản mới nhất thay vì lỗi 500 ở trang của khách.
+    """
     tt = (
-        await db.execute(
-            select(ThongTinChuyenMon).where(
-                ThongTinChuyenMon.san_pham_id == san_pham_id, ThongTinChuyenMon.trang_thai == TrangThaiNoiDung.da_duyet
+        (
+            await db.execute(
+                select(ThongTinChuyenMon)
+                .join(SanPham, SanPham.id == ThongTinChuyenMon.san_pham_id)
+                .where(
+                    ThongTinChuyenMon.san_pham_id == san_pham_id,
+                    ThongTinChuyenMon.trang_thai == TrangThaiNoiDung.da_duyet,
+                    SanPham.deleted_at.is_(None),
+                )
+                .order_by(ThongTinChuyenMon.phien_ban.desc())
+                .limit(1)
             )
         )
-    ).scalar_one_or_none()
+        .scalars()
+        .first()
+    )
     if tt is None:
         return None
     return (await _doc_cac_phien_ban(db, [tt]))[0]
@@ -152,6 +166,13 @@ async def tao_phien_ban(
     if du_lieu.phien_ban_co_so != so_moi_nhat:
         raise _xung_dot("Đã có phiên bản mới hơn phiên bản bạn đang soạn. Hãy tải lại và soạn tiếp từ bản mới nhất.")
     noi_dung = du_lieu.model_dump(include=set(TRUONG_NOI_DUNG))
+    if all(v is None for v in noi_dung.values()):
+        # Bản trống mà được duyệt sẽ xóa sạch chống chỉ định, liều dùng... đang hiển thị cho khách và AI.
+        raise LoiNghiepVu(
+            "DU_LIEU_KHONG_HOP_LE",
+            "Dữ liệu không hợp lệ",
+            chi_tiet=[{"truong": "chi_dinh", "loi": "Cần nhập ít nhất một mục nội dung chuyên môn"}],
+        )
     # Chống bản trùng so với bản còn hiệu lực mới nhất (nháp hoặc đã duyệt); nội dung của bản đã bỏ thì soạn lại được.
     con_hieu_luc = next((tt for tt in cac_ban if tt.trang_thai != TrangThaiNoiDung.luu_tru), None)
     if con_hieu_luc is not None and noi_dung == _noi_dung_cua(con_hieu_luc):
@@ -207,18 +228,27 @@ async def duyet(db: AsyncSession, actor: NhanVien, phien_ban_id: int, *, ip: str
     tt = await _khoa_phien_ban(db, phien_ban_id)
     if tt.trang_thai != TrangThaiNoiDung.nhap:
         raise _xung_dot("Phiên bản này không còn là bản nháp (đã được duyệt hoặc đã lưu trữ)")
-    dang_hien_thi = (
-        await db.execute(
-            select(ThongTinChuyenMon).where(
-                ThongTinChuyenMon.san_pham_id == tt.san_pham_id,
-                ThongTinChuyenMon.trang_thai == TrangThaiNoiDung.da_duyet,
+    cac_ban_hien_thi = (
+        (
+            await db.execute(
+                select(ThongTinChuyenMon)
+                .where(
+                    ThongTinChuyenMon.san_pham_id == tt.san_pham_id,
+                    ThongTinChuyenMon.trang_thai == TrangThaiNoiDung.da_duyet,
+                )
+                .order_by(ThongTinChuyenMon.phien_ban.desc())
+                .with_for_update()
             )
         )
-    ).scalar_one_or_none()
+        .scalars()
+        .all()
+    )
+    dang_hien_thi = cac_ban_hien_thi[0] if cac_ban_hien_thi else None  # thường chỉ có một; nhiều thì dọn hết
     if dang_hien_thi is not None and dang_hien_thi.phien_ban > tt.phien_ban:
         raise _xung_dot("Đã có phiên bản mới hơn được duyệt. Hãy soạn bản mới từ bản đang hiển thị.")
-    if dang_hien_thi is not None:
-        dang_hien_thi.trang_thai = TrangThaiNoiDung.luu_tru
+    if cac_ban_hien_thi:
+        for ban_cu in cac_ban_hien_thi:
+            ban_cu.trang_thai = TrangThaiNoiDung.luu_tru
         await db.flush()  # gỡ bản cũ trước khi đặt bản mới (một bản đã duyệt mỗi sản phẩm)
     tt.trang_thai = TrangThaiNoiDung.da_duyet
     tt.duoc_si_duyet_id = actor.id

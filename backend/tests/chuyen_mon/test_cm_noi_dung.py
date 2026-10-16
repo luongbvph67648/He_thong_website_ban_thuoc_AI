@@ -95,6 +95,21 @@ async def test_noi_dung_giong_het_ban_moi_nhat_la_400(dang_nhap_duoc_si, db):
     assert "Không có thay đổi" in phan_hoi.text
 
 
+async def test_ban_trong_hoan_toan_bi_tu_choi_de_khong_xoa_sach_noi_dung_dang_hien_thi(dang_nhap_duoc_si, db):
+    sp = await tao_san_pham(db)
+    v1 = await soan(dang_nhap_duoc_si, sp.id, None, chong_chi_dinh="Quá mẫn với paracetamol")
+    assert (await dang_nhap_duoc_si.post(f"{GOC_NOI_DUNG}/{v1['id']}/duyet")).status_code == 200
+    for rong in ({}, {"chi_dinh": "   ", "lieu_dung_tham_khao": None, "chong_chi_dinh": None}):
+        than = {"phien_ban_co_so": 1, "chi_dinh": None, "lieu_dung_tham_khao": None, **rong}
+        phan_hoi = await dang_nhap_duoc_si.post(f"{GOC_NOI_DUNG}/san-pham/{sp.id}", json=than)
+        assert la_loi(phan_hoi, 400, "DU_LIEU_KHONG_HOP_LE"), phan_hoi.text
+        assert "ít nhất một mục" in phan_hoi.text
+    assert (await dich_vu.noi_dung_da_duyet(db, sp.id)).chong_chi_dinh == "Quá mẫn với paracetamol"
+    # Bỏ riêng một mục vẫn được (QĐ-18: trường trống là null, không kế thừa)
+    v2 = await soan(dang_nhap_duoc_si, sp.id, 1, chong_chi_dinh=None)
+    assert v2["chong_chi_dinh"] is None and v2["chi_dinh"] is not None
+
+
 async def test_soan_lai_noi_dung_cua_ban_da_bo_duoc_nhung_so_phien_ban_khong_bao_gio_dung_lai(dang_nhap_duoc_si, db):
     sp = await tao_san_pham(db)
     v1 = await soan(dang_nhap_duoc_si, sp.id, None)
@@ -143,6 +158,43 @@ async def test_chua_duyet_thi_khong_co_noi_dung_hien_thi_ban_nhap_khong_lo_ra(da
     sp = await tao_san_pham(db)
     await soan(dang_nhap_duoc_si, sp.id, None)
     assert await dich_vu.noi_dung_da_duyet(db, sp.id) is None
+
+
+async def test_noi_dung_da_duyet_cua_san_pham_da_xoa_mem_la_none(dang_nhap_duoc_si, db):
+    sp = await tao_san_pham(db)
+    v1 = await soan(dang_nhap_duoc_si, sp.id, None)
+    assert (await dang_nhap_duoc_si.post(f"{GOC_NOI_DUNG}/{v1['id']}/duyet")).status_code == 200
+    assert await dich_vu.noi_dung_da_duyet(db, sp.id) is not None
+    sp.deleted_at = bay_gio_utc()
+    await db.flush()
+    assert await dich_vu.noi_dung_da_duyet(db, sp.id) is None  # cửa duy nhất của khách và AI không lộ thuốc đã gỡ
+
+
+async def test_du_lieu_co_hai_ban_da_duyet_van_doc_va_duyet_duoc_khong_loi_500(dang_nhap_duoc_si, db):
+    """DB chưa có unique từng phần: dòng nhập tay không được làm hỏng đường đọc của khách hay nút duyệt."""
+    sp = await tao_san_pham(db)
+    nguoi = dang_nhap_duoc_si.tai_khoan.id
+    for so in (1, 2):
+        db.add(
+            ThongTinChuyenMon(
+                san_pham_id=sp.id,
+                phien_ban=so,
+                trang_thai=TrangThaiNoiDung.da_duyet,
+                nguoi_soan_id=nguoi,
+                duoc_si_duyet_id=nguoi,
+                chi_dinh=f"Bản {so}",
+            )
+        )
+    await db.flush()
+    assert (await dich_vu.noi_dung_da_duyet(db, sp.id)).chi_dinh == "Bản 2"
+    v3 = await soan(dang_nhap_duoc_si, sp.id, 2, chi_dinh="Bản 3")
+    assert (await dang_nhap_duoc_si.post(f"{GOC_NOI_DUNG}/{v3['id']}/duyet")).status_code == 200
+    tat_ca = (await dang_nhap_duoc_si.get(f"{GOC_NOI_DUNG}/san-pham/{sp.id}")).json()
+    assert [(b["phien_ban"], b["trang_thai"]) for b in tat_ca["phien_ban"]] == [
+        (3, "da_duyet"),
+        (2, "luu_tru"),
+        (1, "luu_tru"),
+    ]
 
 
 async def test_duyet_ban_moi_dua_ban_da_duyet_cu_sang_luu_tru_luon_chi_mot_ban_hien_thi(dang_nhap_duoc_si, db):

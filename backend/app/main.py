@@ -39,13 +39,27 @@ QUY_TAC_THAN_REQUEST = (
     ),
 )
 
+# Mọi route ghi còn lại chỉ nhận JSON: FastAPI đọc cả thân vào bộ nhớ trước khi chạy xác thực, nên đặt trần chung
+# (đặt SAU quy tắc tệp vì khớp theo thứ tự). Dài nhất hiện nay là nội dung chuyên môn: 10 trường x 20.000 ký tự.
+TOI_DA_THAN_JSON_BYTE = 2 * 1024 * 1024
+QUY_TAC_THAN_JSON = tuple(
+    QuyTacThanRequest(
+        phuong_thuc,
+        re.compile(r"/api/v1/.*"),
+        TOI_DA_THAN_JSON_BYTE,
+        "THAN_QUA_LON",
+        "Nội dung gửi lên quá lớn",
+    )
+    for phuong_thuc in ("POST", "PUT", "PATCH", "DELETE")
+)
+
 
 def create_app() -> FastAPI:
     cau_hinh_log()
     app = FastAPI(title="Nhà thuốc AI", version="0.1.0")
     dang_ky_xu_ly_loi(app)
     # Thêm trước CORS = nằm trong CORS: phản hồi 413 vẫn có header CORS nên trình duyệt đọc được thông điệp.
-    app.add_middleware(GioiHanKichThuocThan, quy_tac=QUY_TAC_THAN_REQUEST)
+    app.add_middleware(GioiHanKichThuocThan, quy_tac=(*QUY_TAC_THAN_REQUEST, *QUY_TAC_THAN_JSON))
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins_list,
