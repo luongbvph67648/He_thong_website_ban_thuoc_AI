@@ -13,6 +13,7 @@ from app.core.thoi_gian import VN_TZ
 from app.jobs.chay import HamJob, chay_job
 from app.jobs.cong_viec import (
     ai06_doc_don_thuoc,
+    ai08_luat_mua_kem,
     ai_dong_bo_tri_thuc,
     don_lich_su,
     ht01_cap_nhat_lo,
@@ -30,6 +31,8 @@ LICH: tuple[tuple[str, HamJob, int, int], ...] = (
     ("ai_dong_bo_tri_thuc", ai_dong_bo_tri_thuc, 2, 30),
     ("don_lich_su", don_lich_su, 3, 30),
 )
+# Job hằng tuần: (tên, hàm, thứ trong tuần theo cron, giờ, phút). AI08 vào Chủ nhật 03:00, lúc ít người mua.
+LICH_TUAN: tuple[tuple[str, HamJob, str, int, int], ...] = (("ai08_luat_mua_kem", ai08_luat_mua_kem, "sun", 3, 0),)
 # Job chạy theo chu kỳ phút: (tên, hàm, số phút giữa hai lần). HT03 hủy đơn quá hạn; HT08 tự hoàn tất đơn.
 LICH_PHUT: tuple[tuple[str, HamJob, int], ...] = (
     ("ht03_huy_qua_han", ht03_huy_qua_han, 1),
@@ -44,6 +47,16 @@ def tao_scheduler() -> AsyncIOScheduler:
         scheduler.add_job(
             chay_job,
             CronTrigger(hour=gio, minute=phut, timezone=VN_TZ),
+            args=[engine, ten, ham],
+            id=ten,
+            coalesce=True,
+            max_instances=1,
+            misfire_grace_time=3600,
+        )
+    for ten, ham, thu, gio, phut in LICH_TUAN:
+        scheduler.add_job(
+            chay_job,
+            CronTrigger(day_of_week=thu, hour=gio, minute=phut, timezone=VN_TZ),
             args=[engine, ten, ham],
             id=ten,
             coalesce=True,
@@ -67,7 +80,9 @@ async def main() -> None:
     cau_hinh_log()
     scheduler = tao_scheduler()
     scheduler.start()
-    logging.getLogger("jobs").info("Worker job nền đã chạy: %s", ", ".join(t for t, *_ in (*LICH, *LICH_PHUT)))
+    logging.getLogger("jobs").info(
+        "Worker job nền đã chạy: %s", ", ".join(t for t, *_ in (*LICH, *LICH_TUAN, *LICH_PHUT))
+    )
     await asyncio.Event().wait()
 
 

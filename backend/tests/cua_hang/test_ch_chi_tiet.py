@@ -208,7 +208,7 @@ def test_ten_rut_gon(ho_ten, ket_qua):
 # --- Sản phẩm tương tự -------------------------------------------------------------------------------------------------
 
 
-async def test_tuong_tu_cung_danh_muc_hoac_chung_hoat_chat_chung_nhieu_truoc_loai_ke_don_va_chinh_no(client, db):
+async def test_tuong_tu_cung_tap_hoat_chat_truoc_roi_cung_danh_muc_loai_ke_don_va_chinh_no(client, db):
     h1, h2 = HoatChat(ten="HC1"), HoatChat(ten="HC2")
     db.add_all([h1, h2])
     await db.flush()
@@ -226,7 +226,8 @@ async def test_tuong_tu_cung_danh_muc_hoac_chung_hoat_chat_chung_nhieu_truoc_loa
     await sp_ban_duoc(db, "KhôngLiênQuan")
     await db.flush()
     tuong_tu = (await lay(client, goc)).json()["tuong_tu"]
-    assert [t["ten"] for t in tuong_tu] == ["ChungHai", "ChungMột", "CùngDanhMục"]
+    # Spec 07 mục 7: cùng TẬP hoạt chất, rồi cùng danh mục. "ChungMột" chỉ chung một hoạt chất nên không vào hai tầng đầu.
+    assert [t["ten"] for t in tuong_tu] == ["ChungHai", "CùngDanhMục"]
     assert set(tuong_tu[0]) >= {"id", "ten", "slug", "gia", "con_hang", "can_tu_van"}
 
 

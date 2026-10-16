@@ -21,8 +21,8 @@ from app.models.khach_hang import KhachHang
 from app.modules.cua_hang import chi_tiet as dich_vu_chi_tiet
 from app.modules.cua_hang import danh_muc as dich_vu_danh_muc
 from app.modules.cua_hang import danh_sach as dich_vu_danh_sach
+from app.modules.cua_hang import goi_y, tim_kiem_lai
 from app.modules.cua_hang import tim_kiem as dich_vu_tim_kiem
-from app.modules.cua_hang import tim_kiem_lai
 from app.modules.cua_hang.chi_tiet import NguonXem
 from app.modules.cua_hang.danh_sach import BoLoc, SapXep
 from app.modules.cua_hang.schemas import (
@@ -64,6 +64,19 @@ async def banner(db: Db, vi_tri: Annotated[str | None, Query(max_length=30, patt
 @router.get("/trang-chu", response_model=TrangChu, summary="Trang chủ: banner, nổi bật, bán chạy (KVL01)")
 async def trang_chu(db: Db):
     return await dich_vu_danh_sach.trang_chu(db)
+
+
+@router.get(
+    "/goi-y/danh-cho-ban",
+    response_model=list[SanPhamThe],
+    summary="Sản phẩm dành cho bạn theo lịch sử xem 30 ngày (AI07)",
+)
+async def danh_cho_ban(
+    db: Db,
+    khach: Annotated[KhachHang | None, Depends(khach_tuy_chon)],
+    x_ma_phien: Annotated[str | None, Header(max_length=200)] = None,
+):
+    return await goi_y.danh_cho_ban(db, khach, dich_vu_chi_tiet.ma_phien_hop_le(x_ma_phien))
 
 
 @router.get("/san-pham", response_model=Trang[SanPhamThe], summary="Danh sách, lọc, sắp xếp sản phẩm (KVL02)")

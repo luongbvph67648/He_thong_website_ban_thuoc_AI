@@ -23,12 +23,11 @@ from app.models.ai import TaiLieuTriThuc
 from app.models.ban_hang import DonHang, LichSuTrangThai
 from app.models.enums import LoaiSanPham, NguonTriThuc
 from app.models.khach_hang import DiUng, HoSoSucKhoe, KhachHang
-from app.models.san_pham import HoatChat, SanPham, ThanhPhan
+from app.models.san_pham import HoatChat, SanPham
 from app.modules.ai_quan_tri import cau_hinh_ai
 from app.modules.chuyen_mon.noi_dung import noi_dung_da_duyet
 from app.modules.cua_hang import tim_kiem, tim_kiem_lai
-from app.modules.cua_hang.danh_sach import chon_the, dung_the
-from app.modules.cua_hang.hien_thi import la_hien_thi, nap_cay_hien_thi
+from app.modules.cua_hang.loc_an_toan import di_ung_cua_khach, the_hop_le
 from app.modules.cua_hang.schemas import SanPhamThe
 
 logger = logging.getLogger(__name__)
@@ -191,34 +190,6 @@ TRUONG_CHUYEN_MON = (
     "chi_dinh", "chong_chi_dinh", "lieu_dung_tham_khao", "tac_dung_phu", "than_trong", "tuong_tac_thuoc",
     "phu_nu_co_thai_cho_con_bu", "tre_em", "qua_lieu_xu_tri", "bao_quan",
 )  # fmt: skip
-
-
-async def di_ung_cua_khach(db: AsyncSession, khach: KhachHang | None) -> list[int]:
-    """Id hoạt chất khách dị ứng, CHỈ khi đã đồng ý dùng hồ sơ sức khỏe (spec 07 mục 1.4). Dùng để lọc ở SQL."""
-    if khach is None:
-        return []
-    dong_y = await db.scalar(select(HoSoSucKhoe.dong_y_su_dung).where(HoSoSucKhoe.khach_hang_id == khach.id))
-    if not dong_y:
-        return []
-    return list((await db.execute(select(DiUng.hoat_chat_id).where(DiUng.khach_hang_id == khach.id))).scalars())
-
-
-def loc_di_ung(ids_hoat_chat: list[int]):
-    """Điều kiện WHERE: sản phẩm KHÔNG chứa hoạt chất dị ứng."""
-    return ~SanPham.id.in_(select(ThanhPhan.san_pham_id).where(ThanhPhan.hoat_chat_id.in_(ids_hoat_chat)))
-
-
-async def the_hop_le(db: AsyncSession, ids: list[int], ids_di_ung: list[int]) -> list[SanPhamThe]:
-    """Thẻ sản phẩm đã qua MỌI bộ lọc (hiển thị, không kê đơn, không dị ứng), giữ thứ tự `ids`. Dùng cho cả tool lẫn thẻ
-    gửi khách: thẻ chỉ gồm id đã xuất hiện trong kết quả tool của lượt đó và vẫn phải qua bộ lọc này."""
-    if not ids:
-        return []
-    cay = await nap_cay_hien_thi(db)
-    dieu_kien = [la_hien_thi(cay.ids), SanPham.id.in_(ids), SanPham.loai_san_pham != LoaiSanPham.thuoc_ke_don]
-    if ids_di_ung:
-        dieu_kien.append(loc_di_ung(ids_di_ung))
-    the = {t.id: t for t in await dung_the(db, (await db.execute(chon_the().where(*dieu_kien))).all())}
-    return [the[i] for i in ids if i in the]
 
 
 @dataclass

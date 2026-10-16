@@ -3,7 +3,9 @@ import { Alert, Button, Carousel, Empty, Skeleton, Typography } from 'antd'
 import { Link } from 'react-router-dom'
 import { api } from '../../api/client'
 import { lienKetAnToan, laLienKetNgoai } from '../../lib/lienKet'
-import { KHOA_QUERY_CUA_HANG, type SanPhamThe } from './cuaHang'
+import { layMaPhien } from '../../lib/maPhien'
+import { usePhien } from '../../stores/phien'
+import { KHOA_QUERY_CUA_HANG, type NguonXem, type SanPhamThe } from './cuaHang'
 import { useCayDanhMuc } from './useCayDanhMuc'
 import { LuoiSanPham } from './TheSanPham'
 
@@ -24,12 +26,12 @@ function AnhBanner({ b, cao }: { b: Banner; cao: number }) {
   )
 }
 
-function KhuSanPham({ tieuDe, danhSach }: { tieuDe: string; danhSach: readonly SanPhamThe[] }) {
+function KhuSanPham({ tieuDe, danhSach, nguon = 'trang_chu' }: { tieuDe: string; danhSach: readonly SanPhamThe[]; nguon?: NguonXem }) {
   if (!danhSach.length) return null
   return (
     <section aria-label={tieuDe} style={{ marginTop: 24 }}>
       <Typography.Title level={3}>{tieuDe}</Typography.Title>
-      <LuoiSanPham danhSach={danhSach} nguon="trang_chu" />
+      <LuoiSanPham danhSach={danhSach} nguon={nguon} />
     </section>
   )
 }
@@ -56,6 +58,20 @@ function NoiDungTrangChu() {
     },
   })
   const danhMuc = useCayDanhMuc()
+  // AI07 "Dành cho bạn": theo lịch sử xem 30 ngày của thành viên hoặc của phiên trình duyệt; rỗng thì khu này tự ẩn.
+  const daKhoiPhuc = usePhien((st) => st.daKhoiPhuc)
+  const loaiPhien = usePhien((st) => st.loai)
+  const danhChoBan = useQuery({
+    queryKey: [...KHOA_QUERY_CUA_HANG, 'danh-cho-ban', loaiPhien],
+    enabled: daKhoiPhuc,
+    staleTime: 5 * 60_000,
+    retry: false,
+    queryFn: async () => {
+      const maPhien = layMaPhien()
+      const { data } = await api.GET('/api/v1/goi-y/danh-cho-ban', { params: { header: { 'x-ma-phien': maPhien } } })
+      return data ?? []
+    },
+  })
 
   if (trangChu.isPending) return <Skeleton active paragraph={{ rows: 8 }} />
   if (trangChu.isError)
@@ -105,6 +121,7 @@ function NoiDungTrangChu() {
         </section>
       )}
       <KhuSanPham tieuDe="Sản phẩm nổi bật" danhSach={noi_bat} />
+      <KhuSanPham tieuDe="Dành cho bạn" danhSach={danhChoBan.data ?? []} nguon="danh_cho_ban" />
       <KhuSanPham tieuDe="Bán chạy" danhSach={ban_chay} />
       {chuaCoGi && <Empty style={{ marginTop: 48 }} description="Cửa hàng chưa có sản phẩm" />}
     </>

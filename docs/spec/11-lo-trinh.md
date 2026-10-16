@@ -879,14 +879,14 @@ _Kho tri thức, tìm kiếm lai, chatbot RAG, chuyển dược sĩ, đọc ản
   - [x] Màn duyệt DS04 hiển thị gợi ý kèm độ tin cậy, dược sĩ sửa/xác nhận (`do_duoc_si_nhap`). AI không tự duyệt.
 - **Ghi chú triển khai:** `ai/doc_don_thuoc.py` + `ai/prompts/doc_don_thuoc.md` (AI06), `modules/don_thuoc/doc_anh_ai.py` (job `ai06_doc_don_thuoc` mỗi phút, gợi ý `san_pham_id`), `duyet.luu_thuoc_tren_don` + `PUT /noi-bo/don-thuoc/{id}/thuoc-tren-don` (vào registry phân quyền). API spec 06 mục 3.44; QĐ-47. Giao diện `ThuocTrenDon.tsx` trong màn DS04 (độ tin cậy, sửa/thêm/xóa dòng, nút tìm sản phẩm, lưu). Test `tests/ai/test_doc_don_thuoc.py` (13), `ThuocTrenDon.test.tsx` (11). CHƯA thử với ảnh đơn thuốc thật và Claude thật. LƯU Ý: `tao_don` vẫn nhận dòng sản phẩm do dược sĩ chọn ở DS05, không tự lấy từ gợi ý AI.
 
-### [ ] T7.7 · Gợi ý sản phẩm và mua kèm
+### [x] T7.7 · Gợi ý sản phẩm và mua kèm
 - **Chức năng:** AI07 (Gợi ý sản phẩm tương tự, dành cho bạn), AI08 (Gợi ý mua kèm)
 - **Phụ thuộc:** T7.1, T4.9
 - **Bảng:** `san_pham`, `thanh_phan`, `lich_su_xem`, `di_ung`, `luat_mua_kem`, `ct_don_hang`
 - **Tiêu chí chấp nhận:**
-  - [ ] AI07: sản phẩm tương tự (cùng hoạt chất → cùng danh mục → gần vector), "dành cho bạn" theo `lich_su_xem`; loại thuốc kê đơn và hoạt chất dị ứng.
-  - [ ] AI08 job hằng tuần: luật kết hợp từ `ct_don_hang` đơn `hoan_tat` 180 ngày (support ≥ 0.005, confidence ≥ 0.1, lift > 1), ghi đè `luat_mua_kem`.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] AI07: sản phẩm tương tự (cùng hoạt chất → cùng danh mục → gần vector), "dành cho bạn" theo `lich_su_xem`; loại thuốc kê đơn và hoạt chất dị ứng.
+  - [x] AI08 job hằng tuần: luật kết hợp từ `ct_don_hang` đơn `hoan_tat` 180 ngày (support ≥ 0.005, confidence ≥ 0.1, lift > 1), ghi đè `luat_mua_kem`.
+- **Ghi chú triển khai:** `cua_hang/goi_y.py` (AI07: `san_pham_tuong_tu` thay bản trong `chi_tiet.py`, `danh_cho_ban`), `cua_hang/loc_an_toan.py` (bộ lọc kê đơn/dị ứng chuyển từ `ai/chatbot.py`), `gio_hang/luat_mua_kem.py` + job `ai08_luat_mua_kem` (Chủ nhật 03:00, `LICH_TUAN`), `GET /goi-y/danh-cho-ban`. API spec 06 mục 3.45; QĐ-48. Giao diện: khu "Dành cho bạn" ở trang chủ (ẩn khi rỗng). LỆCH nhỏ: "tương tự" đổi từ "chung một hoạt chất" sang đúng spec (cùng TẬP hoạt chất), test T1.3 đã cập nhật. Test `tests/ai/test_goi_y.py` (13), `TrangChu.test.tsx`.
 
 ### [ ] T7.8 · Đánh giá và giám sát AI
 - **Chức năng:** DS12 (Đánh giá câu trả lời AI), AD11 (Giám sát hội thoại AI)

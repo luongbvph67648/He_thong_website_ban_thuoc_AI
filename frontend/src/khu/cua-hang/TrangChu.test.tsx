@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { chiTiet, loi, ok, the } from '../../test/cuaHang'
 import { renderTai } from '../../test/render'
@@ -18,9 +18,10 @@ const CAY = [
 const BANNER = (o: object) => ({ id: 1, tieu_de: 'Khuyến mãi', anh_url: '/banner/chinh-1.svg', lien_ket: '/danh-muc/thuoc', vi_tri: 'trang_chu_chinh', ...o })
 const TRANG_CHU = (o: object = {}) => ({ banner_chinh: [], banner_phu: [], noi_bat: [], ban_chay: [], ...o })
 
-function dapUng(trangChu: unknown) {
+function dapUng(trangChu: unknown, danhChoBan: unknown[] = []) {
   GET.mockImplementation(async (duong: string) => {
     if (duong === '/api/v1/danh-muc') return ok(CAY)
+    if (duong === '/api/v1/goi-y/danh-cho-ban') return ok(danhChoBan)
     if (duong === '/api/v1/trang-chu') return typeof trangChu === 'function' ? trangChu() : ok(trangChu)
     throw new Error(`Chưa giả lập ${duong}`)
   })
@@ -101,5 +102,22 @@ describe('TrangChu', () => {
     const thanh = await screen.findByRole('navigation', { name: 'Danh mục sản phẩm' })
     expect(await within(thanh).findByRole('link', { name: 'Dược mỹ phẩm' })).toHaveAttribute('href', '/danh-muc/duoc-my-pham')
     expect(chiTiet().ten).toBe('Paracetamol 500mg')
+  })
+
+  it('AI07: khu "Dành cho bạn" hiện khi có gợi ý (nguồn danh_cho_ban) và ẩn khi rỗng', async () => {
+    dapUng(TRANG_CHU({ ban_chay: [the({ id: 2, ten: 'Sản phẩm bán chạy B', slug: 'b' })] }), [the({ id: 5, ten: 'Gợi ý riêng E', slug: 'e' })])
+    renderTai('/')
+    const khu = await screen.findByRole('region', { name: 'Dành cho bạn' })
+    expect(within(khu).getByRole('link', { name: 'Gợi ý riêng E' })).toHaveAttribute('href', '/san-pham/e?nguon=danh_cho_ban')
+    const goi = GET.mock.calls.find((c) => c[0] === '/api/v1/goi-y/danh-cho-ban')!
+    expect(goi[1].params.header).toHaveProperty('x-ma-phien')
+  })
+
+  it('AI07: không có gợi ý thì không có khu "Dành cho bạn"', async () => {
+    dapUng(TRANG_CHU({ ban_chay: [the({ id: 2, ten: 'Sản phẩm bán chạy B', slug: 'b' })] }), [])
+    renderTai('/')
+    await screen.findByRole('region', { name: 'Bán chạy' })
+    await waitFor(() => expect(GET.mock.calls.some((c) => c[0] === '/api/v1/goi-y/danh-cho-ban')).toBe(true))
+    expect(screen.queryByRole('region', { name: 'Dành cho bạn' })).not.toBeInTheDocument()
   })
 })

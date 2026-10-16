@@ -446,3 +446,10 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **Chốt danh sách bằng một `PUT` thay toàn bộ** (không CRUD từng dòng): đơn giản, dược sĩ sửa nhiều dòng một lần; dòng chữ không đổi giữ nguyên độ tin cậy để còn dấu vết nguồn gốc. Không thêm cột "đã xác nhận": `do_duoc_si_nhap` chỉ đánh dấu dòng do dược sĩ nhập hoặc sửa chữ.
 - **Chi phí AI06 chưa vào ngân sách ngày** (cùng lý do QĐ-46); số yêu cầu bị chặn sẵn bởi giới hạn gửi đơn theo số điện thoại và theo OTP.
 
+## QĐ-48 · Gợi ý sản phẩm (T7.7)
+- **"Tương tự" theo đúng ba tầng của spec 07 mục 7** (cùng tập hoạt chất, cùng danh mục, gần vector). Bản cũ ở T1.3 ("cùng danh mục HOẶC chung một hoạt chất") bị thay: sản phẩm chỉ chung một trong nhiều hoạt chất giờ chỉ xuất hiện nếu gần về vector. Test cũ đã sửa theo.
+- **Luật mua kèm giữ nguyên ngưỡng của spec**, không thêm số cặp tối thiểu: cửa hàng ít đơn (như dữ liệu mẫu) vẫn có luật, đổi lại với dữ liệu thật lượng đơn nhỏ cho luật nhiễu. Khi vận hành nên cân nhắc tăng `SUPPORT_TOI_THIEU` trong `luat_mua_kem.py`.
+- **Mốc 180 ngày tính từ lúc đơn vào `hoan_tat`** (lịch sử trạng thái; đơn không có lịch sử thì lấy `created_at`), vì đơn chỉ hoàn tất sau thời hạn đổi trả.
+- **Chuyển bộ lọc kê đơn/dị ứng ra `cua_hang/loc_an_toan.py`** để chatbot và gợi ý dùng chung một cài đặt, tránh hai bản lệch nhau.
+- **"Dành cho bạn" không có dự phòng bán chạy chung** khi chưa có lịch sử: khu này ẩn (trang chủ đã có "Bán chạy").
+

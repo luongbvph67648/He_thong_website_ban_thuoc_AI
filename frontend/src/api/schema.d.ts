@@ -1202,6 +1202,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/goi-y/danh-cho-ban": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Sản phẩm dành cho bạn theo lịch sử xem 30 ngày (AI07) */
+        get: operations["danh_cho_ban_api_v1_goi_y_danh_cho_ban_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/san-pham": {
         parameters: {
             query?: never;
@@ -12090,6 +12107,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TrangChu"];
+                };
+            };
+        };
+    };
+    danh_cho_ban_api_v1_goi_y_danh_cho_ban_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "x-ma-phien"?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SanPhamThe"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

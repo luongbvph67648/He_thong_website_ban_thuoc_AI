@@ -4,7 +4,7 @@ import re
 from datetime import timedelta
 from typing import Literal
 
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import luu_tru
@@ -15,7 +15,7 @@ from app.models.enums import LoaiSanPham
 from app.models.khach_hang import DanhGia, KhachHang
 from app.models.san_pham import AnhSanPham, DonViQuyDoi, HoatChat, NhaSanXuat, SanPham, ThanhPhan, ThuongHieu
 from app.modules.chuyen_mon.noi_dung import noi_dung_da_duyet
-from app.modules.cua_hang.danh_sach import chon_the, dung_the
+from app.modules.cua_hang import goi_y
 from app.modules.cua_hang.hien_thi import la_hien_thi, nap_cay_hien_thi, ton_kha_dung
 from app.modules.cua_hang.schemas import (
     AnhCongKhai,
@@ -24,7 +24,6 @@ from app.modules.cua_hang.schemas import (
     MucDuongDan,
     NoiDungChuyenMonCongKhai,
     SanPhamChiTietCongKhai,
-    SanPhamThe,
     TenRut,
     ThanhPhanCongKhai,
     TongHopDanhGia,
@@ -119,38 +118,6 @@ async def _danh_gia(db: AsyncSession, san_pham_id: int) -> TongHopDanhGia:
             for d, ho_ten in moi_nhat
         ],
     )
-
-
-async def _tuong_tu(
-    db: AsyncSession, sp: SanPham, ids_hoat_chat: list[int], ids_danh_muc: set[int]
-) -> list[SanPhamThe]:
-    """Cùng danh mục hoặc chung hoạt chất (chung nhiều trước); luôn loại thuốc kê đơn và chính sản phẩm."""
-    chung = (
-        select(func.count())
-        .select_from(ThanhPhan)
-        .where(ThanhPhan.san_pham_id == SanPham.id, ThanhPhan.hoat_chat_id.in_(ids_hoat_chat))
-        .correlate(SanPham)
-        .scalar_subquery()
-        if ids_hoat_chat
-        else None
-    )
-    cung_loai = (
-        SanPham.danh_muc_id == sp.danh_muc_id
-        if chung is None
-        else or_(SanPham.danh_muc_id == sp.danh_muc_id, chung > 0)
-    )
-    stmt = chon_the().where(
-        la_hien_thi(ids_danh_muc),
-        SanPham.id != sp.id,
-        SanPham.loai_san_pham != LoaiSanPham.thuoc_ke_don,
-        cung_loai,
-    )
-    if chung is not None:
-        stmt = stmt.order_by(chung.desc())
-    dong = (
-        await db.execute(stmt.order_by(SanPham.created_at.desc(), SanPham.id.desc()).limit(SO_SAN_PHAM_TUONG_TU))
-    ).all()
-    return await dung_the(db, dong)
 
 
 async def chi_tiet(
@@ -250,5 +217,7 @@ async def chi_tiet(
         else None,
         con_hang=ton > 0,
         danh_gia=await _danh_gia(db, sp.id),
-        tuong_tu=await _tuong_tu(db, sp, [h for h, _, _ in thanh_phan], cay.ids),
+        tuong_tu=await goi_y.san_pham_tuong_tu(
+            db, sp, [h for h, _, _ in thanh_phan], khach, gioi_han=SO_SAN_PHAM_TUONG_TU
+        ),
     )
