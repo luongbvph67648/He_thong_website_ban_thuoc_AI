@@ -213,3 +213,27 @@ async def test_gioi_han_theo_ip_chan_do_mat_khau_dien_rong(client, db, monkeypat
     transport = httpx.ASGITransport(app=app, client=("10.9.8.7", 4444))
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as khac:
         assert (await dang_nhap(khac)).status_code == 200
+
+
+# --- T8.2: "bị khóa" không được lộ tài khoản có thật ---
+
+
+@pytest.fixture(autouse=True)
+def _xoa_bo_dem_khong_ton_tai():
+    from app.modules.tai_khoan import dang_nhap as dn
+
+    dn._SAI_KHONG_TON_TAI.clear()
+
+
+async def test_so_khong_ton_tai_cung_bi_khoa_tam_sau_cung_so_lan_sai(client, db):
+    ma = [(await dang_nhap(client, "0987654321", "Sai@12345")).status_code for _ in range(7)]
+    assert ma[:4] == [401] * 4
+    assert ma[4:] == [403] * 3  # lần thứ 5 trở đi: cùng phản hồi khóa tạm như tài khoản có thật
+
+
+async def test_phan_hoi_khoa_cua_so_that_va_so_khong_ton_tai_giong_nhau(client, db):
+    await tao_khach(db, so_dien_thoai=SDT)
+    that = [(await dang_nhap(client, SDT, "Sai@12345")) for _ in range(5)]
+    ao = [(await dang_nhap(client, "0987654321", "Sai@12345")) for _ in range(5)]
+    assert [r.status_code for r in that] == [r.status_code for r in ao]
+    assert that[-1].json().keys() == ao[-1].json().keys()
