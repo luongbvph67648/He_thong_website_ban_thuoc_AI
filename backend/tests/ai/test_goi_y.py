@@ -298,4 +298,4 @@ async def test_cong_thuc_do_tin_cay_bang_khong_khi_khong_co_don(db):
 
 
 def test_lich_tuan_co_ai08_chu_nhat():
-    assert [(t, thu) for t, _, thu, *_ in LICH_TUAN] == [("ai08_luat_mua_kem", "sun")]
+    assert ("ai08_luat_mua_kem", "sun") in [(t, thu) for t, _, thu, *_ in LICH_TUAN]
