@@ -102,26 +102,57 @@ def _json_ket_qua(doc: DonThuocDoc) -> dict:
     }
 
 
-async def doc_mot_yeu_cau(db: AsyncSession, yc: YeuCauDonThuoc, su_dung: claude.SuDung) -> bool:
-    """True nếu đã ghi kết quả. Lỗi AI được ghi dấu và trả False (không ném)."""
+@dataclass
+class _KetQuaDoc:
+    """Kết quả đọc một yêu cầu, tính XONG trước khi đụng khóa dòng nào."""
+
+    yc_id: int
+    ma: str
+    doc: DonThuocDoc | None
+    ly_do: str | None
+    lan: int
+
+
+async def _doc_ai(yc: YeuCauDonThuoc, su_dung: claude.SuDung) -> _KetQuaDoc:
+    """Chỉ đọc tệp và gọi Claude, không ghi CSDL (không giữ khóa dòng trong lúc chờ AI, có thể hàng chục giây)."""
     lan = int((yc.ket_qua_ai or {}).get("lan_thu", 0)) + 1
-    ly_do = None
-    doc = None
     ds_anh = await _anh_b64(yc)
     if not ds_anh:
-        ly_do, lan = "anh_hong", SO_LAN_THU
-    else:
-        try:
-            doc = await doc_don_thuoc(ds_anh, su_dung)
-        except claude.AiTuChoi:
-            ly_do, lan = "ai_tu_choi", SO_LAN_THU
-        except (claude.AiLoi, ValidationError) as e:
-            logger.warning("AI06 lỗi với %s (lần %s): %s", yc.ma_yeu_cau, lan, type(e).__name__)
-            ly_do = "ai_loi"
-    if doc is None:
-        yc.ket_qua_ai = {"trang_thai": "loi", "ly_do": ly_do, "lan_thu": lan}
+        return _KetQuaDoc(yc.id, yc.ma_yeu_cau, None, "anh_hong", SO_LAN_THU)
+    try:
+        return _KetQuaDoc(yc.id, yc.ma_yeu_cau, await doc_don_thuoc(ds_anh, su_dung), None, lan)
+    except claude.AiTuChoi:
+        return _KetQuaDoc(yc.id, yc.ma_yeu_cau, None, "ai_tu_choi", SO_LAN_THU)
+    except (claude.AiLoi, ValidationError) as e:
+        logger.warning("AI06 lỗi với %s (lần %s): %s", yc.ma_yeu_cau, lan, type(e).__name__)
+        return _KetQuaDoc(yc.id, yc.ma_yeu_cau, None, "ai_loi", lan)
+
+
+def _can_doc(yc: YeuCauDonThuoc) -> bool:
+    kq = yc.ket_qua_ai
+    chua = kq is None or (
+        isinstance(kq, dict) and kq.get("trang_thai") == "loi" and int(kq.get("lan_thu", 0)) < SO_LAN_THU
+    )
+    return chua and yc.trang_thai in TRANG_THAI_CAN_DOC
+
+
+async def _ghi(db: AsyncSession, kq: _KetQuaDoc) -> bool:
+    """Ghi kết quả trong thời gian khóa ngắn; bỏ qua nếu trong lúc chờ AI yêu cầu đã đổi (dược sĩ từ chối, đã đọc)."""
+    yc = (
+        await db.execute(
+            select(YeuCauDonThuoc)
+            .where(YeuCauDonThuoc.id == kq.yc_id)
+            .with_for_update(skip_locked=True)
+            .execution_options(populate_existing=True)
+        )
+    ).scalar_one_or_none()
+    if yc is None or not _can_doc(yc):
+        return False
+    if kq.doc is None:
+        yc.ket_qua_ai = {"trang_thai": "loi", "ly_do": kq.ly_do, "lan_thu": kq.lan}
         await db.flush()
         return False
+    doc = kq.doc
     yc.ket_qua_ai = _json_ket_qua(doc)
     co_dong = await db.scalar(select(exists().where(CtYeuCauDonThuoc.yeu_cau_id == yc.id)))
     if not co_dong:
@@ -143,7 +174,8 @@ async def doc_mot_yeu_cau(db: AsyncSession, yc: YeuCauDonThuoc, su_dung: claude.
 
 
 async def doc_don_thuoc_moi(db: AsyncSession) -> KetQuaAi06:
-    """AI06: lấy tối đa `SO_YEU_CAU_MOI_LAN` yêu cầu chưa đọc (`SKIP LOCKED` nên hai worker không đọc trùng)."""
+    """AI06: lấy tối đa `SO_YEU_CAU_MOI_LAN` yêu cầu chưa đọc. Ba pha: chọn (không khóa dòng; `chay_job` đã bảo đảm một
+    tiến trình), gọi AI từng yêu cầu, rồi ghi tất cả trong thời gian khóa ngắn."""
     ket_qua = KetQuaAi06()
     if not await cau_hinh_ai.module_bat(db, "doc_don_thuoc"):
         return ket_qua
@@ -159,17 +191,19 @@ async def doc_don_thuoc_moi(db: AsyncSession) -> KetQuaAi06:
                 )
                 .order_by(YeuCauDonThuoc.created_at)
                 .limit(SO_YEU_CAU_MOI_LAN)
-                .with_for_update(skip_locked=True)
             )
         )
         .scalars()
         .all()
     )
+    da_doc: list[_KetQuaDoc] = []
     for yc in ds:
         su_dung = claude.SuDung()
-        ok = await doc_mot_yeu_cau(db, yc, su_dung)
-        (ket_qua.da_doc if ok else ket_qua.loi).append(yc.ma_yeu_cau)
+        da_doc.append(await _doc_ai(yc, su_dung))
         logger.info(
             "AI06 %s", yc.ma_yeu_cau, extra={"token": su_dung.tong_token, "chi_phi_usd": str(su_dung.chi_phi_usd())}
         )
+    for kq in da_doc:
+        ok = await _ghi(db, kq)
+        (ket_qua.da_doc if ok else ket_qua.loi).append(kq.ma)
     return ket_qua

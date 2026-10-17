@@ -19,6 +19,8 @@ const { GET, POST, GET_MAC_DINH } = vi.hoisted(() => {
     if (duong.endsWith('/noi-bo/toi')) return { error: { ma_loi: 'LOI_HE_THONG', thong_diep: 'x', chi_tiet: null } }
     if (duong === '/api/v1/trang-chu') return { data: { banner_chinh: [], banner_phu: [], noi_bat: [], ban_chay: [] } }
     if (duong === '/api/v1/danh-muc') return { data: [] }
+    if (duong === '/api/v1/noi-bo/bao-cao/tong-hop')
+      return { data: { tu_ngay: '2026-10-01', den_ngay: '2026-10-02', so_don_hoan_tat: 0, doanh_thu: '0', hoan_tien: '0', doanh_thu_thuan: '0', gia_von: '0', loi_nhuan_gop: '0', doanh_thu_theo_ngay: [], ban_chay: [], gia_tri_ton_kho: '0', ton_kho_theo_trang_thai: [], so_lo_can_han: 0, lo_can_han: [], hieu_qua_ai: { tong_hoi_thoai: 0, ty_le_chuyen_duoc_si: null, so_gan_co: 0, tong_chi_phi_usd: '0', danh_gia: { khach_huu_ich: 0, khach_khong_huu_ich: 0, duoc_si_dung: 0, duoc_si_sai: 0 } } } }
     return { data: { du_lieu: [], tong: 0, trang: 1, kich_thuoc: 10 } }
   }
   return {
@@ -128,9 +130,9 @@ describe('khu cửa hàng', () => {
     expect(screen.getByPlaceholderText(/Tìm thuốc/)).toBeInTheDocument()
   })
 
-  it('các trang trong spec 2.1 có route (đang xây dựng) kèm mã chức năng', async () => {
+  it('các trang trong spec 2.1 có route hiện trang thật', async () => {
     renderTai('/nhan-vien/bao-cao-ca', { loai: 'noi_bo', vaiTro: 'PHARMACIST', quyen: { 'report.shift': 'xem' } as never })
-    expect(await screen.findByText(/DS14/)).toBeInTheDocument()
+    expect(await screen.findByText('Báo cáo ca', { selector: 'h2' })).toBeInTheDocument()
   })
 
   it('/403 hiện trang không có quyền', async () => {
@@ -166,9 +168,9 @@ describe('khu nhân viên', () => {
     expect(within(menu).queryByText('Tồn kho')).not.toBeInTheDocument()
   })
 
-  it('trang có quyền hiện nội dung (đang xây dựng) kèm mã chức năng', async () => {
+  it('trang có quyền hiện nội dung hiện trang thật', async () => {
     renderTai('/nhan-vien/bao-cao-ca', { ...duocSi, quyen: { ...duocSi.quyen, 'report.shift': 'day_du' } })
-    expect(await screen.findByText(/DS14/)).toBeInTheDocument()
+    expect(await screen.findByText('Báo cáo ca', { selector: 'h2' })).toBeInTheDocument()
   })
 
   it('trang không có quyền hiện 403 nhưng vẫn giữ layout và địa chỉ', async () => {
@@ -180,7 +182,7 @@ describe('khu nhân viên', () => {
 
   it('quyền chỉ xem vẫn vào được trang xem', async () => {
     renderTai('/nhan-vien/bao-cao-ca', { loai: 'noi_bo', vaiTro: 'PHARMACIST', quyen: { 'report.shift': 'chi_xem' } })
-    expect(await screen.findByText(/DS14/)).toBeInTheDocument()
+    expect(await screen.findByText('Báo cáo ca', { selector: 'h2' })).toBeInTheDocument()
   })
 
   it('/nhan-vien tự chuyển tới trang đầu tiên được phép', async () => {
@@ -301,7 +303,7 @@ describe('khu quản trị', () => {
     expect(within(menu).getByText('Nhân viên')).toBeInTheDocument()
     expect(within(menu).getByText('Xem đơn hàng')).toBeInTheDocument()
     expect(within(menu).queryByText('Nhật ký hệ thống')).not.toBeInTheDocument()
-    expect(await screen.findByText(/AD14/)).toBeInTheDocument()
+    expect(await screen.findByText('Tổng quan', { selector: 'h2' })).toBeInTheDocument()
   })
 
   it('dược sĩ không vào được khu quản trị dù có token nội bộ', async () => {
@@ -313,7 +315,7 @@ describe('khu quản trị', () => {
     renderTai('/quan-tri', { loai: 'noi_bo', vaiTro: 'PHARMACIST', quyen: { 'report.all': 'day_du' } })
     expect(await screen.findByText('Bạn không có quyền truy cập trang này')).toBeInTheDocument()
     expect(screen.queryByRole('menu')).not.toBeInTheDocument() // không dựng cả khung quản trị
-    expect(screen.queryByText(/AD14/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Tổng quan', { selector: 'h2' })).not.toBeInTheDocument()
   })
 
   it('chưa đăng nhập bị chuyển tới đăng nhập nội bộ', async () => {

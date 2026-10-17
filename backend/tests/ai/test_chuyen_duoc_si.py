@@ -12,7 +12,7 @@ from app.core.db import lay_tao_phien
 from app.core.ma_hoa import ma_hoa
 from app.core.thoi_gian import bay_gio_utc
 from app.models.ai import HoiThoai, TinNhan
-from app.models.he_thong import CauHinh, NhatKyHeThong
+from app.models.he_thong import CauHinh, NhanVien, NhatKyHeThong
 from app.models.khach_hang import DiUng, HoSoSucKhoe, ThongBao
 from app.models.san_pham import HoatChat
 from app.modules.tu_van import chuyen_duoc_si, ws
@@ -129,7 +129,7 @@ async def test_hang_cho_nhan_phien_va_hai_duoc_si_tranh_nhau(app, db, clients_th
         assert (await ds2.post(f"{NB}/{h.id}/nhan")).status_code == 409
         assert (
             await ds2.get(f"{NB}/{h.id}")
-        ).status_code == 403  # dược sĩ khác không xem phiên đang do người khác xử lý
+        ).status_code == 404  # phiên đang do người khác xử lý: không thấy
         assert (await ds2.get(NB)).json() == []
         await db.refresh(h)
         assert h.loai == "duoc_si" and h.duoc_si_id is not None
@@ -351,3 +351,67 @@ async def test_ht08_dong_phien_khong_hoat_dong(db):
     assert (h_cu.trang_thai, h_chat.trang_thai) == ("da_dong", "da_dong") and h_cu.dong_luc is not None
     assert (h_moi.trang_thai, h_co_tin.trang_thai, h_cho.trang_thai) == ("dang_mo", "dang_mo", "cho_duoc_si")
     assert await chuyen_duoc_si.dong_phien_khong_hoat_dong(db) == []  # chạy lại không đổi gì
+
+
+async def test_chi_tiet_chi_doc_phien_cho_hoac_cua_minh_khong_doc_phien_da_dong_cua_ai(clients_theo_vai_tro, db):
+    ds = clients_theo_vai_tro["PHARMACIST"]
+    ai_da_dong = await mo_phien(db, trang_thai="da_dong", tin=("Tôi bị tiểu đường và đang dùng insulin",))
+    cho = await mo_phien(db, trang_thai="cho_duoc_si")
+    cho_goi = await mo_phien(db, trang_thai="cho_goi_lai")
+    assert (
+        await ds.get(f"{NB}/{ai_da_dong.id}")
+    ).status_code == 404  # hội thoại chỉ với AI đã đóng: không phải việc của dược sĩ
+    assert (await ds.get(f"{NB}/{cho.id}")).status_code == 200 and (
+        await ds.get(f"{NB}/{cho_goi.id}")
+    ).status_code == 200
+    await ds.post(f"{NB}/{cho.id}/nhan")
+    await ds.post(f"{NB}/{cho.id}/dong")
+    assert (await ds.get(f"{NB}/{cho.id}")).status_code == 200  # phiên mình đã xử lý vẫn xem lại được
+
+
+async def test_websocket_duoc_si_bi_khoa_giua_chung_thi_bi_ngat(app, db, clients_theo_vai_tro):
+    ds = clients_theo_vai_tro["PHARMACIST"]
+    h = await mo_phien(db)
+    h.trang_thai = "cho_duoc_si"
+    await db.flush()
+    await ds.post(f"{NB}/{h.id}/nhan")
+    token = ds.headers["Authorization"].removeprefix("Bearer ")
+    d = WsGia({"loai": "xac_thuc", "vai_tro": "duoc_si", "token": token})
+    t = await chay(app, d, h.ma_phien)
+    await cho_den(lambda: d.ra)
+    await db.refresh(h)
+    nv = (await db.execute(select(NhanVien).where(NhanVien.id == h.duoc_si_id))).scalar_one()
+    nv.trang_thai = "bi_khoa"
+    await db.flush()
+    await d.vao.put({"loai": "tin_nhan", "noi_dung": "Tôi vẫn nhắn được?"})
+    await t
+    assert d.dong_voi == ws.MA_DONG_KHONG_CO_QUYEN
+    assert not (await db.execute(select(TinNhan).where(TinNhan.noi_dung == "Tôi vẫn nhắn được?"))).scalars().all()
+
+
+async def test_websocket_gioi_han_tan_suat_tin(app, db, monkeypatch):
+    monkeypatch.setattr(ws._CuaSoTin, "TOI_DA", 3)
+    h = await mo_phien(db)
+    h.trang_thai = "cho_duoc_si"
+    await db.flush()
+    k = WsGia({"loai": "xac_thuc", "vai_tro": "khach"})
+    t = await chay(app, k, h.ma_phien)
+    await cho_den(lambda: k.ra)
+    for i in range(5):
+        await k.vao.put({"loai": "tin_nhan", "noi_dung": f"tin {i}"})
+    await k.vao.put(None)
+    await t
+    loi = [x for x in k.ra if x.get("su_kien") == "loi"]
+    assert len(loi) == 2 and "quá nhanh" in loi[0]["thong_diep"]
+    luu = (
+        (
+            await db.execute(
+                select(TinNhan).where(
+                    TinNhan.hoi_thoai_id == h.id, TinNhan.vai_tro == "khach", TinNhan.noi_dung.like("tin %")
+                )
+            )
+        )
+        .scalars()
+        .all()
+    )
+    assert len(luu) == 3

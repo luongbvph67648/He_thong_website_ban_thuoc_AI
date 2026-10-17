@@ -211,8 +211,10 @@ async def _lay(db: AsyncSession, hoi_thoai_id: int, *, khoa: bool = False) -> Ho
 async def chi_tiet(db: AsyncSession, nv: NhanVien, hoi_thoai_id: int) -> ChatChiTiet:
     await dam_bao_duoc_si(db, nv)
     h = await _lay(db, hoi_thoai_id)
-    if h.trang_thai == TT.duoc_si_dang_xu_ly and h.duoc_si_id != nv.id:
-        raise LoiNghiepVu("KHONG_CO_QUYEN", "Phiên này đang do dược sĩ khác xử lý")
+    # Chỉ đọc phiên đang chờ (để nhận), phiên của chính mình; phiên khác (kể cả đã đóng) là 404 như không tồn tại.
+    # Hội thoại bị gắn cờ xem ở DS12 (đã ẩn danh), không qua đây.
+    if h.trang_thai not in (TT.cho_duoc_si, TT.cho_goi_lai) and h.duoc_si_id != nv.id:
+        raise LoiNghiepVu("KHONG_TIM_THAY", "Không tìm thấy phiên tư vấn")
     ten = await db.scalar(select(KhachHang.ho_ten).where(KhachHang.id == h.khach_hang_id)) if h.khach_hang_id else None
     tin = (
         (await db.execute(select(TinNhan).where(TinNhan.hoi_thoai_id == h.id).order_by(TinNhan.id).limit(300)))

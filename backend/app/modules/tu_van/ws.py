@@ -8,18 +8,21 @@ khỏi lọt vào log), sau đó kiểm quyền vào phiên: khách vãng lai ch
 
 import asyncio
 import logging
+import time
 import uuid
+from collections import deque
 from typing import Any, Protocol
 
 from fastapi import WebSocketDisconnect
 from pydantic import BaseModel, Field, ValidationError
+from sqlalchemy.orm import selectinload
 from starlette.requests import Request
 
 from app.core.db import TaoPhien
 from app.core.loi import LoiNghiepVu
 from app.core.phan_quyen import MA_VAI_TRO_DUOC_SI, _khach_tu_token, _nhan_vien_tu_request, quyen_cua_vai_tro
 from app.models.ai import HoiThoai
-from app.models.enums import TrangThaiHoiThoai
+from app.models.enums import TrangThaiHoiThoai, TrangThaiTaiKhoan
 from app.models.he_thong import NhanVien
 from app.models.khach_hang import KhachHang
 from app.modules.tu_van import chuyen_duoc_si, dich_vu
@@ -67,6 +70,35 @@ async def _dinh_danh(db: Any, xt: XacThuc) -> tuple[str, KhachHang | NhanVien | 
     return "khach", khach
 
 
+async def _con_quyen_duoc_si(db: Any, nv_id: int) -> bool:
+    """Kiểm lại MỖI tin: còn hoạt động, vẫn là dược sĩ và còn `chat.handle` đầy đủ (Admin vừa khóa hoặc gỡ quyền)."""
+    nv = await db.get(NhanVien, nv_id, options=[selectinload(NhanVien.vai_tro)])
+    if nv is None or nv.deleted_at is not None or nv.trang_thai != TrangThaiTaiKhoan.hoat_dong:
+        return False
+    if (await quyen_cua_vai_tro(db, nv.vai_tro_id)).get("chat.handle") != "day_du":
+        return False
+    return nv.vai_tro.ma == MA_VAI_TRO_DUOC_SI
+
+
+class _CuaSoTin:
+    """Tối đa `TOI_DA` tin trong `GIAY` giây trên một kết nối; vượt thì bỏ qua tin (không đóng kết nối)."""
+
+    TOI_DA = 30
+    GIAY = 60
+
+    def __init__(self) -> None:
+        self._luc: deque[float] = deque()
+
+    def cho_phep(self) -> bool:
+        bay_gio = time.monotonic()
+        while self._luc and bay_gio - self._luc[0] > self.GIAY:
+            self._luc.popleft()
+        if len(self._luc) >= self.TOI_DA:
+            return False
+        self._luc.append(bay_gio)
+        return True
+
+
 async def phuc_vu(ws: WebSocketLike, ma_phien: uuid.UUID, tao_phien: TaoPhien) -> None:
     await ws.accept()
     try:
@@ -101,6 +133,7 @@ async def phuc_vu(ws: WebSocketLike, ma_phien: uuid.UUID, tao_phien: TaoPhien) -
         await ws.close(ma_dong)
         return
     khoa = str(ma_phien)
+    gioi_han = _CuaSoTin()
     HUB.vao(khoa, ws, vai_tro)
     try:
         await ws.send_json({"loai": "he_thong", "su_kien": "da_ket_noi"})
@@ -110,11 +143,19 @@ async def phuc_vu(ws: WebSocketLike, ma_phien: uuid.UUID, tao_phien: TaoPhien) -
             except ValidationError:
                 await ws.send_json({"loai": "he_thong", "su_kien": "loi", "thong_diep": "Tin nhắn không hợp lệ"})
                 continue
+            if not gioi_han.cho_phep():
+                await ws.send_json(
+                    {"loai": "he_thong", "su_kien": "loi", "thong_diep": "Bạn nhắn quá nhanh, vui lòng chậm lại"}
+                )
+                continue
             if tin.loai == "dang_go":
                 await HUB.phat(khoa, {"loai": "dang_go", "vai_tro": vai_tro}, tru=ws)
             elif tin.loai == "tin_nhan" and tin.noi_dung.strip():
                 try:
                     async with tao_phien() as db:
+                        if nv_id is not None and not await _con_quyen_duoc_si(db, nv_id):
+                            await ws.close(MA_DONG_KHONG_CO_QUYEN)
+                            return
                         su_kien = await chuyen_duoc_si.gui_tin(db, h_id, vai_tro, tin.noi_dung, nv_id)
                 except LoiNghiepVu as loi:
                     await ws.send_json({"loai": "he_thong", "su_kien": "loi", "thong_diep": loi.thong_diep})

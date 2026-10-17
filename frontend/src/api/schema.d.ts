@@ -3019,6 +3019,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/noi-bo/bao-cao/tong-hop": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Báo cáo thống kê tổng hợp (AD14) */
+        get: operations["tong_hop_bao_cao_api_v1_noi_bo_bao_cao_tong_hop_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/bao-cao/tong-hop/excel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Xuất Excel báo cáo tổng hợp (AD14) */
+        get: operations["tong_hop_excel_api_v1_noi_bo_bao_cao_tong_hop_excel_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/bao-cao/ca": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Báo cáo bán hàng của ca của tôi (DS14) */
+        get: operations["bao_cao_ca_api_v1_noi_bo_bao_cao_ca_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/noi-bo/tu-van": {
         parameters: {
             query?: never;
@@ -4436,6 +4487,69 @@ export interface components {
              */
             dang_hien: boolean;
         };
+        /** BaoCaoCa */
+        BaoCaoCa: {
+            /**
+             * Tu
+             * Format: date-time
+             */
+            tu: string;
+            /**
+             * Den
+             * Format: date-time
+             */
+            den: string;
+            /** So Don */
+            so_don: number;
+            /** Doanh Thu */
+            doanh_thu: string;
+            /** So Don Thuoc Da Duyet */
+            so_don_thuoc_da_duyet: number;
+            /** Tien Mat Thu Tai Quay */
+            tien_mat_thu_tai_quay: string;
+            /** Chuyen Khoan Thu Tai Quay */
+            chuyen_khoan_thu_tai_quay: string;
+            /** So Giao Dich Tien Mat */
+            so_giao_dich_tien_mat: number;
+        };
+        /** BaoCaoTongHop */
+        BaoCaoTongHop: {
+            /**
+             * Tu Ngay
+             * Format: date
+             */
+            tu_ngay: string;
+            /**
+             * Den Ngay
+             * Format: date
+             */
+            den_ngay: string;
+            /** So Don Hoan Tat */
+            so_don_hoan_tat: number;
+            /** Doanh Thu */
+            doanh_thu: string;
+            /** Hoan Tien */
+            hoan_tien: string;
+            /** Doanh Thu Thuan */
+            doanh_thu_thuan: string;
+            /** Gia Von */
+            gia_von: string;
+            /** Loi Nhuan Gop */
+            loi_nhuan_gop: string;
+            /** Doanh Thu Theo Ngay */
+            doanh_thu_theo_ngay: components["schemas"]["DoanhThuNgay"][];
+            /** Ban Chay */
+            ban_chay: components["schemas"]["SanPhamBanChay"][];
+            /** Gia Tri Ton Kho */
+            gia_tri_ton_kho: string;
+            /** Ton Kho Theo Trang Thai */
+            ton_kho_theo_trang_thai: components["schemas"]["GiaTriTonTheoTrangThai"][];
+            /** So Lo Can Han */
+            so_lo_can_han: number;
+            /** Lo Can Han */
+            lo_can_han: components["schemas"]["LoCanHan"][];
+            hieu_qua_ai: components["schemas"]["ThongKeAi"];
+        };
         /** BieuDoDeXuat */
         BieuDoDeXuat: {
             /** Id */
@@ -5377,6 +5491,18 @@ export interface components {
             created_at: string;
             /** So Dong */
             so_dong: number;
+        };
+        /** DoanhThuNgay */
+        DoanhThuNgay: {
+            /**
+             * Ngay
+             * Format: date
+             */
+            ngay: string;
+            /** So Don */
+            so_don: number;
+            /** Doanh Thu */
+            doanh_thu: string;
         };
         /** DoiLoVao */
         DoiLoVao: {
@@ -6322,6 +6448,15 @@ export interface components {
             bang: string[];
             /** Hanh Dong */
             hanh_dong: string[];
+        };
+        /** GiaTriTonTheoTrangThai */
+        GiaTriTonTheoTrangThai: {
+            /** Trang Thai */
+            trang_thai: string;
+            /** So Luong */
+            so_luong: number;
+            /** Gia Tri */
+            gia_tri: string;
         };
         /** GiaoDichRa */
         GiaoDichRa: {
@@ -7313,6 +7448,28 @@ export interface components {
             /** Ghi Chu */
             ghi_chu?: string | null;
         };
+        /** LoCanHan */
+        LoCanHan: {
+            /** Lo Id */
+            lo_id: number;
+            /** Sku */
+            sku: string;
+            /** Ten San Pham */
+            ten_san_pham: string;
+            /** So Lo */
+            so_lo: string;
+            /**
+             * Han Su Dung
+             * Format: date
+             */
+            han_su_dung: string;
+            /** Con Ngay */
+            con_ngay: number;
+            /** So Luong Ton */
+            so_luong_ton: number;
+            /** Gia Tri */
+            gia_tri: string;
+        };
         /** LoCanhBao */
         LoCanhBao: {
             /** Lo Id */
@@ -8194,6 +8351,19 @@ export interface components {
             bat_buoc: boolean;
             /** Chi Cho Vai Tro */
             chi_cho_vai_tro: string | null;
+        };
+        /** SanPhamBanChay */
+        SanPhamBanChay: {
+            /** San Pham Id */
+            san_pham_id: number;
+            /** Sku */
+            sku: string;
+            /** Ten */
+            ten: string;
+            /** So Luong Co So */
+            so_luong_co_so: number;
+            /** Doanh Thu */
+            doanh_thu: string;
         };
         /** SanPhamChiTiet */
         SanPhamChiTiet: {
@@ -16415,6 +16585,108 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["DeXuatRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tong_hop_bao_cao_api_v1_noi_bo_bao_cao_tong_hop_get: {
+        parameters: {
+            query: {
+                /** @description Từ ngày (giờ VN), gồm ngày này */
+                tu_ngay: string;
+                /** @description Đến ngày (giờ VN), gồm ngày này */
+                den_ngay: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BaoCaoTongHop"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tong_hop_excel_api_v1_noi_bo_bao_cao_tong_hop_excel_get: {
+        parameters: {
+            query: {
+                /** @description Từ ngày (giờ VN), gồm ngày này */
+                tu_ngay: string;
+                /** @description Đến ngày (giờ VN), gồm ngày này */
+                den_ngay: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bao_cao_ca_api_v1_noi_bo_bao_cao_ca_get: {
+        parameters: {
+            query: {
+                /** @description Đầu ca; không kèm múi giờ thì tính giờ VN */
+                tu: string;
+                /** @description Cuối ca (loại trừ) */
+                den: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BaoCaoCa"];
                 };
             };
             /** @description Validation Error */

@@ -329,3 +329,10 @@ async def test_phan_quyen_kho_day_du_admin_chi_xem_duoc_si_khong(clients_theo_va
     assert (await admin.get(BASE)).status_code == 200 and (await admin.get(f"{BASE}/{d.id}/bieu-do")).status_code == 200
     assert (await admin.put(f"{BASE}/{d.id}/da-xu-ly", json={"da_xu_ly": True})).status_code == 403
     assert (await ds.get(BASE)).status_code == 403 and (await ds.get(f"{BASE}/ky")).status_code == 403
+
+
+async def test_tim_kiem_khong_vo_voi_ky_tu_dac_biet(clients_theo_vai_tro, db):
+    kho = clients_theo_vai_tro["WAREHOUSE"]
+    await tao_ky(db)
+    for q in ("\\", "%", "_", "a\\"):
+        assert (await kho.get(BASE, params={"q": q})).status_code == 200

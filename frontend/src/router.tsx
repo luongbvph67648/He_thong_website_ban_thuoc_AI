@@ -46,6 +46,8 @@ import TrangTraCuuAnh from './khu/cua-hang/tra-cuu-anh/TrangTraCuuAnh'
 import TrangDanhGiaAi from './khu/nhan-vien/danh-gia-ai/TrangDanhGiaAi'
 import TrangGiamSatAi from './khu/quan-tri/giam-sat-ai/TrangGiamSatAi'
 import TrangDeXuatNhap from './khu/nhan-vien/de-xuat-nhap/TrangDeXuatNhap'
+import TrangTongQuan from './khu/quan-tri/tong-quan/TrangTongQuan'
+import TrangBaoCaoCa from './khu/nhan-vien/bao-cao-ca/TrangBaoCaoCa'
 import TrangTuVan from './khu/nhan-vien/tu-van/TrangTuVan'
 import TrangDuyetDonThuoc from './khu/nhan-vien/don-thuoc/TrangDuyetDonThuoc'
 import TrangHangChoDonThuoc from './khu/nhan-vien/don-thuoc/TrangHangChoDonThuoc'
@@ -148,6 +150,7 @@ const TRANG_NHAN_VIEN_THAT: Record<string, ReactNode> = {
   '/don-thuoc': <TrangHangChoDonThuoc />,
   '/tu-van': <TrangTuVan />,
   '/danh-gia-ai': <TrangDanhGiaAi />,
+  '/bao-cao-ca': <TrangBaoCaoCa />,
   '/de-xuat-nhap': <TrangDeXuatNhap />,
   '/don-thuoc/:id': <TrangDuyetDonThuoc />,
   '/soan-hang': <TrangSoanHang />,
@@ -166,6 +169,7 @@ const TRANG_NHAN_VIEN_THAT: Record<string, ReactNode> = {
 
 /** Trang khu quản trị đã làm thật (khóa là đường dẫn trong `MUC_QUAN_TRI`); còn lại là trang giữ chỗ. */
 const TRANG_QUAN_TRI_THAT: Record<string, ReactNode> = {
+  '/': <TrangTongQuan />,
   '/nhan-vien': <TrangNhanVien />,
   '/vai-tro': <TrangVaiTro />,
   '/khach-hang': <TrangKhachHang />,

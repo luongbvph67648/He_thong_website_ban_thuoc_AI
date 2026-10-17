@@ -914,16 +914,16 @@ _Kho tri thức, tìm kiếm lai, chatbot RAG, chuyển dược sĩ, đọc ản
 
 _Báo cáo tổng hợp, rà soát bảo mật/hiệu năng, dữ liệu demo, tài liệu nộp._
 
-### [ ] T8.1 · Báo cáo tổng hợp và báo cáo ca
+### [x] T8.1 · Báo cáo tổng hợp và báo cáo ca
 - **Chức năng:** AD14 (Báo cáo thống kê tổng hợp), DS14 (Báo cáo bán hàng của ca)
 - **Phụ thuộc:** T6.3, T7.8
 - **Bảng:** `don_hang`, `ct_don_hang`, `phan_bo_lo`, `thanh_toan`, `lo_thuoc`, `hoi_thoai`, `yeu_cau_don_thuoc`
 - **Tiêu chí chấp nhận:**
-  - [ ] AD14: doanh thu (trừ hoàn tiền), lợi nhuận gộp (giá vốn từ `phan_bo_lo`), sản phẩm bán chạy, giá trị tồn kho, thuốc cận hạn, hiệu quả AI; lọc theo kỳ; xuất Excel.
-  - [ ] DS14: số liệu của chính dược sĩ trong khoảng thời gian, tiền mặt thu tại quầy; không có giá vốn.
+  - [x] AD14: doanh thu (trừ hoàn tiền), lợi nhuận gộp (giá vốn từ `phan_bo_lo`), sản phẩm bán chạy, giá trị tồn kho, thuốc cận hạn, hiệu quả AI; lọc theo kỳ; xuất Excel.
+  - [x] DS14: số liệu của chính dược sĩ trong khoảng thời gian, tiền mặt thu tại quầy; không có giá vốn.
 - **Giao diện:**
-  - [ ] Dashboard Admin (biểu đồ), màn báo cáo ca.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Dashboard Admin (biểu đồ), màn báo cáo ca.
+- **Ghi chú triển khai:** `modules/bao_cao/{tong_hop,ca,router_noi_bo,schemas}.py` (3 route vào registry phân quyền), API spec 06 mục 3.48, QĐ-51. Giao diện: `/quan-tri` (Tổng quan: thẻ số liệu, biểu đồ cột SVG doanh thu theo ngày, bán chạy, cận hạn, tồn kho, hiệu quả AI, nút Xuất Excel) và `/nhan-vien/bao-cao-ca`. Test `tests/bao_cao/test_bao_cao.py` (13), `TrangTongQuan.test.tsx`, `TrangBaoCaoCa.test.tsx`; `router.test.tsx` đổi sang kiểm tiêu đề trang thật vì mọi trang đã làm xong. Sau rà soát P7: sửa phạm vi đọc phiên chat của dược sĩ, quyền WebSocket mỗi tin, giới hạn tần suất, escape `q`, AI06 không giữ khóa dòng khi chờ Claude (xem 12-quyet-dinh).
 
 ### [ ] T8.2 · Rà soát bảo mật và hiệu năng
 - **Phụ thuộc:** T8.1
@@ -944,6 +944,9 @@ _Báo cáo tổng hợp, rà soát bảo mật/hiệu năng, dữ liệu demo, t
 ## Việc phát sinh
 
 Lỗi hoặc việc phát hiện trong lúc làm nhưng nằm ngoài phạm vi task đang làm. Ghi một dòng `- [ ] (Tx.y) mô tả`, xử lý sau.
+
+- [ ] (P7-rv, Thấp) Giới hạn tra cứu ảnh theo `X-Ma-Phien` đổi header là reset được và trần 500 lượt/ngày toàn hệ thống có thể bị một nhóm IP làm cạn: cân nhắc tính chi phí AI chung vào `AI_NGAN_SACH_NGAY_USD` (cần nơi ghi chi phí ngoài `hoi_thoai`, qua `/doi-schema`) ở T8.2.
+- [ ] (P7-rv, Thấp) Sự kiện `duoc_si_vao`/`da_dong` của chat phát qua hub TRƯỚC khi commit; commit lỗi sau đó thì khách đã nhận thông báo sai. Phát sau commit khi hub chuyển sang Redis (nhiều worker).
 
 - [ ] (T0.5) `QUYEN_YAML` nằm ngoài `backend/` (`docs/spec/data/quyen.yaml`): khi đóng image Docker ở T8.3 nếu chỉ copy `backend/` thì `python -m app.seed` lỗi `FileNotFoundError`. Khi đóng gói, copy file này vào image hoặc đặt đường dẫn qua biến môi trường.
 - [ ] (T1.3) Admin duy nhất quên mật khẩu thì không có đường khôi phục (nhân viên không có "quên mật khẩu" tự phục vụ, Admin khác đặt lại ở T1.4): thêm lệnh CLI `python -m app.seed --dat-lai-admin` hoặc tương đương khi làm T1.4/T8.3.

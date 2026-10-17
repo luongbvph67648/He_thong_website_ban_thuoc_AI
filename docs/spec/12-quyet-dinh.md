@@ -467,3 +467,15 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **Sản phẩm chưa bán nhưng dưới tồn tối thiểu vẫn được đề xuất** (dự báo 0), để cảnh báo thiếu hàng không phụ thuộc lịch sử bán.
 - **Biểu đồ vẽ bằng SVG thuần**, không thêm thư viện biểu đồ cho một màn hình.
 
+## Sau rà soát P7 (nghiep-vu-reviewer)
+- **QĐ-45 bổ sung:** dược sĩ chỉ đọc chi tiết phiên đang chờ (`cho_duoc_si`, `cho_goi_lai`) hoặc phiên mình đã nhận/xử lý; phiên khác kể cả đã đóng là `404` (hội thoại bị gắn cờ xem ở DS12, đã ẩn danh). WebSocket kiểm lại tài khoản, vai trò và `chat.handle` ở MỖI tin của dược sĩ (khóa/gỡ quyền có hiệu lực ngay, đóng `4403`) và giới hạn 30 tin/phút/kết nối. HT08 đóng cả phiên `duoc_si_dang_xu_ly` im lặng quá 120 phút (ngoài dòng 6 của spec 04, chỉ nói `dang_mo`); sự kiện `da_dong` do job phát không tới được socket (hub nằm ở process API), khách nhận lỗi `409` khi gửi tin kế tiếp.
+- **QĐ-47 bổ sung:** job AI06 gọi Claude KHÔNG giữ khóa dòng (chọn, gọi AI, rồi ghi trong thời gian khóa ngắn và bỏ qua yêu cầu đã đổi trạng thái giữa chừng).
+- **QĐ-49 bổ sung:** system prompt chatbot cấm nhắc lại thông tin sức khỏe cá nhân (dị ứng, thai kỳ...) trong câu trả lời, vì lời đáp lưu ở `tin_nhan` và Admin xem được bản ẩn danh.
+
+## QĐ-51 · Báo cáo (T8.1)
+- **Một đơn tính vào kỳ lúc vào `hoan_tat`**, không phải lúc tạo: doanh thu chỉ chốt khi hết thời hạn đổi trả (spec 04 dòng 29). Đơn đã giao nhưng chưa hoàn tất chưa vào doanh thu.
+- **Hoàn tiền trừ theo kỳ phát sinh**, không truy ngược về kỳ của đơn gốc: số liệu kỳ cũ không đổi sau khi đã báo cáo, đổi lại một kỳ có thể có doanh thu thuần âm nếu hoàn nhiều đơn kỳ trước.
+- **Lợi nhuận gộp = doanh thu thuần − giá vốn**, phí vận chuyển nằm trong doanh thu (chưa có chi phí giao hàng nên không trừ). Hàng khách trả được hoàn nhập thì không tính giá vốn (phân bổ `da_hoan_nhap`).
+- **Báo cáo ca chỉ tính việc của chính dược sĩ**; "do mình xử lý" = đơn mình tạo hoặc xác nhận. Đơn khách tự đặt mà dược sĩ khác xác nhận không vào ca của người tạo (không có người tạo).
+- **Xuất Excel dùng `Decimal` trực tiếp** (openpyxl ghi số, không qua float).
+

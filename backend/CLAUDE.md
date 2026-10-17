@@ -179,4 +179,5 @@ async def don_cua_toi(ma_don: str, kh: Annotated[KhachHang, Depends(khach_hien_t
 - **Gợi ý sản phẩm** (`cua_hang/goi_y.py`, `cua_hang/loc_an_toan.py`, `gio_hang/luat_mua_kem.py`, T7.7, QĐ-48): mọi nơi gợi ý sản phẩm (chatbot, tương tự, dành cho bạn) phải lấy thẻ qua `loc_an_toan.the_hop_le` (không kê đơn, hiển thị, không dị ứng); không tự viết lại bộ lọc.
 - **Giám sát/đánh giá AI** (`modules/giam_sat_ai/`, `core/an_danh.py`, T7.8, QĐ-49): mọi nội dung hội thoại cho nhân viên xem phải đi qua `che_thong_tin` và không kèm `khach_hang_id`/`ma_phien`/`ip_hash`; dược sĩ chỉ đọc hội thoại bị gắn cờ.
 - **Dự báo nhu cầu** (`modules/du_bao/`, T7.9, QĐ-50): mô hình ở `mo_hinh.py` là hàm thuần (test không cần DB); nhu cầu lấy từ `phan_bo_lo` `da_xuat` theo tuần giờ VN, loại tuần hiện tại; chạy lại trong tuần thì cập nhật dòng, không tạo mới.
+- **Báo cáo** (`modules/bao_cao/`, T8.1, QĐ-51): mốc kỳ của đơn là lúc vào `hoan_tat` (`tong_hop.moc_hoan_tat`); báo cáo ca chỉ trả số liệu của người gọi và tuyệt đối không có giá vốn; chuỗi đưa vào Excel đi qua `_an_toan`.
 

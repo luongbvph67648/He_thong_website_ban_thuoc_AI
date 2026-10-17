@@ -15,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core.loi import LoiNghiepVu
 from app.core.phan_trang import ThamSoPhanTrang, Trang, lay_trang, tao_trang
 from app.core.thoi_gian import hom_nay_vn
+from app.core.tim_kiem import mau_tim_like
 from app.models.ai import DeXuatNhapHang
 from app.models.ban_hang import CtDonHang, PhanBoLo
 from app.models.enums import TrangThaiKinhDoanh, TrangThaiPhanBo
@@ -203,8 +204,8 @@ async def danh_sach(
     if da_xu_ly is not None:
         stmt = stmt.where(DeXuatNhapHang.da_xu_ly.is_(da_xu_ly))
     if q and q.strip():
-        mau = f"%{q.strip().replace('%', '').replace('_', '')}%"
-        stmt = stmt.where(or_(SanPham.ten.ilike(mau), SanPham.sku.ilike(mau)))
+        mau = mau_tim_like(q.strip())
+        stmt = stmt.where(or_(SanPham.ten.ilike(mau, escape="\\"), SanPham.sku.ilike(mau, escape="\\")))
     stmt = stmt.order_by(DeXuatNhapHang.da_xu_ly, DeXuatNhapHang.so_luong_de_xuat.desc(), DeXuatNhapHang.id)
     dong, tong = await lay_trang(db, stmt, tp, nhieu_cot=True)
     return tao_trang([_ra(d, sp) for d, sp in dong], tong, tp)
