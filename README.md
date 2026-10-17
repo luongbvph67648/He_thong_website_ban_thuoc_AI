@@ -133,7 +133,7 @@ deploy/       Cấu hình nginx cho bản triển khai
 scripts/      e2e.sh
 ```
 
-Hướng dẫn demo từng kịch bản cho giảng viên: [`docs/HUONG_DAN_DEMO.md`](docs/HUONG_DAN_DEMO.md).
+Hướng dẫn demo từng kịch bản cho giảng viên: [`docs/HUONG_DAN_DEMO.md`](docs/HUONG_DAN_DEMO.md). Tài liệu ôn tập bảo vệ: [`docs/ON_TAP_BAO_VE.md`](docs/ON_TAP_BAO_VE.md).
 
 Quy ước làm việc và các lệnh thường dùng: [`CLAUDE.md`](CLAUDE.md), [`backend/CLAUDE.md`](backend/CLAUDE.md),
 [`frontend/CLAUDE.md`](frontend/CLAUDE.md).
