@@ -6,7 +6,7 @@ import { api } from '../../../api/client'
 import { goi, thongDiepChung } from '../../../api/goi'
 import type { components } from '../../../api/schema'
 import { YeuCauQuyen } from '../../../components/YeuCauQuyen'
-import { mauDoTinCay } from './thuocTrenDon'
+import { mauDoTinCay } from './doTinCayThuoc'
 
 type YeuCau = components['schemas']['YeuCauDuyetRa']
 type Dong = components['schemas']['ThuocTrenDonRa']

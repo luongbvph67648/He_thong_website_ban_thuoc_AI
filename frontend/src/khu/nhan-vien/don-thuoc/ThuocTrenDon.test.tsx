@@ -2,7 +2,7 @@ import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { renderTai } from '../../../test/render'
-import { mauDoTinCay } from './thuocTrenDon'
+import { mauDoTinCay } from './doTinCayThuoc'
 
 vi.setConfig({ testTimeout: 90_000 })
 const GET = vi.fn()
