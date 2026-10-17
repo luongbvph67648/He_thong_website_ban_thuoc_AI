@@ -127,9 +127,7 @@ async def test_hang_cho_nhan_phien_va_hai_duoc_si_tranh_nhau(app, db, clients_th
             and ok.json()["duoc_si_cua_toi"] is True
         )
         assert (await ds2.post(f"{NB}/{h.id}/nhan")).status_code == 409
-        assert (
-            await ds2.get(f"{NB}/{h.id}")
-        ).status_code == 404  # phiên đang do người khác xử lý: không thấy
+        assert (await ds2.get(f"{NB}/{h.id}")).status_code == 404  # phiên đang do người khác xử lý: không thấy
         assert (await ds2.get(NB)).json() == []
         await db.refresh(h)
         assert h.loai == "duoc_si" and h.duoc_si_id is not None
