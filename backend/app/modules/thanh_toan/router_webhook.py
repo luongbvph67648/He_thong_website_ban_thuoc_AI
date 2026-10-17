@@ -59,7 +59,7 @@ async def gia_ipn(vao: GiaIpnVao, db: Db):
     """Dựng IPN ký bằng khóa giả cho giao dịch này rồi đi qua đúng hàm xử lý IPN như cổng thật."""
     so_tien = 0
     id_text = vao.giao_dich.rpartition("-")[2]
-    if id_text.isdigit():
+    if id_text.isascii() and id_text.isdigit() and len(id_text) <= 12:
         tong = await db.scalar(
             select(DonHang.tong_tien)
             .join(ThanhToan, ThanhToan.don_hang_id == DonHang.id)
@@ -71,7 +71,7 @@ async def gia_ipn(vao: GiaIpnVao, db: Db):
     # Giao dịch có thể thuộc VNPay hoặc MoMo (đơn chọn cổng nào), cổng giả thay cả hai
     cong = (
         await db.scalar(select(ThanhToan.cong_thanh_toan).where(ThanhToan.id == int(id_text)))
-        if id_text.isdigit()
+        if (id_text.isascii() and id_text.isdigit() and len(id_text) <= 12)
         else None
     )
     return _vnpay(await xu_ly_ipn(db, cong or PhuongThucThanhToan.vnpay, ket_qua))

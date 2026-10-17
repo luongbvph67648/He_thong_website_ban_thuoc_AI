@@ -12,6 +12,8 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=BACKEND_DIR / ".env", env_file_encoding="utf-8", extra="ignore")
 
+    # `production` bật chốt chặn khởi động (`kiem_tra_san_xuat`): cấm cổng giả, bắt buộc bí mật và cookie Secure.
+    MOI_TRUONG: Literal["dev", "production"] = "dev"
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/nha_thuoc"
     CORS_ORIGINS: str = "http://localhost:5173"
     DATABASE_URL_TEST: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/nha_thuoc_test"
@@ -67,6 +69,31 @@ class Settings(BaseSettings):
     @property
     def cors_origins_list(self) -> list[str]:
         return [o.strip() for o in self.CORS_ORIGINS.split(",") if o.strip()]
+
+    def kiem_tra_san_xuat(self) -> list[str]:
+        """Danh sách cấu hình không an toàn khi `MOI_TRUONG=production` (rỗng nếu đạt hoặc đang dev)."""
+        if self.MOI_TRUONG != "production":
+            return []
+        loi: list[str] = []
+        for ten, gia_tri in (
+            ("JWT_SECRET", self.JWT_SECRET.get_secret_value()),
+            ("KHOA_MA_HOA", self.KHOA_MA_HOA.get_secret_value()),
+        ):
+            if not gia_tri:
+                loi.append(f"{ten} đang trống")
+        if not self.COOKIE_SECURE:
+            loi.append("COOKIE_SECURE phải là true")
+        if self.THANH_TOAN_CHE_DO != "sandbox":
+            loi.append("THANH_TOAN_CHE_DO=gia (cổng giả) không được dùng ở production")
+        elif not (self.VNPAY_HASH_SECRET.get_secret_value() and self.MOMO_SECRET_KEY.get_secret_value()):
+            loi.append("VNPAY_HASH_SECRET và MOMO_SECRET_KEY không được để trống")
+        if self.VAN_CHUYEN_CHE_DO != "ghn":
+            loi.append("VAN_CHUYEN_CHE_DO=gia (vận chuyển giả) không được dùng ở production")
+        elif not self.GHN_WEBHOOK_TOKEN.get_secret_value():
+            loi.append("GHN_WEBHOOK_TOKEN không được để trống")
+        if self.TIN_NHAN_CHE_DO != "that":
+            loi.append("TIN_NHAN_CHE_DO=gia ghi OTP ra log, phải dùng `that`")
+        return loi
 
 
 settings = Settings()

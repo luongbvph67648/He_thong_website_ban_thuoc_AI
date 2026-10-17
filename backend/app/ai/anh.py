@@ -8,7 +8,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 
 CANH_DAI_TOI_DA = 1568
 CHAT_LUONG_JPEG = 85
-TOI_DA_DIEM_ANH = 50_000_000
+TOI_DA_DIEM_ANH = 12_000_000
 """Chặn "bom giải nén": ảnh nhỏ byte nhưng hàng trăm triệu điểm ảnh sẽ ăn hết bộ nhớ khi mở."""
 
 

@@ -925,13 +925,13 @@ _Báo cáo tổng hợp, rà soát bảo mật/hiệu năng, dữ liệu demo, t
   - [x] Dashboard Admin (biểu đồ), màn báo cáo ca.
 - **Ghi chú triển khai:** `modules/bao_cao/{tong_hop,ca,router_noi_bo,schemas}.py` (3 route vào registry phân quyền), API spec 06 mục 3.48, QĐ-51. Giao diện: `/quan-tri` (Tổng quan: thẻ số liệu, biểu đồ cột SVG doanh thu theo ngày, bán chạy, cận hạn, tồn kho, hiệu quả AI, nút Xuất Excel) và `/nhan-vien/bao-cao-ca`. Test `tests/bao_cao/test_bao_cao.py` (13), `TrangTongQuan.test.tsx`, `TrangBaoCaoCa.test.tsx`; `router.test.tsx` đổi sang kiểm tiêu đề trang thật vì mọi trang đã làm xong. Sau rà soát P7: sửa phạm vi đọc phiên chat của dược sĩ, quyền WebSocket mỗi tin, giới hạn tần suất, escape `q`, AI06 không giữ khóa dòng khi chờ Claude (xem 12-quyet-dinh).
 
-### [ ] T8.2 · Rà soát bảo mật và hiệu năng
+### [x] T8.2 · Rà soát bảo mật và hiệu năng
 - **Phụ thuộc:** T8.1
 - **Tiêu chí chấp nhận:**
-  - [ ] Chạy `/security-review` và `/review-nghiep-vu` trên toàn bộ mã; sửa hết lỗi mức cao.
-  - [ ] Kiểm tra: rate limit, CORS, cookie `Secure/HttpOnly/SameSite`, header bảo mật, upload (kiểu MIME, kích thước), không lộ stack trace, log không chứa dữ liệu nhạy cảm.
-  - [ ] `EXPLAIN ANALYZE` các truy vấn nóng (danh sách sản phẩm, tìm kiếm, danh sách đơn) với dữ liệu mẫu ×10; thêm index nếu cần qua `/doi-schema`.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Chạy `/security-review` và `/review-nghiep-vu` trên toàn bộ mã; sửa hết lỗi mức cao.
+  - [x] Kiểm tra: rate limit, CORS, cookie `Secure/HttpOnly/SameSite`, header bảo mật, upload (kiểu MIME, kích thước), không lộ stack trace, log không chứa dữ liệu nhạy cảm.
+  - [x] `EXPLAIN ANALYZE` các truy vấn nóng (danh sách sản phẩm, tìm kiếm, danh sách đơn) với dữ liệu mẫu ×10; thêm index nếu cần qua `/doi-schema`.
+- **Ghi chú triển khai:** Rà soát bảo mật bằng một agent đọc toàn backend (không chạy `/security-review` dựng sẵn) + `nghiep-vu-reviewer` ở từng pha. Đã sửa: (1) `MOI_TRUONG=production` bắt `create_app()` từ chối khởi động khi còn cổng thanh toán/vận chuyển/SMS giả, thiếu `JWT_SECRET`/`KHOA_MA_HOA`/khóa cổng/`GHN_WEBHOOK_TOKEN`, hoặc `COOKIE_SECURE=false` (`Settings.kiem_tra_san_xuat`, test `test_cau_hinh_san_xuat.py`); `seed --mau` bị từ chối ở production; (2) ảnh bom: tra cứu ảnh tính giới hạn tần suất TRƯỚC khi giải mã, trần điểm ảnh 50M xuống 12M, giải mã chạy `asyncio.to_thread` (AI05 có semaphore 2, AI06 cũng ngoài event loop); (3) so sánh chữ ký URL bằng bytes, id giao dịch IPN chỉ nhận ≤12 chữ số ASCII. Header bảo mật, nhật ký bất biến (migration 0003), đo EXPLAIN: xem QĐ-52. Chưa sửa (đưa vào "Việc phát sinh"): khóa tài khoản lộ SĐT tồn tại, giới hạn IP sau reverse proxy, bucket bộ nhớ, token xác nhận đơn không hết hạn.
 
 ### [ ] T8.3 · Dữ liệu demo, e2e và tài liệu nộp
 - **Phụ thuộc:** T8.2
@@ -998,7 +998,7 @@ Lỗi hoặc việc phát hiện trong lúc làm nhưng nằm ngoài phạm vi t
 - [ ] (T1.3-rv) `thong_bao.service.kiem_tra_lien_ket` chưa chặn ký tự điều khiển (`"/\t/evil.com"` thành `//evil.com` khi trình duyệt phân tích); frontend đã chặn nên chưa khai thác được, nhưng phía server cần tương đương `?tiep=` (QĐ-11).
 - [ ] (T1.3-rv) Giới hạn theo IP (`core/gioi_han.py`, `phien_http.dia_chi_ip`): gom IPv6 theo /64 (mỗi địa chỉ trong một dải có bộ đếm riêng nên lách được) và cấu hình `--proxy-headers`/`forwarded-allow-ips` khi chạy sau nginx (T8.3), nếu không cả site dùng chung một bộ đếm theo IP của proxy.
 - [ ] (T1.3-rv) `POST /auth/otp` với `kenh=email`: gửi email (chậm hơn) chỉ xảy ra với tài khoản có thật nên độ trễ phản hồi có thể lộ tài khoản; cân bằng thời gian hoặc đưa gửi tin nhắn vào tác vụ nền (T3.2/T6.x).
-- [ ] (T1.3-rv) Mặc định thiên về dev: `TIN_NHAN_CHE_DO=gia` (OTP ghi vào log nếu quên đặt `that`), `.env.example` đặt `COOKIE_SECURE=false`; thêm chốt khi khởi động ở môi trường production và đưa vào checklist deploy (T8.2/T8.3).
+- [x] (T1.3-rv, xong ở T8.2: `MOI_TRUONG`) Mặc định thiên về dev: `TIN_NHAN_CHE_DO=gia` (OTP ghi vào log nếu quên đặt `that`), `.env.example` đặt `COOKIE_SECURE=false`; thêm chốt khi khởi động ở môi trường production và đưa vào checklist deploy (T8.2/T8.3).
 - [ ] (T1.3-rv) Registry/ma trận phân quyền: `tests/phan_quyen/ma_tran.py` bỏ qua route không có `methods` (WebSocket `/tu-van/ws`, T6.x); các guard hiện nhận `Request` nên chưa dùng được cho WebSocket. Route thật chưa có ca bị chặn nào vì chỉ có `profile.self`: từ T3.1 trở đi mỗi route nội bộ mới tự đưa ca bị chặn vào ma trận.
 - [ ] (T3.2) Job dọn ảnh mồ côi (banner, ảnh bìa bài viết, ảnh sản phẩm tải lên nhưng bản ghi không lưu): quét `storage/cong-khai`, xóa file không được bản ghi nào tham chiếu và cũ hơn 24 giờ.
 - [ ] (T4.1) Khách thành viên chưa sửa được hồ sơ cá nhân (họ tên, email) và đổi mật khẩu trong trang tài khoản (KTV01): spec 06 chưa có `PATCH /toi` và `POST /toi/doi-mat-khau`; cần bổ sung spec rồi làm.
@@ -1006,3 +1006,6 @@ Lỗi hoặc việc phát hiện trong lúc làm nhưng nằm ngoài phạm vi t
 - **T4.3:** chưa có test đồng thời cho `dung_ma` (hai đơn cùng dùng lượt cuối); mới dựa vào khóa FOR UPDATE.
 - **T4.4:** khóa Idempotency-Key nằm trong bộ nhớ tiến trình (mất khi khởi động lại, không dùng chung giữa nhiều tiến trình); đủ cho đồ án một tiến trình, cần bảng hoặc Redis nếu chạy nhiều worker.
 - **T4.5:** hoàn tiền thật qua cổng: `hoan_tien` của VNPay/MoMo chưa cài (T6.3); kiểm lại tên trường và bảng mã với tài liệu VNPay/MoMo hiện hành khi chạy sandbox thật (QĐ-27) và ghi phiên bản API.
+- [ ] (T8.2-rv, Trung bình) Khóa tài khoản sau 5 lần sai làm lộ SĐT/email tồn tại (401 chuyển 403 `TAI_KHOAN_BI_KHOA`) và cho kẻ xấu khóa mãi chủ tài khoản/Admin: khóa theo cặp (tài khoản, IP) hoặc luôn trả 401 giống nhau (`tai_khoan/dang_nhap.py`).
+- [ ] (T8.2-rv, Trung bình) Giới hạn tần suất dùng `request.client.host`: sau reverse proxy mọi người chung một IP. Khi deploy chạy uvicorn với `--proxy-headers --forwarded-allow-ips=<IP proxy>` (không dùng `*`) và ghi vào README (T8.3).
+- [ ] (T8.2-rv, Thấp) `core/gioi_han.py` quét O(n) khi quá 10.000 khóa và khóa do client chọn (`X-Ma-Phien`) đẩy được bucket người khác; bucket toàn hệ thống `anh-ngay` một IP đốt được. Đăng ký lộ email trùng (409); `/xac-nhan-don/{token}` không hết hạn và `/thanh-toan` không giới hạn tần suất; WS `/tu-van/ws` chưa giới hạn số kết nối; `ilike` ở `khuyen_mai/quan_tri.py:103` chưa thoát `\`.

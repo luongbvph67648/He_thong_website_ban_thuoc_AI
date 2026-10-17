@@ -486,3 +486,5 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **Header bảo mật mặc định** ở `RequestIdMiddleware` (nosniff, DENY, no-referrer, Permissions-Policy, CSP khóa chặt cho API, `Cache-Control: no-store` cho `/api/`); route đã tự đặt `Cache-Control` (ảnh công khai) được giữ. HSTS/TLS do reverse proxy (T8.3).
 - Index `lich_su_xem(ma_phien, san_pham_id, created_at)` KHÔNG thêm: truy vấn chống trùng đo 0,1 ms ở 500.000 dòng nhờ index `san_pham_id` (mục phát sinh T2.4 đóng).
 
+## QĐ-53 · Chốt cấu hình production (T8.2)
+Thêm `MOI_TRUONG` (`dev` mặc định | `production`). Ở `production`, `create_app()` ném lỗi khi còn chế độ giả (thanh toán, vận chuyển, tin nhắn), thiếu bí mật (JWT, khóa mã hóa, khóa cổng, token webhook GHN) hoặc `COOKIE_SECURE=false`; `seed --mau` bị từ chối. Mặc định giữ `dev` để chạy cục bộ và test không cần cấu hình. Giới hạn trần ảnh giải mã 12 triệu điểm ảnh. Chờ người xác nhận.

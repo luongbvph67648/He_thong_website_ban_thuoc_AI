@@ -168,4 +168,4 @@ def url_ky(khoa: str, giay: int = HAN_URL_KY_GIAY) -> str:
 
 def kiem_tra_ky(khoa: str, het_han: int, ky: str) -> bool:
     """Chữ ký đúng và chưa hết hạn. So sánh chữ ký bằng hằng thời gian."""
-    return het_han > time.time() and hmac.compare_digest(_chu_ky(khoa, het_han), ky)
+    return het_han > time.time() and hmac.compare_digest(_chu_ky(khoa, het_han).encode(), ky.encode())

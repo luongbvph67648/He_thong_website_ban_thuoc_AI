@@ -35,7 +35,7 @@ async def dem(db, model) -> int:
 
 
 async def test_database_test_dung_tu_migration_va_da_seed(db):
-    assert (await db.execute(text("SELECT version_num FROM alembic_version"))).scalar_one() == "0002"
+    assert (await db.execute(text("SELECT version_num FROM alembic_version"))).scalar_one() == "0003"
     assert (await db.execute(text("SELECT count(*) FROM vai_tro"))).scalar_one() == 3
     assert (await db.execute(text("SELECT count(*) FROM cau_hinh"))).scalar_one() == 19
     assert await dem(db, KhachHang) == 0  # không seed dữ liệu mẫu

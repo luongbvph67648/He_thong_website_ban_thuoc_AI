@@ -78,7 +78,7 @@ async def xu_ly_ipn(db: AsyncSession, cong: PhuongThucThanhToan, ket_qua: KetQua
     if not ket_qua.chu_ky_hop_le:
         return KetQuaXuLy.sai_chu_ky
     ma_don, _, id_text = ket_qua.tham_chieu.rpartition("-")
-    if not id_text.isdigit():
+    if not (id_text.isascii() and id_text.isdigit() and len(id_text) <= 12):
         return KetQuaXuLy.khong_tim_thay
     giao_dich = (
         await db.execute(

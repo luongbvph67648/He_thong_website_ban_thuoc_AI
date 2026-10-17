@@ -145,6 +145,8 @@ QUY_TAC_THAN_JSON = tuple(
 
 def create_app() -> FastAPI:
     cau_hinh_log()
+    if loi_cau_hinh := settings.kiem_tra_san_xuat():
+        raise RuntimeError("Cấu hình production không an toàn: " + "; ".join(loi_cau_hinh))
     app = FastAPI(title="Nhà thuốc AI", version="0.1.0")
     dang_ky_xu_ly_loi(app)
     # Thêm trước CORS = nằm trong CORS: phản hồi 413 vẫn có header CORS nên trình duyệt đọc được thông điệp.

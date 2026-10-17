@@ -39,6 +39,8 @@ def _thong_tin_admin() -> TaiKhoanAdmin | None:
 
 def kiem_tra_duoc_nap_mau(url: str, cho_phep_may_chu_khac: bool) -> None:
     """Tài khoản mẫu có mật khẩu công khai nên chỉ nạp vào CSDL ở máy cục bộ, trừ khi người chạy nói rõ."""
+    if settings.MOI_TRUONG == "production":
+        raise LoiCauHinh("Từ chối nạp dữ liệu mẫu khi MOI_TRUONG=production: tài khoản mẫu có mật khẩu công khai.")
     may_chu = make_url(url).host or "localhost"
     if may_chu not in MAY_CHU_CUC_BO and not cho_phep_may_chu_khac:
         raise LoiCauHinh(

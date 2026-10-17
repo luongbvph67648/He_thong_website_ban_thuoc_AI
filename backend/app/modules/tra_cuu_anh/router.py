@@ -1,5 +1,6 @@
 """KVL06: tra cứu thuốc bằng ảnh. Công khai, giới hạn lượt theo IP, phiên và toàn hệ thống."""
 
+import asyncio
 import logging
 from typing import Annotated
 
@@ -25,6 +26,8 @@ TOI_DA_MOI_PHIEN = 5
 TOI_DA_MOI_NGAY = 500
 CUA_SO_GIAY = 600
 CUA_SO_NGAY_GIAY = 86_400
+_XU_LY_ANH = asyncio.Semaphore(2)
+"""Giải mã ảnh tốn CPU/RAM: tối đa 2 ảnh cùng lúc, chạy ngoài event loop."""
 THONG_DIEP_GIOI_HAN = "Bạn tra cứu ảnh quá nhiều, vui lòng chờ một lúc rồi thử lại"
 
 
@@ -62,11 +65,12 @@ async def tra_cuu_anh(
         raise _loi_anh("Ảnh tối đa 5 MB" if noi_dung else "Cần một ảnh")
     if luu_tru.nhan_dang_anh(noi_dung) is None:
         raise _loi_anh("Chỉ nhận ảnh jpeg, png hoặc webp")
+    _gioi_han(bo_gioi_han, dia_chi_ip(request), ma_phien)  # trước khi giải mã: tốn CPU/RAM
     try:
-        anh_b64 = chuan_bi_anh(noi_dung)
+        async with _XU_LY_ANH:
+            anh_b64 = await asyncio.to_thread(chuan_bi_anh, noi_dung)
     except AnhKhongDoc as e:
         raise _loi_anh(str(e)) from e
-    _gioi_han(bo_gioi_han, dia_chi_ip(request), ma_phien)
     async with tao_phien() as db:
         bat = await cau_hinh_ai.module_bat(db, "tra_anh")
     loi_ai = LoiNghiepVu("LOI_DOI_TAC", "Chưa đọc được ảnh lúc này, vui lòng thử lại sau hoặc tìm thuốc theo tên")

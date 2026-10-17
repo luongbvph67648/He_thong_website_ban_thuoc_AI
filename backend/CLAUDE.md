@@ -181,3 +181,4 @@ async def don_cua_toi(ma_don: str, kh: Annotated[KhachHang, Depends(khach_hien_t
 - **Dự báo nhu cầu** (`modules/du_bao/`, T7.9, QĐ-50): mô hình ở `mo_hinh.py` là hàm thuần (test không cần DB); nhu cầu lấy từ `phan_bo_lo` `da_xuat` theo tuần giờ VN, loại tuần hiện tại; chạy lại trong tuần thì cập nhật dòng, không tạo mới.
 - **Báo cáo** (`modules/bao_cao/`, T8.1, QĐ-51): mốc kỳ của đơn là lúc vào `hoan_tat` (`tong_hop.moc_hoan_tat`); báo cáo ca chỉ trả số liệu của người gọi và tuyệt đối không có giá vốn; chuỗi đưa vào Excel đi qua `_an_toan`.
 
+- **Cấu hình production** (`core/config.py::Settings.kiem_tra_san_xuat`, T8.2, QĐ-53): `MOI_TRUONG=production` làm `create_app()` từ chối khởi động nếu còn cổng/vận chuyển/SMS giả hoặc thiếu bí mật; ảnh giải mã luôn qua `asyncio.to_thread` và sau giới hạn tần suất.

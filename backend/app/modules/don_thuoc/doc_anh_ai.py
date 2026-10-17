@@ -3,6 +3,7 @@
 Mỗi yêu cầu chỉ ghi dòng thuốc khi CHƯA có dòng nào (dược sĩ có thể đã nhập tay). AI lỗi thì ghi dấu `loi` và thử lại
 tối đa `SO_LAN_THU` lần; bị từ chối thì không thử lại. Dược sĩ vẫn duyệt bình thường khi không có kết quả AI."""
 
+import asyncio
 import logging
 from dataclasses import dataclass, field
 from decimal import Decimal
@@ -86,7 +87,7 @@ async def _anh_b64(yc: YeuCauDonThuoc) -> list[str]:
         if noi_dung is None:
             continue
         try:
-            ra.append(chuan_bi_anh(noi_dung))
+            ra.append(await asyncio.to_thread(chuan_bi_anh, noi_dung))
         except AnhKhongDoc:
             logger.warning("AI06: ảnh %s của %s không đọc được", khoa, yc.ma_yeu_cau)
     return ra
