@@ -933,13 +933,13 @@ _Báo cáo tổng hợp, rà soát bảo mật/hiệu năng, dữ liệu demo, t
   - [x] `EXPLAIN ANALYZE` các truy vấn nóng (danh sách sản phẩm, tìm kiếm, danh sách đơn) với dữ liệu mẫu ×10; thêm index nếu cần qua `/doi-schema`.
 - **Ghi chú triển khai:** Rà soát bảo mật bằng một agent đọc toàn backend (không chạy `/security-review` dựng sẵn) + `nghiep-vu-reviewer` ở từng pha. Đã sửa: (1) `MOI_TRUONG=production` bắt `create_app()` từ chối khởi động khi còn cổng thanh toán/vận chuyển/SMS giả, thiếu `JWT_SECRET`/`KHOA_MA_HOA`/khóa cổng/`GHN_WEBHOOK_TOKEN`, hoặc `COOKIE_SECURE=false` (`Settings.kiem_tra_san_xuat`, test `test_cau_hinh_san_xuat.py`); `seed --mau` bị từ chối ở production; (2) ảnh bom: tra cứu ảnh tính giới hạn tần suất TRƯỚC khi giải mã, trần điểm ảnh 50M xuống 12M, giải mã chạy `asyncio.to_thread` (AI05 có semaphore 2, AI06 cũng ngoài event loop); (3) so sánh chữ ký URL bằng bytes, id giao dịch IPN chỉ nhận ≤12 chữ số ASCII. Header bảo mật, nhật ký bất biến (migration 0003), đo EXPLAIN: xem QĐ-52. Chưa sửa (đưa vào "Việc phát sinh"): khóa tài khoản lộ SĐT tồn tại, giới hạn IP sau reverse proxy, bucket bộ nhớ, token xác nhận đơn không hết hạn.
 
-### [ ] T8.3 · Dữ liệu demo, e2e và tài liệu nộp
+### [x] T8.3 · Dữ liệu demo, e2e và tài liệu nộp
 - **Phụ thuộc:** T8.2
 - **Tiêu chí chấp nhận:**
-  - [ ] Kịch bản Playwright cho luồng chính: khách đặt hàng COD → dược sĩ xác nhận → kho soạn/giao → hoàn tất; gửi đơn thuốc → duyệt → xác nhận; đổi trả → hoàn tiền; chat AI → chuyển dược sĩ.
-  - [ ] Seed demo đẹp (ảnh sản phẩm, đơn hàng nhiều trạng thái, dữ liệu báo cáo 3 tháng).
-  - [ ] `README.md` gốc: giới thiệu, ảnh chụp màn hình, cách chạy, tài khoản demo; hướng dẫn deploy đơn giản (docker compose prod).
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Kịch bản Playwright cho luồng chính: khách đặt hàng COD → dược sĩ xác nhận → kho soạn/giao → hoàn tất; gửi đơn thuốc → duyệt → xác nhận; đổi trả → hoàn tiền; chat AI → chuyển dược sĩ.
+  - [x] Seed demo đẹp (ảnh sản phẩm, đơn hàng nhiều trạng thái, dữ liệu báo cáo 3 tháng).
+  - [x] `README.md` gốc: giới thiệu, ảnh chụp màn hình, cách chạy, tài khoản demo; hướng dẫn deploy đơn giản (docker compose prod).
+- **Ghi chú triển khai:** `python -m app.seed --demo` (`backend/app/seed/demo.py`): ảnh minh họa vẽ bằng Pillow, ~165 đơn bán tại quầy trong 90 ngày, 24 đơn online đã giao/hủy và 8 đơn đang ở các trạng thái khác; tất cả đi qua API thật trong ứng dụng ASGI cùng tiến trình rồi dời mọi cột `timestamptz` của đơn và bản ghi con về quá khứ (kể cả thẻ kho, phân bổ lô); phiếu nhập mẫu lùi 100 ngày. Kiểm bằng SQL: tồn lô khớp thẻ kho, không tồn âm, mọi đơn hoàn tất có phân bổ `da_xuat`. Đơn hoàn tất quá hạn đổi trả do hàm HT08 thật xử lý. Không có luồng đổi trả/đơn thuốc trong seed (e2e bao phủ). E2E: `frontend/e2e/*.spec.ts` (4 luồng, Playwright 1.56) chạy bằng `scripts/e2e.sh` trên CSDL `nha_thuoc_e2e` dựng lại từ đầu (xóa cờ đổi mật khẩu của Admin seed để vào được khu quản trị); đơn dựng nhanh qua API (`taoDonDaGiao`) cho kịch bản đổi trả. `vite.config.ts` chỉ cho vitest chạy `src/**/*.test.*`. Triển khai: `backend/Dockerfile`, `frontend/Dockerfile`, `deploy/nginx.conf`, `docker-compose.prod.yml`, `.env.prod.example`: **chưa build thử** (môi trường làm việc không có Docker daemon); chỉ kiểm cú pháp bằng đọc. Lệch spec: production cần nhà cung cấp SMS (`tich_hop/tin_nhan/that.py` chưa cài), nên README hướng dẫn chạy `MOI_TRUONG=dev` cho bản demo. Ảnh chụp màn hình ở `docs/anh/`.
 
 ## Việc phát sinh
 

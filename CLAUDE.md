@@ -37,6 +37,7 @@ docker compose up -d db mailpit                       # Postgres + Mailpit (http
 cd backend && uv sync                                 # cài phụ thuộc
 cd backend && uv run alembic upgrade head             # migration (từ T0.4)
 cd backend && uv run python -m app.seed --mau         # seed + dữ liệu mẫu (từ T0.5)
+cd backend && uv run python -m app.seed --demo        # như --mau, thêm ảnh và ~190 đơn trong 3 tháng (từ T8.3)
 cd backend && uv run uvicorn app.main:app --reload    # API http://localhost:8000/docs
 cd backend && uv run python -m app.jobs               # worker job nền (từ T3.2)
 cd backend && uv run ruff check . && uv run ruff format --check .   # (từ T0.6)
@@ -46,6 +47,7 @@ cd frontend && npm run gen:api                        # sinh type từ OpenAPI, 
 cd frontend && npm run lint && npx tsc --noEmit       # lint bằng oxlint
 cd frontend && npm test -- --run                      # vitest một lần (từ T0.7)
 cd frontend && npm run build
+./scripts/e2e.sh                                       # e2e Playwright trên CSDL nha_thuoc_e2e (từ T8.3)
 ```
 
 ## Quy tắc bắt buộc

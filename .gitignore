@@ -15,3 +15,7 @@ dist/
 
 # Hệ điều hành
 .DS_Store
+
+# Playwright
+frontend/test-results/
+frontend/playwright-report/

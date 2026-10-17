@@ -94,6 +94,7 @@ docker-compose.yml
 | `JWT_SECRET` | (chuỗi ngẫu nhiên ≥ 32 ký tự) | |
 | `JWT_ACCESS_PHUT` | `15` | |
 | `REFRESH_NGAY` | `14` | Hạn refresh token (ngày), tính từ lần làm mới gần nhất |
+| `MOI_TRUONG` | `dev` | `dev` hoặc `production`; `production` từ chối khởi động khi còn cổng/vận chuyển/SMS giả, thiếu bí mật hoặc `COOKIE_SECURE=false` (QĐ-53) |
 | `COOKIE_SECURE` | `true` | Cờ `Secure` của cookie refresh token; chỉ đặt `false` khi dev qua http |
 | `FRONTEND_URL`, `CORS_ORIGINS` | `http://localhost:5173` | |
 | `ADMIN_EMAIL`, `ADMIN_MAT_KHAU` | | Dùng cho seed Admin đầu tiên |
@@ -122,4 +123,4 @@ docker-compose.yml
 
 Backend, worker và frontend chạy trực tiếp trên máy để reload nhanh (lệnh trong `CLAUDE.md`).
 
-Bản deploy (T8.3) dùng `docker-compose.prod.yml`, thêm service `api`, `worker` và `web` (nginx phục vụ bản build frontend và proxy `/api`).
+Bản deploy (T8.3) dùng `docker-compose.prod.yml`, thêm service `migrate` (chạy một lần), `api`, `worker` và `web` (nginx phục vụ bản build frontend và proxy `/api`, cấu hình ở `deploy/nginx.conf`). Biến môi trường `MOI_TRUONG` (dev | production) bật chốt cấu hình an toàn (QĐ-53).

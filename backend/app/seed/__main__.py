@@ -49,7 +49,8 @@ def kiem_tra_duoc_nap_mau(url: str, cho_phep_may_chu_khac: bool) -> None:
         )
 
 
-async def chay(mau: bool, cho_phep_may_chu_khac: bool = False) -> int:
+async def chay(mau: bool, cho_phep_may_chu_khac: bool = False, demo: bool = False) -> int:
+    mau = mau or demo
     try:
         admin = _thong_tin_admin()
         if admin is not None:
@@ -87,6 +88,18 @@ async def chay(mau: bool, cho_phep_may_chu_khac: bool = False) -> int:
             print(f"Tài khoản mẫu (mật khẩu chung công khai: {MAT_KHAU_MAU}), CHỈ DÙNG CỤC BỘ:")
             for vai_tro, dang_nhap in TAI_KHOAN_MAU:
                 print(f"  {vai_tro}: {dang_nhap}")
+        if demo:
+            from app.main import create_app
+            from app.seed.demo import LoiDemo, seed_demo
+
+            try:
+                async with AsyncSession(engine) as db:
+                    moi = await seed_demo(create_app(), db)
+            except LoiDemo as loi:
+                raise LoiCauHinh(str(loi)) from loi
+            print(
+                "Dữ liệu demo mới tạo:", ", ".join(f"{k}={v}" for k, v in sorted(moi.items())) or "không có (đã có đơn)"
+            )
         return 0
     except LoiCauHinh as loi:
         print(loi, file=sys.stderr)
@@ -99,10 +112,13 @@ def main() -> int:
     tham_so = argparse.ArgumentParser(prog="python -m app.seed", description=__doc__.split("\n")[0])
     tham_so.add_argument("--mau", action="store_true", help="nạp thêm dữ liệu mẫu để demo")
     tham_so.add_argument(
+        "--demo", action="store_true", help="như --mau, thêm đơn hàng nhiều trạng thái và 3 tháng doanh thu"
+    )
+    tham_so.add_argument(
         "--cho-phep-may-chu-khac", action="store_true", help="cho --mau chạy với CSDL không ở máy cục bộ"
     )
     args = tham_so.parse_args()
-    return asyncio.run(chay(args.mau, args.cho_phep_may_chu_khac))
+    return asyncio.run(chay(args.mau, args.cho_phep_may_chu_khac, args.demo))
 
 
 if __name__ == "__main__":

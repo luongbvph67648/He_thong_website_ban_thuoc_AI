@@ -488,3 +488,6 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 
 ## QĐ-53 · Chốt cấu hình production (T8.2)
 Thêm `MOI_TRUONG` (`dev` mặc định | `production`). Ở `production`, `create_app()` ném lỗi khi còn chế độ giả (thanh toán, vận chuyển, tin nhắn), thiếu bí mật (JWT, khóa mã hóa, khóa cổng, token webhook GHN) hoặc `COOKIE_SECURE=false`; `seed --mau` bị từ chối. Mặc định giữ `dev` để chạy cục bộ và test không cần cấu hình. Giới hạn trần ảnh giải mã 12 triệu điểm ảnh. Chờ người xác nhận.
+
+## QĐ-54 · Dữ liệu demo và e2e (T8.3)
+Dữ liệu demo sinh bằng chính API/nghiệp vụ rồi dời mốc thời gian (không INSERT thẳng đơn/tồn kho) để báo cáo và thẻ kho khớp nhau; e2e chạy trên CSDL riêng `nha_thuoc_e2e` dựng lại mỗi lần. Triển khai bằng `docker-compose.prod.yml` (chưa kiểm chạy). Production cần nhà cung cấp SMS thật; bản demo dùng `MOI_TRUONG=dev`. Chờ người xác nhận.

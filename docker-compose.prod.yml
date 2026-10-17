@@ -1,0 +1,67 @@
+# Triển khai đơn giản một máy: docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+# Cần .env.prod (sao chép từ .env.prod.example). TLS/HTTPS: đặt thêm một proxy (Caddy, Traefik, nginx) phía trước cổng WEB_PORT.
+services:
+  db:
+    image: pgvector/pgvector:pg16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: nha_thuoc
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?đặt POSTGRES_PASSWORD trong .env.prod}
+      POSTGRES_DB: nha_thuoc
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nha_thuoc -d nha_thuoc"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # Chạy một lần mỗi lần triển khai: migration rồi seed cơ bản (vai trò, quyền, cấu hình, Admin đầu tiên)
+  migrate:
+    build: { context: ., dockerfile: backend/Dockerfile }
+    env_file: .env.prod
+    environment: &db_env
+      DATABASE_URL: postgresql+asyncpg://nha_thuoc:${POSTGRES_PASSWORD}@db:5432/nha_thuoc
+    command: ["sh", "-c", "alembic upgrade head && python -m app.seed"]
+    depends_on:
+      db: { condition: service_healthy }
+    restart: "no"
+
+  api:
+    build: { context: ., dockerfile: backend/Dockerfile }
+    restart: unless-stopped
+    env_file: .env.prod
+    environment: *db_env
+    volumes:
+      - storage:/app/backend/storage
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  # Job nền (hết hạn giữ hàng, tự hoàn tất đơn, nhắc việc, dự báo nhập hàng...). Chạy ĐÚNG MỘT bản.
+  worker:
+    build: { context: ., dockerfile: backend/Dockerfile }
+    restart: unless-stopped
+    env_file: .env.prod
+    environment: *db_env
+    command: ["python", "-m", "app.jobs"]
+    volumes:
+      - storage:/app/backend/storage
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  web:
+    build: { context: ., dockerfile: frontend/Dockerfile }
+    restart: unless-stopped
+    ports:
+      - "${WEB_PORT:-80}:80"
+    depends_on:
+      api: { condition: service_healthy }
+
+volumes:
+  pgdata:
+  storage:

@@ -18,5 +18,6 @@ export default defineConfig({
     globals: true, // bật dọn DOM tự động của Testing Library sau mỗi test
     setupFiles: ['./src/test/setup.ts'],
     css: false,
+    include: ['src/**/*.test.{ts,tsx}'], // e2e/*.spec.ts là của Playwright
   },
 })
