@@ -1149,8 +1149,9 @@ Table nhat_ky_he_thong [headercolor: #534AB7] {
   indexes {
     (bang, ban_ghi_id)
     (nhan_vien_id, created_at)
+    created_at // [T8.2] sắp xếp/lọc theo thời gian: quét tuần tự 400.000 dòng mất ~30 ms
   }
-  Note: 'Chỉ INSERT. Không ghi mật khẩu, OTP, dữ liệu sức khỏe dạng rõ'
+  Note: 'Chỉ INSERT: trigger ở migration 0003 chặn UPDATE/DELETE [T8.2]. Không ghi mật khẩu, OTP, dữ liệu sức khỏe dạng rõ'
 }
 
 // [DB14] Bảng mới: phiên đăng nhập (refresh token) để khóa tài khoản có hiệu lực ngay

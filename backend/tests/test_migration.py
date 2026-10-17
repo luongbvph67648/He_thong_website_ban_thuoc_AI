@@ -38,8 +38,8 @@ async def trang_thai(engine) -> dict[str, int]:
 
 def test_chi_co_mot_head_va_chuoi_tuyen_tinh():
     kich_ban = ScriptDirectory.from_config(cau_hinh_alembic(settings.DATABASE_URL))
-    assert kich_ban.get_heads() == ["0002"]
-    assert [r.revision for r in reversed(list(kich_ban.walk_revisions()))] == ["0001", "0002"]
+    assert kich_ban.get_heads() == ["0003"]
+    assert [r.revision for r in reversed(list(kich_ban.walk_revisions()))] == ["0001", "0002", "0003"]
 
 
 async def test_upgrade_tao_du_doi_tuong(engine_tam):

@@ -144,6 +144,7 @@ class NhatKyHeThong(Base):
     __table_args__ = (
         Index("ix_nhat_ky_he_thong__bang_ban_ghi_id", "bang", "ban_ghi_id"),
         Index("ix_nhat_ky_he_thong__nhan_vien_id_created_at", "nhan_vien_id", "created_at"),
+        Index("ix_nhat_ky_he_thong__created_at", "created_at"),
     )
 
 

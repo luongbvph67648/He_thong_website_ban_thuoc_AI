@@ -34,7 +34,7 @@
 | Bản chụp | `ct_don_hang` lưu `ten_san_pham`, `ten_don_vi`, `he_so`, `don_gia`; `don_hang` lưu địa chỉ giao. Không join ngược sang giá hiện tại để tính tiền đơn cũ |
 | jsonb | Chỉ cho dữ liệu bán cấu trúc đã ghi trong ERD (ảnh, checklist, payload IPN/webhook, metadata AI). Không dùng jsonb để né thiết kế bảng |
 
-## 4. Ràng buộc bổ sung (migration `0002_rang_buoc`)
+## 4. Ràng buộc bổ sung (migration `0002_rang_buoc`, `0003_nhat_ky_bat_bien`)
 Mỗi mục dưới đây cần ít nhất 1 test chứng minh DB từ chối dữ liệu sai (T0.4).
 
 ### 4.1 Hàm và index tìm kiếm
@@ -93,6 +93,9 @@ CREATE UNIQUE INDEX don_thuoc_mot_don_mo   ON don_hang (yeu_cau_don_thuoc_id)
   WHERE yeu_cau_don_thuoc_id IS NOT NULL AND trang_thai <> 'da_huy';
 ```
 Ràng buộc "mỗi đơn có tối đa 1 vận đơn `giao_hang` còn hiệu lực" kiểm tra trong service, vì `trang_thai_doi_tac` là chuỗi tự do của đối tác.
+
+### 4.3b Nhật ký bất biến (migration `0003`, T8.2)
+- Trigger `trg_nhat_ky_chi_them` (hàm `nhat_ky_chi_them()`) chặn `UPDATE` và `DELETE` trên `nhat_ky_he_thong` (`integrity_constraint_violation`); chỉ `INSERT`. `TRUNCATE` không bị chặn (quản trị CSDL, test). Index `ix_nhat_ky_he_thong__created_at` cho trang nhật ký và thống kê.
 
 ### 4.4 Sequence cho mã chứng từ
 `CREATE SEQUENCE seq_<loai>` cho: `phieu_nhap`, `phieu_kiem_ke`, `phieu_dieu_chinh`, `phieu_huy`, `phieu_xuat_tra`, `lenh_thu_hoi`, `nhan_vien`. Định dạng mã ở spec 04 mục 7.

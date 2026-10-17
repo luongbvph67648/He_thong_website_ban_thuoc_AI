@@ -479,3 +479,10 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **Báo cáo ca chỉ tính việc của chính dược sĩ**; "do mình xử lý" = đơn mình tạo hoặc xác nhận. Đơn khách tự đặt mà dược sĩ khác xác nhận không vào ca của người tạo (không có người tạo).
 - **Xuất Excel dùng `Decimal` trực tiếp** (openpyxl ghi số, không qua float).
 
+## QĐ-52 · Rà soát hiệu năng và bảo mật (T8.2)
+- **Đo hiệu năng** trên bản sao CSDL với 5.042 sản phẩm, 50.000 đơn, 500.000 dòng `lich_su_xem`, 200.000 `lich_su_tim_kiem`, 400.000 `nhat_ky_he_thong` (gấp ~100 lần dữ liệu mẫu): danh sách sản phẩm ~20 ms, tìm kiếm ~90-140 ms, gợi ý ~60 ms, trang chủ ~40 ms, danh sách đơn ~15 ms, nhật ký ~40 ms, báo cáo tổng hợp ~115 ms (lần đầu ~430 ms). Mọi truy vấn nóng dùng index sẵn có, không cần thêm index ngoài `nhat_ky_he_thong(created_at)` (quét tuần tự ~30 ms ở 400.000 dòng).
+- **Đổi schema (0003), làm theo `/doi-schema` nhưng không chờ xác nhận từng bước** vì người dùng yêu cầu làm liên tục tới khi hoàn thiện: chỉ thêm (index, trigger), không đổi dữ liệu, `downgrade` đầy đủ. Người dùng nên xem lại.
+- **Trigger chặn UPDATE/DELETE nhật ký** đóng mục "Việc phát sinh" T1.3: nhật ký chỉ-INSERT nay do DB bảo đảm, không chỉ do ứng dụng không có route sửa.
+- **Header bảo mật mặc định** ở `RequestIdMiddleware` (nosniff, DENY, no-referrer, Permissions-Policy, CSP khóa chặt cho API, `Cache-Control: no-store` cho `/api/`); route đã tự đặt `Cache-Control` (ảnh công khai) được giữ. HSTS/TLS do reverse proxy (T8.3).
+- Index `lich_su_xem(ma_phien, san_pham_id, created_at)` KHÔNG thêm: truy vấn chống trùng đo 0,1 ms ở 500.000 dòng nhờ index `san_pham_id` (mục phát sinh T2.4 đóng).
+

@@ -1148,6 +1148,8 @@ CREATE INDEX ON "nhat_ky_he_thong" ("bang", "ban_ghi_id");
 
 CREATE INDEX ON "nhat_ky_he_thong" ("nhan_vien_id", "created_at");
 
+CREATE INDEX ON "nhat_ky_he_thong" ("created_at");
+
 CREATE INDEX ON "phien_dang_nhap" ("khach_hang_id");
 
 CREATE INDEX ON "phien_dang_nhap" ("nhan_vien_id");
@@ -1438,7 +1440,7 @@ COMMENT ON COLUMN "vai_tro_quyen"."gioi_han" IS 'Mô tả điều kiện với q
 
 COMMENT ON COLUMN "cau_hinh"."khoa" IS 'VD: nguong_can_han_ngay, thoi_han_doi_tra_ngay';
 
-COMMENT ON TABLE "nhat_ky_he_thong" IS 'Chỉ INSERT. Không ghi mật khẩu, OTP, dữ liệu sức khỏe dạng rõ';
+COMMENT ON TABLE "nhat_ky_he_thong" IS 'Chỉ INSERT: trigger ở migration 0003 chặn UPDATE/DELETE [T8.2]. Không ghi mật khẩu, OTP, dữ liệu sức khỏe dạng rõ';
 
 COMMENT ON COLUMN "nhat_ky_he_thong"."hanh_dong" IS 'tao, sua, xoa, duyet, dang_nhap...';
 

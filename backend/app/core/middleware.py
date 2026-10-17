@@ -38,6 +38,17 @@ def mau_route(scope: Scope) -> str:
         return getattr(route, "path", None) or "<khong-khop>"
 
 
+HEADER_BAO_MAT = {
+    "X-Content-Type-Options": "nosniff",
+    "X-Frame-Options": "DENY",
+    "Referrer-Policy": "no-referrer",
+    "Permissions-Policy": "camera=(), microphone=(), geolocation=()",
+}
+"""Header bảo mật thêm vào MỌI phản hồi HTTP của API (kể cả lỗi). HSTS và TLS do reverse proxy đảm nhiệm."""
+DUONG_TAI_LIEU = ("/docs", "/redoc", "/openapi.json")
+"""Trang tài liệu Swagger cần script/style bên ngoài nên không đặt CSP khóa chặt."""
+
+
 class RequestIdMiddleware:
     """Gắn request_id cho mỗi request: nhận từ header nếu hợp lệ, không thì tự sinh.
 
@@ -68,7 +79,14 @@ class RequestIdMiddleware:
             if message["type"] == "http.response.start":
                 da_bat_dau_tra_loi = True
                 trang_thai = message["status"]
-                MutableHeaders(scope=message)[HEADER_REQUEST_ID] = request_id
+                dau = MutableHeaders(scope=message)
+                dau[HEADER_REQUEST_ID] = request_id
+                for ten, gia_tri in HEADER_BAO_MAT.items():
+                    dau.setdefault(ten, gia_tri)  # route đặt riêng (ví dụ ảnh công khai) thì giữ giá trị của route
+                if not scope["path"].startswith(DUONG_TAI_LIEU):
+                    dau.setdefault("Content-Security-Policy", "default-src 'none'; frame-ancestors 'none'")
+                if scope["path"].startswith("/api/") and "cache-control" not in dau:
+                    dau["Cache-Control"] = "no-store"  # phản hồi API có dữ liệu cá nhân không được cache trung gian
             await send(message)
 
         try:
