@@ -14,6 +14,7 @@ from app.jobs.chay import HamJob, chay_job
 from app.jobs.cong_viec import (
     ai06_doc_don_thuoc,
     ai08_luat_mua_kem,
+    ai09_du_bao_nhu_cau,
     ai_dong_bo_tri_thuc,
     don_lich_su,
     ht01_cap_nhat_lo,
@@ -31,8 +32,11 @@ LICH: tuple[tuple[str, HamJob, int, int], ...] = (
     ("ai_dong_bo_tri_thuc", ai_dong_bo_tri_thuc, 2, 30),
     ("don_lich_su", don_lich_su, 3, 30),
 )
-# Job hằng tuần: (tên, hàm, thứ trong tuần theo cron, giờ, phút). AI08 vào Chủ nhật 03:00, lúc ít người mua.
-LICH_TUAN: tuple[tuple[str, HamJob, str, int, int], ...] = (("ai08_luat_mua_kem", ai08_luat_mua_kem, "sun", 3, 0),)
+# Job hằng tuần: (tên, hàm, thứ trong tuần theo cron, giờ, phút). AI08 Chủ nhật 03:00, AI09 thứ Hai 04:00.
+LICH_TUAN: tuple[tuple[str, HamJob, str, int, int], ...] = (
+    ("ai08_luat_mua_kem", ai08_luat_mua_kem, "sun", 3, 0),
+    ("ai09_du_bao_nhu_cau", ai09_du_bao_nhu_cau, "mon", 4, 0),  # sau AI08; đầu tuần để kho nhập hàng sớm
+)
 # Job chạy theo chu kỳ phút: (tên, hàm, số phút giữa hai lần). HT03 hủy đơn quá hạn; HT08 tự hoàn tất đơn.
 LICH_PHUT: tuple[tuple[str, HamJob, int], ...] = (
     ("ht03_huy_qua_han", ht03_huy_qua_han, 1),

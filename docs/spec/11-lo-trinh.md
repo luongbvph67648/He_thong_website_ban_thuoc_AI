@@ -899,16 +899,16 @@ _Kho tri thức, tìm kiếm lai, chatbot RAG, chuyển dược sĩ, đọc ản
   - [x] Màn đánh giá câu trả lời; dashboard AI cho Admin.
 - **Ghi chú triển khai:** `core/an_danh.py` (che SĐT/email/số dài/tên), `modules/giam_sat_ai/{dich_vu,router_noi_bo,schemas}.py` (7 route vào registry phân quyền), `chuyen_cho_duoc_si` đặt `loai = duoc_si` ngay lúc chuyển. API spec 06 mục 3.46; QĐ-49. Giao diện: `components/HoiThoaiAnDanh.tsx`, `/nhan-vien/danh-gia-ai` (danh sách gắn cờ, ngăn kéo hội thoại, nút Đúng/Sai + ghi chú) và `/quan-tri/giam-sat-ai` (thống kê, hội thoại, từ khóa không ra kết quả). Test `tests/ai/test_giam_sat_ai.py` (21), `TrangDanhGiaAi.test.tsx`, `TrangGiamSatAi.test.tsx`. Việc che tên là best-effort (xem QĐ-49).
 
-### [ ] T7.9 · Dự báo nhu cầu và đề xuất nhập hàng
+### [x] T7.9 · Dự báo nhu cầu và đề xuất nhập hàng
 - **Chức năng:** AI09 (Dự báo nhu cầu, đề xuất nhập hàng), KHO14 (Xem đề xuất nhập hàng từ AI)
 - **Phụ thuộc:** T7.1, T3.5
 - **Bảng:** `de_xuat_nhap_hang`, `ct_don_hang`, `lo_thuoc`
 - **Tiêu chí chấp nhận:**
-  - [ ] Job hằng tuần: dự báo 30 ngày tới theo sản phẩm (trung bình trượt có trọng số; Holt-Winters khi đủ ≥ 12 tuần dữ liệu), tính MAPE trên 4 tuần gần nhất, ghi `de_xuat_nhap_hang`.
-  - [ ] Kho xem đề xuất, đánh dấu đã xử lý khi lập phiếu nhập.
+  - [x] Job hằng tuần: dự báo 30 ngày tới theo sản phẩm (trung bình trượt có trọng số; Holt-Winters khi đủ ≥ 12 tuần dữ liệu), tính MAPE trên 4 tuần gần nhất, ghi `de_xuat_nhap_hang`.
+  - [x] Kho xem đề xuất, đánh dấu đã xử lý khi lập phiếu nhập.
 - **Giao diện:**
-  - [ ] Màn đề xuất nhập hàng có biểu đồ lịch sử bán và dự báo.
-- **Ghi chú triển khai:** _(trống)_
+  - [x] Màn đề xuất nhập hàng có biểu đồ lịch sử bán và dự báo.
+- **Ghi chú triển khai:** `modules/du_bao/{mo_hinh,dich_vu,router_noi_bo,schemas}.py` (mô hình thuần dễ test), job `ai09_du_bao_nhu_cau` (`LICH_TUAN`, thứ Hai 04:00), 4 route `forecast.view` vào registry. API spec 06 mục 3.47; QĐ-50. Giao diện `/nhan-vien/de-xuat-nhap` (bảng, lọc kỳ, ngăn kéo biểu đồ SVG 26 tuần + 5 tuần dự báo, nút đã xử lý). Test `tests/ai/test_du_bao.py` (20), `TrangDeXuatNhap.test.tsx` (4). Chưa chạy với dữ liệu bán thật; MAPE trên chuỗi ngắn nhiễu.
 
 ## P8 · Báo cáo & hoàn thiện
 

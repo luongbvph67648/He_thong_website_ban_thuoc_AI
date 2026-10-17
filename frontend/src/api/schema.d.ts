@@ -2951,6 +2951,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/noi-bo/de-xuat-nhap/ky": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Các kỳ đã có đề xuất, mới nhất trước (KHO14) */
+        get: operations["cac_ky_api_v1_noi_bo_de_xuat_nhap_ky_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/de-xuat-nhap": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Đề xuất nhập hàng của một kỳ (KHO14) */
+        get: operations["danh_sach_api_v1_noi_bo_de_xuat_nhap_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/de-xuat-nhap/{de_xuat_id}/bieu-do": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Lịch sử bán và dự báo theo tuần (KHO14) */
+        get: operations["bieu_do_api_v1_noi_bo_de_xuat_nhap__de_xuat_id__bieu_do_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/noi-bo/de-xuat-nhap/{de_xuat_id}/da-xu-ly": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /** Đánh dấu đã (chưa) xử lý đề xuất (KHO14) */
+        put: operations["da_xu_ly_api_v1_noi_bo_de_xuat_nhap__de_xuat_id__da_xu_ly_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/noi-bo/tu-van": {
         parameters: {
             query?: never;
@@ -4368,6 +4436,21 @@ export interface components {
              */
             dang_hien: boolean;
         };
+        /** BieuDoDeXuat */
+        BieuDoDeXuat: {
+            /** Id */
+            id: number;
+            /** Ten San Pham */
+            ten_san_pham: string;
+            /** Don Vi Co So */
+            don_vi_co_so: string;
+            /** Mo Hinh */
+            mo_hinh: string;
+            /** Lich Su */
+            lich_su: components["schemas"]["DiemTuan"][];
+            /** Du Bao */
+            du_bao: components["schemas"]["DiemTuan"][];
+        };
         /** BoLocSanPham */
         BoLocSanPham: {
             /** Thuong Hieu */
@@ -4809,6 +4892,11 @@ export interface components {
             /** Da Cap Nhat */
             da_cap_nhat: number;
         };
+        /** DaXuLyVao */
+        DaXuLyVao: {
+            /** Da Xu Ly */
+            da_xu_ly: boolean;
+        };
         /** DangKyYeuCau */
         DangKyYeuCau: {
             /** So Dien Thoai */
@@ -5100,6 +5188,43 @@ export interface components {
             /** Ids */
             ids: number[];
         };
+        /** DeXuatRa */
+        DeXuatRa: {
+            /** Id */
+            id: number;
+            /** San Pham Id */
+            san_pham_id: number;
+            /** Sku */
+            sku: string;
+            /** Ten San Pham */
+            ten_san_pham: string;
+            /** Don Vi Co So */
+            don_vi_co_so: string;
+            /**
+             * Ky Bat Dau
+             * Format: date
+             */
+            ky_bat_dau: string;
+            /**
+             * Ky Ket Thuc
+             * Format: date
+             */
+            ky_ket_thuc: string;
+            /** So Luong Du Bao */
+            so_luong_du_bao: number;
+            /** Ton Kha Dung */
+            ton_kha_dung: number;
+            /** Ton Toi Thieu */
+            ton_toi_thieu: number;
+            /** So Luong De Xuat */
+            so_luong_de_xuat: number;
+            /** Mo Hinh */
+            mo_hinh: string | null;
+            /** Sai So Mape */
+            sai_so_mape: string | null;
+            /** Da Xu Ly */
+            da_xu_ly: boolean;
+        };
         /** DiUngRa */
         DiUngRa: {
             /** Hoat Chat Id */
@@ -5179,6 +5304,16 @@ export interface components {
             ma_tinh: string;
             /** Ma Phuong Xa */
             ma_phuong_xa: string;
+        };
+        /** DiemTuan */
+        DiemTuan: {
+            /**
+             * Tuan Bat Dau
+             * Format: date
+             */
+            tuan_bat_dau: string;
+            /** So Luong */
+            so_luong: number;
         };
         /** DieuChinhChiTiet */
         DieuChinhChiTiet: {
@@ -7074,6 +7209,21 @@ export interface components {
             /** Ma */
             ma: string;
         };
+        /** KyDeXuat */
+        KyDeXuat: {
+            /**
+             * Ky Bat Dau
+             * Format: date
+             */
+            ky_bat_dau: string;
+            /**
+             * Ky Ket Thuc
+             * Format: date
+             */
+            ky_ket_thuc: string;
+            /** So San Pham */
+            so_san_pham: number;
+        };
         /** LenhChiTiet */
         LenhChiTiet: {
             /** Id */
@@ -8938,6 +9088,17 @@ export interface components {
         Trang_DanhGiaNoiBo_: {
             /** Du Lieu */
             du_lieu: components["schemas"]["DanhGiaNoiBo"][];
+            /** Tong */
+            tong: number;
+            /** Trang */
+            trang: number;
+            /** Kich Thuoc */
+            kich_thuoc: number;
+        };
+        /** Trang[DeXuatRa] */
+        Trang_DeXuatRa_: {
+            /** Du Lieu */
+            du_lieu: components["schemas"]["DeXuatRa"][];
             /** Tong */
             tong: number;
             /** Trang */
@@ -16130,6 +16291,130 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TimKiemKhongKetQua"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cac_ky_api_v1_noi_bo_de_xuat_nhap_ky_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KyDeXuat"][];
+                };
+            };
+        };
+    };
+    danh_sach_api_v1_noi_bo_de_xuat_nhap_get: {
+        parameters: {
+            query?: {
+                ky?: string | null;
+                chi_can_nhap?: boolean;
+                da_xu_ly?: boolean | null;
+                q?: string | null;
+                /** @description Số trang, bắt đầu từ 1 */
+                trang?: number;
+                /** @description Số dòng mỗi trang */
+                kich_thuoc?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Trang_DeXuatRa_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    bieu_do_api_v1_noi_bo_de_xuat_nhap__de_xuat_id__bieu_do_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                de_xuat_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BieuDoDeXuat"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    da_xu_ly_api_v1_noi_bo_de_xuat_nhap__de_xuat_id__da_xu_ly_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                de_xuat_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DaXuLyVao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeXuatRa"];
                 };
             };
             /** @description Validation Error */

@@ -460,3 +460,10 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 - **`loai = duoc_si` đặt ngay khi khách yêu cầu gặp dược sĩ** (trước đó chỉ đặt khi dược sĩ nhận phiên), để tỉ lệ chuyển dược sĩ không bỏ sót phiên chờ gọi lại/đã đóng. Hội thoại cũ trước T7.8 đã đóng chưa được điền ngược.
 - **Chi phí hiển thị bằng USD, cộng từ `hoi_thoai.chi_phi`**; chi phí tra ảnh, đọc đơn thuốc chưa có trong số này (QĐ-46, QĐ-47).
 
+## QĐ-50 · Dự báo nhu cầu (T7.9)
+- **Dùng `statsmodels`** đúng spec (thêm vào phụ thuộc chính, kéo theo numpy/scipy/pandas); Holt-Winters chạy trong thread (`asyncio.to_thread`) để không chặn event loop của job.
+- **Nhu cầu = lượng ĐÃ XUẤT KHO** theo thời điểm xuất (không phải lúc đặt), trừ phần hoàn nhập; tuần hiện tại bị loại vì chưa đủ.
+- **Đánh dấu "đã xử lý" làm tay** bằng `PUT`, chưa tự gắn với phiếu nhập: phiếu nhập có thể gộp nhiều sản phẩm/đợt nên không suy ra được 1-1 từ đề xuất.
+- **Sản phẩm chưa bán nhưng dưới tồn tối thiểu vẫn được đề xuất** (dự báo 0), để cảnh báo thiếu hàng không phụ thuộc lịch sử bán.
+- **Biểu đồ vẽ bằng SVG thuần**, không thêm thư viện biểu đồ cho một màn hình.
+

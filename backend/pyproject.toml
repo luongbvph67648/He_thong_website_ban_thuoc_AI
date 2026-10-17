@@ -21,6 +21,7 @@ dependencies = [
     "cryptography>=50.0.2",
     "anthropic>=1.15.0",
     "pillow>=12.3.0",
+    "statsmodels>=0.15.0",
 ]
 
 [project.optional-dependencies]

@@ -13,6 +13,7 @@ from app.modules.ai_quan_tri.tri_thuc import dong_bo as dong_bo_tri_thuc
 from app.modules.ban_hang.het_han import KetQuaHt03, huy_don_qua_han
 from app.modules.ban_hang.tu_hoan_tat import KetQuaHt08Don, tu_hoan_tat_don
 from app.modules.don_thuoc.doc_anh_ai import KetQuaAi06, doc_don_thuoc_moi
+from app.modules.du_bao.dich_vu import KetQuaAi09, chay_du_bao
 from app.modules.gio_hang.luat_mua_kem import KetQuaAi08, tinh_luat_mua_kem
 from app.modules.kho.canh_bao import gui_thong_bao_ht02, nhan_vien_kho
 from app.modules.kho.lo_hang_ngay import KetQuaHt01, cap_nhat_trang_thai_lo
@@ -69,6 +70,11 @@ async def ai06_doc_don_thuoc(db: AsyncSession) -> KetQuaAi06:
 async def ai08_luat_mua_kem(db: AsyncSession) -> KetQuaAi08:
     """AI08 hằng tuần: tính lại luật mua kèm từ đơn hoàn tất 180 ngày."""
     return await tinh_luat_mua_kem(db)
+
+
+async def ai09_du_bao_nhu_cau(db: AsyncSession) -> KetQuaAi09:
+    """AI09 hằng tuần: dự báo nhu cầu 30 ngày và đề xuất nhập hàng."""
+    return await chay_du_bao(db)
 
 
 async def don_lich_su(db: AsyncSession) -> int:

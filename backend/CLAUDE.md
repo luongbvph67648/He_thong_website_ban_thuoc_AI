@@ -178,4 +178,5 @@ async def don_cua_toi(ma_don: str, kh: Annotated[KhachHang, Depends(khach_hien_t
 - **Đọc ảnh đơn thuốc** (`ai/doc_don_thuoc.py`, `modules/don_thuoc/doc_anh_ai.py`, T7.6, QĐ-47): chạy bằng job nền, không trong request; chỉ ghi `ct_yeu_cau_don_thuoc` khi yêu cầu chưa có dòng; AI không bao giờ tạo đơn hay chọn sản phẩm bán, dược sĩ chốt qua `duyet.luu_thuoc_tren_don`.
 - **Gợi ý sản phẩm** (`cua_hang/goi_y.py`, `cua_hang/loc_an_toan.py`, `gio_hang/luat_mua_kem.py`, T7.7, QĐ-48): mọi nơi gợi ý sản phẩm (chatbot, tương tự, dành cho bạn) phải lấy thẻ qua `loc_an_toan.the_hop_le` (không kê đơn, hiển thị, không dị ứng); không tự viết lại bộ lọc.
 - **Giám sát/đánh giá AI** (`modules/giam_sat_ai/`, `core/an_danh.py`, T7.8, QĐ-49): mọi nội dung hội thoại cho nhân viên xem phải đi qua `che_thong_tin` và không kèm `khach_hang_id`/`ma_phien`/`ip_hash`; dược sĩ chỉ đọc hội thoại bị gắn cờ.
+- **Dự báo nhu cầu** (`modules/du_bao/`, T7.9, QĐ-50): mô hình ở `mo_hinh.py` là hàm thuần (test không cần DB); nhu cầu lấy từ `phan_bo_lo` `da_xuat` theo tuần giờ VN, loại tuần hiện tại; chạy lại trong tuần thì cập nhật dòng, không tạo mới.
 
