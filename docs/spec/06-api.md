@@ -350,7 +350,7 @@ Quyền `report.inventory` (`xem`: kho và Admin). Tính hoàn toàn từ `bien_
 - **Thanh toán thành công và đơn còn `cho_thanh_toan`:** giao dịch `thanh_cong`, đơn chuyển qua `chuyen_trang_thai` (nguồn `ipn_thanh_toan`): đơn khách tự đặt dòng 10 -> `cho_xac_nhan`, đơn dược sĩ tạo dòng 11 -> `da_xac_nhan`; hook của hai dòng đặt `trang_thai_tt = da_thanh_toan`. Chấp nhận cả khi vừa quá `han_thanh_toan` nhưng job HT03 chưa kịp hủy.
 - **Thanh toán thành công nhưng đơn không còn `cho_thanh_toan`** (đã hủy quá hạn, hoặc đã có giao dịch khác thành công): tiền đã vào nên giao dịch vẫn ghi `thanh_cong`, không đổi trạng thái đơn; tạo giao dịch `hoan_tien` (`khoi_tao`, `thanh_toan_goc_id` = giao dịch này, cùng số tiền) và `trang_thai_tt = cho_hoan_tien` (Admin xác nhận ở T6.3). Vẫn trả "đã xác nhận" để cổng không gọi lại.
 - **Định dạng phản hồi cổng:** VNPay `200` JSON `{"RspCode","Message"}` (`00` thành công, `01` không thấy đơn, `02` đã xác nhận, `04` sai số tiền, `97` sai chữ ký, `99` lỗi khác); MoMo `204` không thân (sai chữ ký hoặc sai số tiền `400`). Sai chữ ký thì không ghi gì vào CSDL.
-- **Cổng giả:** `POST /webhook/gia-ipn` thân `{giao_dich: "<ma_don>-<id>", thanh_cong: bool}` (không cần đăng nhập vì tiền là giả; route chỉ được gắn khi `THANH_TOAN_CHE_DO=gia`). Server tự dựng IPN, ký bằng khóa giả và gọi cùng hàm xử lý IPN; trả `{"RspCode","Message"}` như VNPay. Trang frontend `/thanh-toan-gia?giao_dich=...` gọi route này.
+- **Cổng giả:** `POST /webhook/gia-ipn` thân `{giao_dich: "<ma_don>-<id>", thanh_cong: bool}` (không cần đăng nhập vì tiền là giả; route chỉ được gắn khi `THANH_TOAN_CHE_DO=gia`). Server tự dựng IPN, ký bằng khóa giả và gọi cùng hàm xử lý IPN; trả `{"RspCode","Message"}` như VNPay. Trang frontend `/thanh-toan-gia?giao_dich=...` gọi route này. `GET /webhook/gia-giao-dich?giao_dich=<ref>` (cùng điều kiện gắn route, không cần đăng nhập) trả `{giao_dich, ma_don, so_tien, cong (vnpay|momo), trang_thai (khoi_tao|thanh_cong|that_bai), het_han_luc}` để trang cổng giả dựng giao diện giống cổng đã chọn; mã sai, không có hoặc không khớp mã đơn đều là `404 KHONG_TIM_THAY`.
 
 ### 3.24 Xử lý đơn: khách xem và hủy, dược sĩ xác nhận và hủy (KTV06, DS01–DS03, T4.6)
 - **Khách** (`khach_hien_tai`; `khach_hang_id` từ token, đơn của khách khác hoặc không có là `404`):
@@ -617,6 +617,7 @@ Mọi nội dung hội thoại ra khỏi các route này đã qua `core/an_danh.
 | `GET /api/v1/webhook/vnpay-ipn` | VNPay | Kiểm chữ ký → kiểm số tiền → chống trùng → HT04 → trả JSON `RspCode` theo tài liệu VNPay |
 | `POST /api/v1/webhook/momo-ipn` | MoMo | Kiểm chữ ký → kiểm số tiền → chống trùng → HT04 → trả đúng mã phản hồi MoMo yêu cầu |
 | `POST /api/v1/webhook/gia-ipn` | Cổng giả (chỉ khi `THANH_TOAN_CHE_DO=gia`) | Dựng IPN ký bằng khóa giả → cùng hàm xử lý IPN (mục 3.23) |
+| `GET /api/v1/webhook/gia-giao-dich` | Cổng giả (chỉ khi `THANH_TOAN_CHE_DO=gia`) | Thông tin giao dịch cho trang cổng giả (mục 3.23) |
 | `POST /api/v1/webhook/ghn` | GHN | Kiểm token → ghi `van_don.du_lieu_webhook` → ánh xạ trạng thái → HT05/HT06 |
 
 - Trang "kết quả thanh toán" phía frontend **không** tin tham số trên URL trả về. Trang này hỏi lại backend trạng thái đơn.

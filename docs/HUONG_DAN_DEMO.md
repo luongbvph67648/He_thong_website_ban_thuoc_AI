@@ -61,14 +61,23 @@ Mục đích: cho thấy toàn bộ vòng đời một đơn hàng COD qua 3 vai
 
 Điểm để nói: dược sĩ xác nhận, kho soạn theo lô gần hết hạn trước (FEFO), tiền COD chỉ ghi nhận khi giao thành công.
 
-## Kịch bản 2. Thanh toán online (cổng giả)
+## Kịch bản 2. Thanh toán online (cổng giả lập VNPay và MoMo)
 
-1. **Khách**: thêm một sản phẩm vào giỏ, vào thanh toán.
-2. Chọn **VNPay** (hoặc **MoMo**), bấm **Đặt hàng**.
-3. Hệ thống mở trang "cổng giả" thay cho cổng thật. Bấm nút thanh toán thành công hoặc thất bại.
-4. Quay lại **Đơn hàng của tôi** xem trạng thái thanh toán thay đổi theo lựa chọn.
+Giao diện mô phỏng cổng thật (có dòng cảnh báo vàng "môi trường mô phỏng, không có tiền thật"). Chi tiết ở `docs/BAT_AI_THAT.md`.
 
-Điểm để nói: tích hợp thật dùng VNPay/MoMo sandbox, bản demo dùng adapter giả để chạy không cần mạng.
+**VNPay**
+1. **Khách**: thêm sản phẩm vào giỏ, vào thanh toán, chọn **VNPay**, bấm **Đặt hàng**.
+2. Trang cổng VNPay hiện số tiền, mã đơn và đồng hồ đếm ngược. Chọn **Thẻ nội địa và tài khoản ngân hàng**, bấm **Tiếp tục**.
+3. Nhập thẻ thử nghiệm (bảng gợi ý có ngay trên trang): số thẻ `9704198526191432198`, tên `NGUYEN VAN A`, ngày phát hành `07/15`. **Tiếp tục**.
+4. Nhập OTP `123456`, bấm **Xác nhận**. Hiện "Giao dịch thành công", rồi tự quay về trang đơn: **Thanh toán thành công**.
+5. Thử thất bại: dùng thẻ `9704195798459170488` (không đủ số dư) rồi OTP `123456`. Đơn vẫn chờ thanh toán, bấm **Thanh toán lại**.
+
+**MoMo**
+1. Chọn **MoMo** khi đặt hàng. Trang hiện mã QR.
+2. Bấm **Mô phỏng: mở ứng dụng MoMo và quét mã**, nhập PIN `123456`, bấm **Xác nhận**.
+
+Điểm để nói: kết quả được báo cho server bằng IPN có chữ ký (không tin trình duyệt), server kiểm tra chữ ký, số tiền và chống xử lý trùng
+rồi mới đổi trạng thái đơn; quá hạn thanh toán thì job nền tự hủy đơn và nhả hàng.
 
 ## Kịch bản 3. Chatbot AI rồi chuyển sang dược sĩ
 

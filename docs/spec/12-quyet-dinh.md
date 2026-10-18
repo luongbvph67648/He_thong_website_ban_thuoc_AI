@@ -491,3 +491,8 @@ Thêm `MOI_TRUONG` (`dev` mặc định | `production`). Ở `production`, `crea
 
 ## QĐ-54 · Dữ liệu demo và e2e (T8.3)
 Dữ liệu demo sinh bằng chính API/nghiệp vụ rồi dời mốc thời gian (không INSERT thẳng đơn/tồn kho) để báo cáo và thẻ kho khớp nhau; e2e chạy trên CSDL riêng `nha_thuoc_e2e` dựng lại mỗi lần. Triển khai bằng `docker-compose.prod.yml` (chưa kiểm chạy). Production cần nhà cung cấp SMS thật; bản demo dùng `MOI_TRUONG=dev`. Chờ người xác nhận.
+
+## QĐ-55 · Cổng thanh toán giả mô phỏng VNPay/MoMo và công cụ kiểm tra AI thật
+- Trang `/thanh-toan-gia` dựng giao diện mô phỏng đúng cổng khách đã chọn (thẻ thử nghiệm, OTP, QR, PIN, đồng hồ đếm ngược), lấy dữ liệu từ `GET /webhook/gia-giao-dich` (chỉ có khi `THANH_TOAN_CHE_DO=gia`; chế độ production đã cấm). Số thẻ thử nghiệm lấy từ bộ thẻ công khai của sandbox VNPay; luôn hiện cảnh báo "môi trường mô phỏng" để không bị nhầm với cổng thật.
+- `python -m app.ai.kiem_tra` kiểm Claude thật (khóa, model, bốn JSON Schema thật, vòng lặp tool + streaming, embedding, ảnh tùy chọn) để phát hiện lệch API trước khi demo. Backend làm nóng mô hình BGE-M3 ở nền lúc khởi động khi `EMBEDDING_GIA_LAP=false`.
+- Phần gọi Claude/BGE-M3 vẫn CHƯA được chạy với dịch vụ thật trong lúc phát triển (xem `docs/BAT_AI_THAT.md`). Ngưỡng độ gần `NGUONG_KHOANG_CACH` có thể cần chỉnh khi dùng vector thật. Chờ người xác nhận.

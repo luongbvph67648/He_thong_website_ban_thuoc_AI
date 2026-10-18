@@ -128,28 +128,122 @@ describe('trang kết quả đọc trạng thái từ máy chủ, không tin URL
 })
 
 describe('cổng thanh toán giả', () => {
-  it('bấm Thành công gửi IPN giả rồi về trang kết quả của đúng đơn', async () => {
-    giaLapDon(don())
+  const GD = (cong: string, rieng: object = {}) => ({ giao_dich: 'DHABCD2345-17', ma_don: 'DHABCD2345', so_tien: 27000, cong, trang_thai: 'khoi_tao', het_han_luc: HAN_TUONG_LAI, ...rieng })
+  function giaLapCong(gd: object) {
+    GET.mockImplementation(async (duong: string) => {
+      if (duong === '/api/v1/webhook/gia-giao-dich') return ok(gd)
+      if (duong === '/api/v1/toi/don-hang/{ma_don}') return ok(don())
+      if (duong === '/api/v1/toi/gio-hang') return ok({ dong: [], tam_tinh: '0.00', tong_so_luong: 0 })
+      return ok([])
+    })
     POST.mockResolvedValue(ok({ RspCode: '00', Message: 'Confirm Success' }))
+  }
+  const IPN = (thanh_cong: boolean) => ['/api/v1/webhook/gia-ipn', { body: { giao_dich: 'DHABCD2345-17', thanh_cong } }]
+
+  it('VNPay: thẻ thử nghiệm đúng, nhập OTP đúng thì gửi IPN thành công và báo kết quả', async () => {
+    giaLapCong(GD('vnpay'))
     renderTai('/thanh-toan-gia?giao_dich=DHABCD2345-17', { loai: 'khach' })
-    await userEvent.setup().click(await screen.findByText('Thành công'))
-    await waitFor(() => expect(POST).toHaveBeenCalledWith('/api/v1/webhook/gia-ipn', { body: { giao_dich: 'DHABCD2345-17', thanh_cong: true } }))
-    expect(await screen.findByText('Đơn hàng đang chờ thanh toán')).toBeInTheDocument()
-    expect(GET).toHaveBeenCalledWith('/api/v1/toi/don-hang/{ma_don}', { params: { path: { ma_don: 'DHABCD2345' } } })
+    const u = userEvent.setup()
+    expect(await screen.findByText(/Môi trường mô phỏng/)).toBeInTheDocument()
+    expect(screen.getByText('27.000 ₫')).toBeInTheDocument()
+    await u.click(screen.getByText('Tiếp tục'))
+    await u.type(screen.getByLabelText('Số thẻ'), '9704198526191432198')
+    await u.type(screen.getByLabelText('Tên chủ thẻ'), 'NGUYEN VAN A')
+    await u.type(screen.getByLabelText('Ngày phát hành'), '07/15')
+    await u.click(screen.getByText('Tiếp tục'))
+    await u.type(await screen.findByLabelText('Mã OTP'), '123456')
+    await u.click(screen.getByText('Xác nhận'))
+    await waitFor(() => expect(POST).toHaveBeenCalledWith(...IPN(true)))
+    expect(await screen.findByText('Giao dịch thành công')).toBeInTheDocument()
   })
 
-  it('bấm Thất bại gửi thanh_cong=false', async () => {
-    giaLapDon(don())
-    POST.mockResolvedValue(ok({ RspCode: '00', Message: 'Confirm Success' }))
+  it('VNPay: thông tin thẻ sai thì báo lỗi và chưa gửi IPN', async () => {
+    giaLapCong(GD('vnpay'))
     renderTai('/thanh-toan-gia?giao_dich=DHABCD2345-17')
-    await userEvent.setup().click(await screen.findByText('Thất bại'))
-    await waitFor(() => expect(POST.mock.calls[0][1].body.thanh_cong).toBe(false))
+    const u = userEvent.setup()
+    await u.click(await screen.findByText('Tiếp tục'))
+    await u.type(screen.getByLabelText('Số thẻ'), '1111222233334444')
+    await u.type(screen.getByLabelText('Tên chủ thẻ'), 'NGUYEN VAN A')
+    await u.type(screen.getByLabelText('Ngày phát hành'), '07/15')
+    await u.click(screen.getByText('Tiếp tục'))
+    expect(await screen.findByText(/Thông tin thẻ không chính xác/)).toBeInTheDocument()
+    expect(POST).not.toHaveBeenCalled()
+  })
+
+  it('VNPay: thẻ không đủ số dư, OTP đúng thì giao dịch thất bại kèm lý do', async () => {
+    giaLapCong(GD('vnpay'))
+    renderTai('/thanh-toan-gia?giao_dich=DHABCD2345-17')
+    const u = userEvent.setup()
+    await u.click(await screen.findByText('Tiếp tục'))
+    await u.type(screen.getByLabelText('Số thẻ'), '9704195798459170488')
+    await u.type(screen.getByLabelText('Tên chủ thẻ'), 'NGUYEN VAN A')
+    await u.type(screen.getByLabelText('Ngày phát hành'), '07/15')
+    await u.click(screen.getByText('Tiếp tục'))
+    await u.type(await screen.findByLabelText('Mã OTP'), '123456')
+    await u.click(screen.getByText('Xác nhận'))
+    await waitFor(() => expect(POST).toHaveBeenCalledWith(...IPN(false)))
+    expect(await screen.findByText('Giao dịch không thành công')).toBeInTheDocument()
+    expect(screen.getByText(/không đủ số dư/)).toBeInTheDocument()
+  })
+
+  it('VNPay: nhập sai OTP ba lần thì giao dịch thất bại', async () => {
+    giaLapCong(GD('vnpay'))
+    renderTai('/thanh-toan-gia?giao_dich=DHABCD2345-17')
+    const u = userEvent.setup()
+    await u.click(await screen.findByText('Tiếp tục'))
+    await u.type(screen.getByLabelText('Số thẻ'), '9704198526191432198')
+    await u.type(screen.getByLabelText('Tên chủ thẻ'), 'NGUYEN VAN A')
+    await u.type(screen.getByLabelText('Ngày phát hành'), '07/15')
+    await u.click(screen.getByText('Tiếp tục'))
+    const o = await screen.findByLabelText('Mã OTP')
+    for (let i = 0; i < 3; i++) {
+      await u.clear(o)
+      await u.type(o, '000000')
+      await u.click(screen.getByText('Xác nhận'))
+    }
+    await waitFor(() => expect(POST).toHaveBeenCalledWith(...IPN(false)))
+  })
+
+  it('MoMo: quét giả lập rồi nhập PIN đúng thì thành công; Hủy giao dịch thì thất bại', async () => {
+    giaLapCong(GD('momo'))
+    renderTai('/thanh-toan-gia?giao_dich=DHABCD2345-17')
+    const u = userEvent.setup()
+    await u.click(await screen.findByText(/Mô phỏng: mở ứng dụng MoMo/))
+    await u.type(screen.getByLabelText('Mã PIN'), '123456')
+    await u.click(screen.getByText('Xác nhận'))
+    await waitFor(() => expect(POST).toHaveBeenCalledWith(...IPN(true)))
+  })
+
+  it('Hủy giao dịch gửi thanh_cong=false', async () => {
+    giaLapCong(GD('momo'))
+    renderTai('/thanh-toan-gia?giao_dich=DHABCD2345-17')
+    await userEvent.setup().click(await screen.findByText('Hủy giao dịch'))
+    await waitFor(() => expect(POST).toHaveBeenCalledWith(...IPN(false)))
+  })
+
+  it('giao dịch đã xử lý: không cho thanh toán lại, dẫn tới đơn hàng', async () => {
+    giaLapCong(GD('vnpay', { trang_thai: 'thanh_cong' }))
+    renderTai('/thanh-toan-gia?giao_dich=DHABCD2345-17')
+    expect(await screen.findByText('Giao dịch này đã được xử lý')).toBeInTheDocument()
+    expect(screen.queryByText('Hủy giao dịch')).not.toBeInTheDocument()
+  })
+
+  it('giao dịch quá hạn: báo hết hạn', async () => {
+    giaLapCong(GD('vnpay', { het_han_luc: new Date(Date.now() - 1000).toISOString() }))
+    renderTai('/thanh-toan-gia?giao_dich=DHABCD2345-17')
+    expect(await screen.findByText('Giao dịch đã hết hạn')).toBeInTheDocument()
+  })
+
+  it('giao dịch không có: báo không tìm thấy', async () => {
+    GET.mockResolvedValue({ error: { ma_loi: 'KHONG_TIM_THAY', thong_diep: 'x', chi_tiet: null }, response: { ok: false, status: 404 } })
+    renderTai('/thanh-toan-gia?giao_dich=rac')
+    expect(await screen.findByText('Không tìm thấy giao dịch')).toBeInTheDocument()
   })
 
   it('thiếu giao_dich: báo lỗi, không có nút', async () => {
     giaLapDon(don())
     renderTai('/thanh-toan-gia')
     expect(await screen.findByText('Thiếu mã giao dịch')).toBeInTheDocument()
-    expect(screen.queryByText('Thành công')).not.toBeInTheDocument()
+    expect(screen.queryByText('Tiếp tục')).not.toBeInTheDocument()
   })
 })

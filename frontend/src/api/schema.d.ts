@@ -2066,6 +2066,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/webhook/gia-giao-dich": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Thông tin giao dịch cho cổng giả */
+        get: operations["gia_giao_dich_api_v1_webhook_gia_giao_dich_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/webhook/gia-ipn": {
         parameters: {
             query?: never;
@@ -6434,6 +6451,23 @@ export interface components {
             ma_phien: string;
             /** So Dien Thoai */
             so_dien_thoai?: string | null;
+        };
+        /**
+         * GiaGiaoDichRa
+         * @description Thông tin để trang cổng giả dựng giao diện giống VNPay/MoMo (cổng thật cũng nhận số tiền và mã đơn từ URL).
+         */
+        GiaGiaoDichRa: {
+            /** Giao Dich */
+            giao_dich: string;
+            /** Ma Don */
+            ma_don: string;
+            /** So Tien */
+            so_tien: number;
+            cong: components["schemas"]["PhuongThucThanhToan"];
+            /** Trang Thai */
+            trang_thai: string;
+            /** Het Han Luc */
+            het_han_luc?: string | null;
         };
         /** GiaIpnVao */
         GiaIpnVao: {
@@ -14824,6 +14858,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    gia_giao_dich_api_v1_webhook_gia_giao_dich_get: {
+        parameters: {
+            query: {
+                giao_dich: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GiaGiaoDichRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

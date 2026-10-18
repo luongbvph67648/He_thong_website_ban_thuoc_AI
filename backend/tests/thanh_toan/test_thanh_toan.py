@@ -29,6 +29,7 @@ from tests.khuyen_mai.test_khuyen_mai import tao_km
 VNPAY_IPN = "/api/v1/webhook/vnpay-ipn"
 MOMO_IPN = "/api/v1/webhook/momo-ipn"
 GIA_IPN = "/api/v1/webhook/gia-ipn"
+GIA_GD = "/api/v1/webhook/gia-giao-dich"
 
 
 @pytest.fixture(autouse=True)
@@ -347,6 +348,24 @@ async def test_cong_gia_bam_thanh_cong_di_qua_cung_ham_xu_ly(cong_gia, dang_nhap
         kq = await client.post(GIA_IPN, json={"giao_dich": f"{o['ma_don']}-{gd.id}", "thanh_cong": ok})
         assert (kq.json()["RspCode"], (await c.get(f"{DON}/{o['ma_don']}")).json()["trang_thai"]) == mong_doi
     assert (await client.post(GIA_IPN, json={"giao_dich": f"{o['ma_don']}-{gd.id}", "thanh_cong": True})).json()["RspCode"] == "02"  # fmt: skip
+
+
+async def test_cong_gia_tra_thong_tin_giao_dich_de_dung_trang_thanh_toan(cong_gia, dang_nhap_khach, client, db):
+    c = dang_nhap_khach
+    _, o = await dat_online(c, db, cong="momo")
+    await tao_gd(c, o["ma_don"])
+    gd = await lay_gd(db, o["ma_don"])
+    ref = f"{o['ma_don']}-{gd.id}"
+    r = await client.get(GIA_GD, params={"giao_dich": ref})
+    assert r.status_code == 200
+    ra = r.json()
+    assert (ra["ma_don"], ra["cong"], ra["trang_thai"], ra["giao_dich"]) == (o["ma_don"], "momo", "khoi_tao", ref)
+    assert ra["so_tien"] == int(gd.so_tien) and ra["het_han_luc"] is not None
+    await client.post(GIA_IPN, json={"giao_dich": ref, "thanh_cong": True})
+    assert (await client.get(GIA_GD, params={"giao_dich": ref})).json()["trang_thai"] == "thanh_cong"
+    # Mã sai, id không có, mã đơn không khớp id: cùng một câu trả lời 404
+    for rac in ("rac", "DH1-999999", f"DHKHONGKHOP-{gd.id}", f"{o['ma_don']}-0{gd.id}x"):
+        assert (await client.get(GIA_GD, params={"giao_dich": rac})).status_code == 404
 
 
 async def test_cong_gia_bam_that_bai_va_giao_dich_khong_co(cong_gia, dang_nhap_khach, client, db):

@@ -182,3 +182,4 @@ async def don_cua_toi(ma_don: str, kh: Annotated[KhachHang, Depends(khach_hien_t
 - **Báo cáo** (`modules/bao_cao/`, T8.1, QĐ-51): mốc kỳ của đơn là lúc vào `hoan_tat` (`tong_hop.moc_hoan_tat`); báo cáo ca chỉ trả số liệu của người gọi và tuyệt đối không có giá vốn; chuỗi đưa vào Excel đi qua `_an_toan`.
 
 - **Cấu hình production** (`core/config.py::Settings.kiem_tra_san_xuat`, T8.2, QĐ-53): `MOI_TRUONG=production` làm `create_app()` từ chối khởi động nếu còn cổng/vận chuyển/SMS giả hoặc thiếu bí mật; ảnh giải mã luôn qua `asyncio.to_thread` và sau giới hạn tần suất.
+- **Cổng thanh toán giả và công cụ kiểm tra AI** (QĐ-55): `GET /webhook/gia-giao-dich` cấp dữ liệu cho trang `/thanh-toan-gia` (giao diện mô phỏng VNPay/MoMo ở `frontend/src/khu/cua-hang/gio-hang/cong-gia/`); `uv run python -m app.ai.kiem_tra` kiểm Claude/embedding thật (không chạy trong CI, cần khóa); đổi schema JSON của AI thì chạy lại công cụ này.

@@ -1,4 +1,8 @@
+import asyncio
+import logging
 import re
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -143,11 +147,33 @@ QUY_TAC_THAN_JSON = tuple(
 )
 
 
+logger = logging.getLogger(__name__)
+
+
+async def _lam_nong_embedding() -> None:
+    """Nạp BGE-M3 ngay khi khởi động (nền) để lượt tìm kiếm/chat đầu tiên không phải chờ nạp mô hình hàng chục giây."""
+    from app.ai import embedding
+
+    try:
+        await embedding.embed(["khởi động"])
+        logger.info("Mô hình embedding đã sẵn sàng")
+    except Exception as e:  # noqa: BLE001 - lỗi nạp mô hình không được làm sập API; tìm kiếm tự quay về từ khóa
+        logger.warning("Không nạp được mô hình embedding: %s", type(e).__name__)
+
+
+@asynccontextmanager
+async def _vong_doi(_: FastAPI) -> AsyncIterator[None]:
+    tac_vu = None if settings.EMBEDDING_GIA_LAP else asyncio.create_task(_lam_nong_embedding())
+    yield
+    if tac_vu is not None and not tac_vu.done():
+        tac_vu.cancel()
+
+
 def create_app() -> FastAPI:
     cau_hinh_log()
     if loi_cau_hinh := settings.kiem_tra_san_xuat():
         raise RuntimeError("Cấu hình production không an toàn: " + "; ".join(loi_cau_hinh))
-    app = FastAPI(title="Nhà thuốc AI", version="0.1.0")
+    app = FastAPI(title="Nhà thuốc AI", version="0.1.0", lifespan=_vong_doi)
     dang_ky_xu_ly_loi(app)
     # Thêm trước CORS = nằm trong CORS: phản hồi 413 vẫn có header CORS nên trình duyệt đọc được thông điệp.
     app.add_middleware(GioiHanKichThuocThan, quy_tac=(*QUY_TAC_THAN_REQUEST, *QUY_TAC_THAN_JSON))

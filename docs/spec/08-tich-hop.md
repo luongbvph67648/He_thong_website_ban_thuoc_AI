@@ -42,8 +42,12 @@ class CongThanhToan(Protocol):
 - **Hoàn tiền** qua API refund với `transId` gốc (lưu ở `thanh_toan.ma_giao_dich_cong`).
 
 ## 4. Bản giả của thanh toán
-- `tao_url_thanh_toan` trả URL tới trang `/thanh-toan-gia?giao_dich=...` của frontend. Trang có 2 nút "Thành công" và "Thất bại".
-- Bấm nút → frontend gọi `POST /api/v1/webhook/gia-ipn`. Route này **chỉ tồn tại khi `THANH_TOAN_CHE_DO=gia`**, tạo IPN đã ký bằng khóa giả và đi qua **cùng** hàm xử lý IPN thật.
+- `tao_url_thanh_toan` trả URL tới trang `/thanh-toan-gia?giao_dich=...` của frontend. Trang đọc thông tin giao dịch bằng `GET /api/v1/webhook/gia-giao-dich` rồi dựng giao diện **mô phỏng cổng đã chọn** (QĐ-55):
+  - **VNPay:** chọn phương thức, nhập thẻ nội địa (bộ thẻ thử nghiệm của sandbox VNPay hiện ngay trên trang), OTP `123456`, hoặc quét QR giả lập; thẻ không đủ số dư và thẻ chưa kích hoạt cho giao dịch thất bại có lý do; nhập sai OTP 3 lần thì thất bại.
+  - **MoMo:** mã QR, khung điện thoại giả, mã PIN `123456`; từ chối hoặc sai PIN 3 lần thì thất bại.
+  - Cả hai có đồng hồ đếm ngược theo `han_thanh_toan` của đơn, nút Hủy giao dịch, màn kết quả rồi tự quay về `/thanh-toan/ket-qua`, và dòng cảnh báo "môi trường mô phỏng, không có tiền thật".
+  - Giao dịch đã xử lý thì không cho thanh toán lại trên cùng trang (thanh toán lại tạo giao dịch mới).
+- Khi khách hoàn tất, frontend gọi `POST /api/v1/webhook/gia-ipn`. Route này **chỉ tồn tại khi `THANH_TOAN_CHE_DO=gia`**, tạo IPN đã ký bằng khóa giả và đi qua **cùng** hàm xử lý IPN thật.
 - `hoan_tien` luôn thành công và trả mã giả.
 
 ## 5. Vận chuyển GHN

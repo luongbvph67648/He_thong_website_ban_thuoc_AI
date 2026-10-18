@@ -1,14 +1,17 @@
 """IPN của cổng thanh toán: `/api/v1/webhook/*` (HT04). Xác thực bằng chữ ký của cổng, không dùng đăng nhập."""
 
+from datetime import datetime
+
 from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel
 from sqlalchemy import select
 
 from app.core.db import Db
+from app.core.loi import LoiNghiepVu
 from app.models.ban_hang import DonHang, ThanhToan
-from app.models.enums import PhuongThucThanhToan
+from app.models.enums import LoaiGiaoDich, PhuongThucThanhToan
 from app.modules.thanh_toan.dich_vu import KetQuaXuLy, xu_ly_ipn
-from app.tich_hop.thanh_toan import lay_cong
+from app.tich_hop.thanh_toan import lay_cong, tham_chieu
 from app.tich_hop.thanh_toan.gia import CongGia, dung_ipn
 
 router = APIRouter(prefix="/webhook", tags=["Webhook thanh toán"])
@@ -52,6 +55,43 @@ async def momo_ipn(request: Request, db: Db):
 class GiaIpnVao(BaseModel):
     giao_dich: str
     thanh_cong: bool
+
+
+class GiaGiaoDichRa(BaseModel):
+    """Thông tin để trang cổng giả dựng giao diện giống VNPay/MoMo (cổng thật cũng nhận số tiền và mã đơn từ URL)."""
+
+    giao_dich: str
+    ma_don: str
+    so_tien: int
+    cong: PhuongThucThanhToan
+    trang_thai: str
+    """`khoi_tao` (đang chờ khách thanh toán), `thanh_cong` hoặc `that_bai`."""
+    het_han_luc: datetime | None = None
+
+
+@router_gia.get("/gia-giao-dich", response_model=GiaGiaoDichRa, summary="Thông tin giao dịch cho cổng giả")
+async def gia_giao_dich(giao_dich: str, db: Db):
+    id_text = giao_dich.rpartition("-")[2]
+    if not (id_text.isascii() and id_text.isdigit() and len(id_text) <= 12):
+        raise LoiNghiepVu("KHONG_TIM_THAY", "Không tìm thấy giao dịch")
+    dong = (
+        await db.execute(
+            select(ThanhToan, DonHang)
+            .join(DonHang, DonHang.id == ThanhToan.don_hang_id)
+            .where(ThanhToan.id == int(id_text), ThanhToan.loai == LoaiGiaoDich.thanh_toan)
+        )
+    ).first()
+    if dong is None or giao_dich != tham_chieu(dong[1], dong[0]):
+        raise LoiNghiepVu("KHONG_TIM_THAY", "Không tìm thấy giao dịch")
+    tt, don = dong
+    return GiaGiaoDichRa(
+        giao_dich=giao_dich,
+        ma_don=don.ma_don,
+        so_tien=int(tt.so_tien),
+        cong=tt.cong_thanh_toan,
+        trang_thai=tt.trang_thai.value,
+        het_han_luc=don.han_thanh_toan,
+    )
 
 
 @router_gia.post("/gia-ipn", summary="IPN của cổng giả (chỉ khi THANH_TOAN_CHE_DO=gia)")

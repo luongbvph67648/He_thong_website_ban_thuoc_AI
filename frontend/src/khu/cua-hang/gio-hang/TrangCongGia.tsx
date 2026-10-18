@@ -1,48 +1,37 @@
-import { Alert, App, Button, Card, Space, Typography } from 'antd'
-import { useState } from 'react'
-import { useNavigate, useSearchParams } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { Alert, Button, Result, Spin } from 'antd'
+import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../../../api/client'
-import { goi, thongDiepChung } from '../../../api/goi'
-import { maDonTuGiaoDich } from './thanhToanOnline'
+import GiaMomo from './cong-gia/GiaMomo'
+import GiaVnpay from './cong-gia/GiaVnpay'
 
 /**
- * Cổng thanh toán GIẢ (spec 08 mục 4), chỉ để dev/demo: bấm Thành công hoặc Thất bại thì gửi IPN giả lên backend
- * (route chỉ tồn tại khi `THANH_TOAN_CHE_DO=gia`), rồi quay về trang kết quả đọc trạng thái từ máy chủ.
+ * Cổng thanh toán GIẢ (spec 08 mục 4), chỉ khi `THANH_TOAN_CHE_DO=gia`: dựng giao diện mô phỏng VNPay hoặc MoMo (theo cổng
+ * khách đã chọn khi đặt hàng) từ thông tin giao dịch của máy chủ. Kết quả gửi bằng IPN giả như cổng thật báo cho máy chủ,
+ * rồi khách về trang kết quả đọc trạng thái từ máy chủ. Không có tiền thật.
  */
 export default function TrangCongGia() {
-  const { message } = App.useApp()
-  const navigate = useNavigate()
   const [tham] = useSearchParams()
   const giaoDich = tham.get('giao_dich') ?? ''
-  const [dangGui, datDangGui] = useState<boolean | null>(null)
-
-  async function bam(thanhCong: boolean) {
-    datDangGui(thanhCong)
-    const r = await goi(() => api.POST('/api/v1/webhook/gia-ipn', { body: { giao_dich: giaoDich, thanh_cong: thanhCong } }))
-    datDangGui(null)
-    if (!r.ok) {
-      void message.error(thongDiepChung(r.loi))
-      return
-    }
-    navigate(`/thanh-toan/ket-qua?ma=${encodeURIComponent(maDonTuGiaoDich(giaoDich))}`)
+  const q = useQuery({
+    queryKey: ['cong-gia', giaoDich],
+    enabled: giaoDich !== '',
+    retry: false,
+    staleTime: Infinity,
+    queryFn: async () => (await api.GET('/api/v1/webhook/gia-giao-dich', { params: { query: { giao_dich: giaoDich } } })).data ?? null,
+  })
+  if (giaoDich === '') return <Alert type="error" showIcon message="Thiếu mã giao dịch" />
+  if (q.isLoading) return <Spin />
+  const gd = q.data
+  if (!gd) return <Result status="404" title="Không tìm thấy giao dịch" extra={<Link to="/"><Button type="primary">Về trang chủ</Button></Link>} />
+  if (gd.trang_thai !== 'khoi_tao') {
+    return (
+      <Result
+        status="info"
+        title="Giao dịch này đã được xử lý"
+        extra={<Link to={`/thanh-toan/ket-qua?ma=${encodeURIComponent(gd.ma_don)}`}><Button type="primary">Xem đơn hàng</Button></Link>}
+      />
+    )
   }
-
-  return (
-    <Card style={{ maxWidth: 480 }} title="Cổng thanh toán giả">
-      <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
-        <Alert type="warning" showIcon message="Chỉ dùng khi phát triển, không có tiền thật." />
-        {giaoDich === '' ? (
-          <Alert type="error" showIcon message="Thiếu mã giao dịch" />
-        ) : (
-          <>
-            <Typography.Text>Mã giao dịch: <b>{giaoDich}</b></Typography.Text>
-            <Space>
-              <Button type="primary" loading={dangGui === true} disabled={dangGui !== null} onClick={() => bam(true)}>Thành công</Button>
-              <Button danger loading={dangGui === false} disabled={dangGui !== null} onClick={() => bam(false)}>Thất bại</Button>
-            </Space>
-          </>
-        )}
-      </Space>
-    </Card>
-  )
+  return gd.cong === 'momo' ? <GiaMomo gd={gd} /> : <GiaVnpay gd={gd} />
 }
