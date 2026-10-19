@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { Alert, DatePicker, Input, Select, Space, Table, Tag } from 'antd'
 import { useState } from 'react'
-import { Link, useLocation } from 'react-router-dom'
+import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { api } from '../../../api/client'
 import type { components } from '../../../api/schema'
 import { NHAN_PHUONG_THUC_DON } from '../../../lib/donHang'
@@ -18,7 +18,12 @@ const tuyChon = (m: Record<string, { nhan: string }>) => Object.keys(m).map((k) 
 /** DS01: danh sách đơn nội bộ, lọc theo trạng thái, ngày đặt, phương thức thanh toán, kênh bán và mã/tên/SĐT. */
 export default function TrangQuanLyDon() {
   const goc = useLocation().pathname.replace(/\/+$/, '')
-  const [trangThai, setTrangThai] = useState<TrangThai | undefined>()
+  const [thamSo] = useSearchParams()
+  // `?trang_thai=` (liên kết từ trang Tổng quan) chỉ đặt bộ lọc ban đầu; giá trị lạ bị bỏ.
+  const [trangThai, setTrangThai] = useState<TrangThai | undefined>(() => {
+    const v = thamSo.get('trang_thai')
+    return v && Object.hasOwn(TRANG_THAI.don_hang, v) ? (v as TrangThai) : undefined
+  })
   const [kenh, setKenh] = useState<KenhBan | undefined>()
   const [phuongThuc, setPhuongThuc] = useState<PhuongThuc | undefined>()
   const [khoang, setKhoang] = useState<[string, string] | null>(null)
