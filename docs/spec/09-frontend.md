@@ -88,6 +88,14 @@ Trang tài khoản cá nhân `/nhan-vien/tai-khoan` (hồ sơ: họ tên, số �
 | `/xem/chung-tu-kho` | AD16 | `stock_doc.view` (mức xem) |
 | `/xem/chuyen-mon`, `/xem/chuyen-mon/:id` | AD16 | `content.view` (mức xem) |
 
+**Dashboard (`/`, AD14).** Thứ tự từ trên xuống, để Admin mở ra là thấy việc cần làm trước:
+1. **Cần xử lý**: mỗi nhóm việc là một ô có số lượng, mô tả và liên kết tới trang xử lý. Việc gấp (đỏ): phiếu kho chờ duyệt, hoàn tiền chờ xác nhận, lệnh thu hồi đang mở, lô hết hạn còn tồn. Việc cần chú ý (vàng): đơn giao thất bại, sản phẩm dưới tồn tối thiểu, lô cận hạn, đơn chờ xác nhận, câu trả lời AI bị gắn cờ trong kỳ. Nhóm bằng 0 gom vào dòng "Đã ổn". Nhóm thiếu quyền thì không tải và không hiện.
+2. **Chỉ số kinh doanh** của kỳ (mẫu: hôm nay, 7 ngày, 30 ngày, tháng này hoặc tự chọn) so với kỳ liền trước cùng số ngày: doanh thu thuần, lợi nhuận gộp (biên), đơn hoàn tất (giá trị trung bình), tiền hoàn (tăng là xấu).
+3. Biểu đồ doanh thu theo ngày và số đơn đang chạy theo trạng thái (bấm vào mở danh sách đơn đã lọc, `?trang_thai=`).
+4. Bán chạy, cảnh báo kho (cận hạn, hết hạn, dưới tồn tối thiểu), tồn kho theo trạng thái lô, hiệu quả AI.
+
+Nguồn dữ liệu là các API sẵn có (`bao-cao/tong-hop` gọi hai lần cho kỳ này và kỳ trước, `canh-bao-kho`, `duyet-phieu`, `hoan-tien`, `thu-hoi`, `don-hang`), không có endpoint riêng.
+
 #### Trang quản lý nhân viên (`/quan-tri/nhan-vien`, AD01) và vai trò, phân quyền (`/quan-tri/vai-tro`, AD18)
 - **Nhân viên:** bảng lọc theo tên/email/mã (tìm không phân biệt dấu), vai trò, trạng thái; bộ lọc và số trang nằm trên URL (`?q=&vai_tro=&trang_thai=&trang=`) nên tải lại hay chia sẻ liên kết vẫn giữ nguyên. Hàng của chính mình tắt Khóa, Đặt lại mật khẩu, Xóa kèm giải thích (backend cũng chặn). Khóa, đặt lại mật khẩu, xóa đều hỏi xác nhận; nút thao tác bọc `YeuCauQuyen` nên chỉ hiện với mức đầy đủ.
 - **Mật khẩu tạm** (sau khi tạo hoặc đặt lại) hiện trong một hộp thoại chỉ đóng bằng nút "Đã ghi lại, đóng" (không đóng khi bấm ra ngoài); đóng xong là phần tử biến khỏi DOM, giao diện không giữ mật khẩu ở đâu khác và không có cách xem lại.

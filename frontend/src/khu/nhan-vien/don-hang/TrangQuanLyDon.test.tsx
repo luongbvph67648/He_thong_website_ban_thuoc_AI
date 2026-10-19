@@ -44,6 +44,17 @@ describe('quản lý đơn của dược sĩ (DS01–DS03)', () => {
     })
   })
 
+  it('?trang_thai= trên địa chỉ đặt sẵn bộ lọc trạng thái, giá trị lạ bị bỏ', async () => {
+    const dau = renderTai('/quan-tri/xem/don-hang?trang_thai=giao_that_bai', { loai: 'noi_bo', vaiTro: 'ADMIN', quyen: { 'order.view': 'chi_xem' } })
+    await waitFor(() => expect(GET.mock.calls.some((c) => c[0] === '/api/v1/noi-bo/don-hang')).toBe(true))
+    expect(GET.mock.calls.find((c) => c[0] === '/api/v1/noi-bo/don-hang')![1].params.query.trang_thai).toBe('giao_that_bai')
+    dau.unmount()
+    GET.mockClear()
+    renderTai('/quan-tri/xem/don-hang?trang_thai=khong_co', { loai: 'noi_bo', vaiTro: 'ADMIN', quyen: { 'order.view': 'chi_xem' } })
+    await waitFor(() => expect(GET.mock.calls.some((c) => c[0] === '/api/v1/noi-bo/don-hang')).toBe(true))
+    expect(GET.mock.calls.find((c) => c[0] === '/api/v1/noi-bo/don-hang')![1].params.query.trang_thai).toBeUndefined()
+  })
+
   it('chi tiết đơn chờ xác nhận: xác nhận gọi API xác nhận', async () => {
     POST.mockResolvedValue(ok(CT({ trang_thai: 'da_xac_nhan' })))
     renderTai('/nhan-vien/don-hang/9', { loai: 'noi_bo', vaiTro: 'PHARMACIST', quyen: DUOC_SI })
