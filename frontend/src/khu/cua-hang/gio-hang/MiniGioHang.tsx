@@ -28,11 +28,11 @@ export function MiniGioHang() {
     )
   return (
     <Popover content={noiDung} placement="bottomRight" title="Giỏ hàng">
-      <Link to="/gio-hang" aria-label={`Giỏ hàng, ${gio.tong_so_luong} sản phẩm`}>
-        <Badge count={gio.tong_so_luong} size="small" overflowCount={99}>
-          <ShoppingCartOutlined style={{ fontSize: 20 }} />
+      <Link className="nut-gio-hang" to="/gio-hang" aria-label={`Giỏ hàng, ${gio.tong_so_luong} sản phẩm`}>
+        <Badge count={gio.tong_so_luong} size="small" overflowCount={99} showZero>
+          <span className="bieu-tuong-gio-hang"><ShoppingCartOutlined /></span>
         </Badge>{' '}
-        Giỏ hàng
+        <span className="nhan-gio-hang">Giỏ hàng</span>
       </Link>
     </Popover>
   )

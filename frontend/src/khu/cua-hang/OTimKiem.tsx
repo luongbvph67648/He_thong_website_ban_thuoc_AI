@@ -47,7 +47,7 @@ export function OTimKiem() {
   }
 
   return (
-    <div style={{ display: 'flex', gap: 8, flex: '1 1 240px', maxWidth: 560 }}>
+    <div className="tim-kiem-header" style={{ display: 'flex', gap: 8, flex: '1 1 240px', maxWidth: 560 }}>
     <AutoComplete
       style={{ flex: 1, minWidth: 0 }}
       value={go}

@@ -8,6 +8,7 @@ export function TheSanPham({ sp, nguon }: { sp: SanPhamThe; nguon?: NguonXem }) 
   return (
     <Link to={`/san-pham/${sp.slug}${nguon ? `?nguon=${nguon}` : ''}`} aria-label={sp.ten} style={{ display: 'block', height: '100%' }}>
       <Card
+        className="the-san-pham"
         hoverable
         size="small"
         style={{ height: '100%' }}
@@ -17,12 +18,12 @@ export function TheSanPham({ sp, nguon }: { sp: SanPhamThe; nguon?: NguonXem }) 
               src={sp.anh_chinh_url}
               alt=""
               loading="lazy"
-              style={{ height: 160, objectFit: 'contain', padding: 8, background: '#fafafa' }}
+              style={{ height: 190, objectFit: 'contain', padding: 12, background: '#fafafa' }}
             />
           ) : (
             <div
               aria-hidden
-              style={{ height: 160, background: '#fafafa', display: 'grid', placeItems: 'center', color: '#bfbfbf' }}
+              style={{ height: 190, background: '#fafafa', display: 'grid', placeItems: 'center', color: '#bfbfbf' }}
             >
               Chưa có ảnh
             </div>
@@ -40,7 +41,7 @@ export function TheSanPham({ sp, nguon }: { sp: SanPhamThe; nguon?: NguonXem }) 
             </Typography.Text>
           )}
           {sp.gia ? (
-            <Typography.Text strong style={{ color: '#cf1322' }}>
+            <Typography.Text strong style={{ color: '#1677ff' }}>
               {dinhDangTien(sp.gia)}
               {sp.ten_don_vi_gia && <span style={{ fontWeight: 400, color: '#8c8c8c' }}> / {sp.ten_don_vi_gia}</span>}
             </Typography.Text>
@@ -63,7 +64,7 @@ export function LuoiSanPham({ danhSach, nguon }: { danhSach: readonly SanPhamThe
       style={{
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))',
-        gap: 12,
+        gap: 16,
       }}
     >
       {danhSach.map((sp) => (

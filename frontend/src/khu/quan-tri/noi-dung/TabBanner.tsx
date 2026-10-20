@@ -102,7 +102,9 @@ export function TabBanner({ coGhi }: { coGhi: boolean }) {
     <Space orientation="vertical" size={12} style={{ width: '100%' }}>
       {thongDiep && <Alert type="error" showIcon title={thongDiep} closable={{ onClose: () => setThongDiep(null) }} />}
       <Space style={{ justifyContent: 'space-between', width: '100%' }} wrap>
-        <Typography.Text type="secondary">Banner hiện ở trang chủ cửa hàng theo vị trí, thứ tự và khoảng thời gian.</Typography.Text>
+        <Typography.Text type="secondary">
+          Banner trang chủ lấy từ danh sách này. Chọn Sửa để thay ảnh minh họa, tiêu đề, liên kết hoặc lịch hiển thị; tiêu đề được ghép bằng chữ rõ nét trên banner.
+        </Typography.Text>
         <YeuCauQuyen ma="cms.manage" kieu="nut">
           <Button type="primary" icon={<PlusOutlined />} onClick={() => setMo({ kieu: 'tao' })}>
             Thêm banner
@@ -173,7 +175,7 @@ function FormBanner({ mo, onDong, onXong }: { mo: NonNullable<Mo>; onDong: () =>
     <Modal open title={goc ? 'Sửa banner' : 'Thêm banner'} okText="Lưu" cancelText="Hủy" confirmLoading={dangLuu} onOk={() => void luu()} onCancel={onDong} mask={{ closable: false }} destroyOnHidden width={560}>
       <Form layout="vertical" component="div">
         {thongDiep && <Alert type="warning" showIcon title={thongDiep} style={{ marginBottom: 16 }} />}
-        <Form.Item label="Ảnh" required validateStatus={loi.anh_url ? 'error' : undefined} help={loi.anh_url}>
+        <Form.Item label="Ảnh minh họa" required validateStatus={loi.anh_url ? 'error' : undefined} help={loi.anh_url}>
           <NutTaiAnh khu="banner" value={gia.anh_url} onChange={(anh_url) => dat({ anh_url })} />
         </Form.Item>
         <Form.Item label="Tiêu đề (dùng làm mô tả ảnh)" htmlFor="bn-tieu-de" validateStatus={loi.tieu_de ? 'error' : undefined} help={loi.tieu_de}>

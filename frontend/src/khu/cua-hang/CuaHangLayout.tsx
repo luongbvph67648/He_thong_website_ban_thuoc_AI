@@ -1,4 +1,4 @@
-import { LogoutOutlined, UserOutlined } from '@ant-design/icons'
+import { GiftOutlined, LogoutOutlined, PercentageOutlined, UserOutlined } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button, Layout, Skeleton, Space } from 'antd'
 import { Link, Outlet, useNavigate } from 'react-router-dom'
@@ -33,24 +33,30 @@ export default function CuaHangLayout() {
   }
 
   return (
-    <Layout style={{ minHeight: '100vh' }}>
+    <Layout className="cua-hang" style={{ minHeight: '100vh' }}>
+      <div className="thanh-thong-tin-cua-hang">
+        <div className="thanh-thong-tin-noi-dung">
+          <span>Chăm sóc sức khỏe cho cả gia đình</span>
+          <span className="thanh-thong-tin-diem">Tư vấn cùng dược sĩ</span>
+          <Link to="/tai-khoan/don-hang">Theo dõi đơn hàng <span aria-hidden="true">→</span></Link>
+        </div>
+      </div>
       <Header
-        style={{
-          background: '#fff',
-          borderBottom: '1px solid #f0f0f0',
-          display: 'flex',
-          alignItems: 'center',
-          gap: 16,
-          flexWrap: 'wrap',
-          height: 'auto',
-          padding: '8px 16px',
-        }}
+        className="dau-trang-cua-hang"
       >
-        <Link to="/" style={{ fontSize: 20, fontWeight: 600, whiteSpace: 'nowrap' }}>
-          Nhà thuốc AI
+        <Link to="/" className="thuong-hieu">
+          <span className="thuong-hieu-icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" focusable="false">
+              <path className="dau-thap-y-te" d="M20 4h8v14h16v8H28v18h-8V26H4v-8h16z" />
+              <path className="chen-hygeia" d="M15 29h18l-2 10H17zM13 29h22" />
+              <path className="ran-hygeia" d="M24 29c-3-2-2-5 1-6 3-1 6 1 6 3 0 2-2 3-4 2-2-1-2-3 0-5l4-4c2-2 1-5-2-6-3-1-6 1-6 3 0 2 2 3 4 2 2-1 2-3 0-5l-1-1" />
+              <circle className="ran-dau" cx="22.5" cy="10.5" r="1.2" />
+            </svg>
+          </span>
+          <span className="thuong-hieu-chu"><strong>Nhà thuốc AI</strong><small>Khỏe an tâm mỗi ngày</small></span>
         </Link>
         <OTimKiem />
-        <Space size="large">
+        <Space size="middle" className="hanh-dong-dau-trang">
           <MiniGioHang />
           {!daKhoiPhuc ? (
             <span role="status" aria-label="Đang tải tài khoản">
@@ -67,16 +73,32 @@ export default function CuaHangLayout() {
               </Button>
             </Space>
           ) : (
-            <Link to="/dang-nhap">
+            <Link className="nut-tai-khoan" to="/dang-nhap">
               <UserOutlined /> Đăng nhập
             </Link>
           )}
         </Space>
       </Header>
       <MenuDanhMuc />
-      <Content style={{ padding: 16, maxWidth: 1200, width: '100%', margin: '0 auto' }}>
-        <Outlet />
-      </Content>
+      <div className="khung-trang-khach">
+        <aside className="quang-cao-ben quang-cao-trai" aria-label="Chương trình chăm sóc sức khỏe">
+          <span className="quang-cao-icon"><GiftOutlined /></span>
+          <span className="quang-cao-nhan">GỢI Ý CHO BẠN</span>
+          <strong>Chăm sóc sức khỏe</strong>
+          <span className="quang-cao-mo-ta">Khám phá sản phẩm phù hợp cho cả gia đình.</span>
+          <Link to="/danh-muc/thuc-pham-chuc-nang">Khám phá <span aria-hidden="true">→</span></Link>
+        </aside>
+        <Content className="noi-dung-cua-hang" style={{ padding: 24, maxWidth: 1200, width: '100%', margin: '0 auto' }}>
+          <Outlet />
+        </Content>
+        <aside className="quang-cao-ben quang-cao-phai" aria-label="Ưu đãi và giảm giá">
+          <span className="quang-cao-icon"><PercentageOutlined /></span>
+          <span className="quang-cao-nhan">ƯU ĐÃI MUA SẮM</span>
+          <strong>Tiết kiệm mỗi đơn</strong>
+          <span className="quang-cao-mo-ta">Kiểm tra mã giảm giá và ưu đãi tại giỏ hàng.</span>
+          <Link to="/gio-hang">Xem giỏ hàng <span aria-hidden="true">→</span></Link>
+        </aside>
+      </div>
       <ChanTrang />
       <WidgetChat />
     </Layout>

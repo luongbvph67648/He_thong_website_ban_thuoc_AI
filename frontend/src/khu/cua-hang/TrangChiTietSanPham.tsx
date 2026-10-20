@@ -91,7 +91,7 @@ function KhuMuaHang({ sp }: { sp: SanPhamChiTiet }) {
           onChange={(x) => datDonViId(x)}
         />
       )}
-      <Typography.Title level={3} style={{ color: '#cf1322', margin: 0 }} aria-label="Giá">
+      <Typography.Title level={3} style={{ color: '#1677ff', margin: 0 }} aria-label="Giá">
         {dinhDangTien(donVi.gia_ban)} <span style={{ fontSize: 14, fontWeight: 400, color: '#8c8c8c' }}>/ {donVi.ten_don_vi}</span>
       </Typography.Title>
       {donVi.he_so > 1 && <Typography.Text type="secondary">1 {donVi.ten_don_vi} = {donVi.he_so} {sp.don_vi.find((d) => d.he_so === 1)?.ten_don_vi ?? 'đơn vị nhỏ nhất'}</Typography.Text>}

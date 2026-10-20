@@ -11,7 +11,7 @@ const queryClient = new QueryClient({
 
 export default function App() {
   return (
-    <ConfigProvider locale={viVN} theme={{ token: { colorPrimary: '#0f8f5f', colorLink: '#0f8f5f' } }}>
+    <ConfigProvider locale={viVN} theme={{ token: { colorPrimary: '#1677ff', colorLink: '#1677ff', colorText: '#243b53', colorTextSecondary: '#6b7a90', colorBorder: '#e2e7ee', colorBgContainer: '#ffffff' } }}>
       <AntApp>
         <QueryClientProvider client={queryClient}>
           <RouterProvider router={router} />

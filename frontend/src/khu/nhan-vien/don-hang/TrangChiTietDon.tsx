@@ -58,6 +58,17 @@ export default function TrangChiTietDon() {
         )}
         {coQuyen(quyen, 'order.cancel') && duocSiHuyDuoc(don.trang_thai) && <Button danger onClick={() => setMoHuy(true)}>Hủy đơn</Button>}
       </Space>
+      {don.trang_thai === 'cho_thanh_toan' && (don.phuong_thuc_tt === 'vnpay' || don.phuong_thuc_tt === 'momo') && (
+        <Alert
+          type="info"
+          showIcon
+          message={`Đơn đang chờ ${NHAN_PHUONG_THUC_DON[don.phuong_thuc_tt]} xác nhận thanh toán.`}
+          description="Dược sĩ có thể xác nhận đơn sau khi cổng thanh toán báo thành công. Mã giao dịch và trạng thái thanh toán được hệ thống đối chiếu tự động."
+        />
+      )}
+      {don.trang_thai === 'cho_xac_nhan' && don.trang_thai_tt === 'da_thanh_toan' && (don.phuong_thuc_tt === 'vnpay' || don.phuong_thuc_tt === 'momo') && (
+        <Alert type="success" showIcon message="Thanh toán online đã được hệ thống xác nhận. Dược sĩ có thể xác nhận đơn." />
+      )}
       {don.trang_thai_tt === 'cho_hoan_tien' && <Alert type="info" showIcon message="Đơn đã thanh toán: giao dịch hoàn tiền đang chờ Admin xác nhận." />}
       {don.ly_do_huy && <Alert type="warning" showIcon message={`Lý do hủy: ${don.ly_do_huy}`} />}
       <Descriptions bordered size="small" column={2}>

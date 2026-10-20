@@ -1,1 +1,23 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" role="img" aria-label="Dược sĩ tư vấn tận tình"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#047857"/><stop offset="1" stop-color="#34d399"/></linearGradient></defs><rect width="1200" height="400" fill="url(#g)"/><text x="72" y="184" font-family="sans-serif" font-size="48" font-weight="700" fill="#fff">Dược sĩ tư vấn tận tình</text><text x="72" y="248" font-family="sans-serif" font-size="26" fill="#fff" fill-opacity="0.9">Hỏi đáp về thuốc và cách dùng an toàn</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" role="img" aria-label="Hình minh họa tư vấn cùng dược sĩ">
+  <defs>
+    <linearGradient id="nen" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f3f5f8"/><stop offset=".55" stop-color="#eaf3ff"/><stop offset="1" stop-color="#dceafe"/></linearGradient>
+    <linearGradient id="ao" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#f3f5f8"/></linearGradient>
+    <linearGradient id="xanh" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#4b9bff"/><stop offset="1" stop-color="#0958d9"/></linearGradient>
+    <filter id="bong" x="-.3" y="-.3" width="1.8" height="1.8"><feDropShadow dx="0" dy="15" stdDeviation="17" flood-color="#1677ff" flood-opacity=".2"/></filter>
+  </defs>
+  <rect width="1200" height="360" fill="url(#nen)"/>
+  <circle cx="1072" cy="-22" r="230" fill="#fff" opacity=".34"/><circle cx="1070" cy="366" r="214" fill="#c4dcff" opacity=".24"/>
+  <path d="M0 301c183-41 318 13 472-9 160-23 272-68 423-41 121 21 211 40 305 12v97H0z" fill="#fff" opacity=".38"/>
+  <circle cx="781" cy="75" r="8" fill="#9bc4f7"/><circle cx="1122" cy="113" r="6" fill="#fff"/><circle cx="745" cy="278" r="8" fill="#fff"/>
+  <g filter="url(#bong)">
+    <circle cx="960" cy="181" r="140" fill="#f3f5f8" opacity=".8"/>
+    <path d="M858 338c8-76 39-115 102-115s94 39 102 115" fill="url(#ao)"/>
+    <path d="M922 157c0-44 22-69 54-69s54 25 54 69c0 45-25 75-54 75s-54-30-54-75z" fill="#efc6a7"/>
+    <path d="M918 155c-4-54 19-86 61-86 38 0 60 28 57 68-22-8-40-22-49-40-15 25-38 43-69 49z" fill="#243b53"/>
+    <path d="M936 237l39 44 39-44 23 14-15 87h-93l-16-87z" fill="#fff"/>
+    <path d="M974 282v56" stroke="#1677ff" stroke-width="5"/><path d="M961 291h26m-13-13v26" stroke="#1677ff" stroke-width="5" stroke-linecap="round"/>
+    <rect x="1031" y="264" width="54" height="73" rx="12" fill="url(#xanh)" transform="rotate(9 1058 300)"/>
+    <path d="M1046 294h24m-24 11h24m-24 11h14" stroke="#fff" stroke-width="4" stroke-linecap="round" transform="rotate(9 1058 300)"/>
+  </g>
+  <g filter="url(#bong)"><rect x="778" y="169" width="68" height="92" rx="17" fill="#fff"/><path d="M812 190v48m-24-24h48" stroke="#1677ff" stroke-width="8" stroke-linecap="round"/></g>
+</svg>

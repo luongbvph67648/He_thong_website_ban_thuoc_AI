@@ -53,7 +53,7 @@ describe('thanh toán online (KTV03)', () => {
     expect(maDonTuGiaoDich('khongco')).toBe('')
   })
 
-  it('đặt hàng VNPay: tạo giao dịch với khóa mới rồi chuyển sang cổng, không vào trang kết quả', async () => {
+  it('đặt hàng VNPay: hiện QR cùng thông tin đơn và tạo giao dịch với khóa mới', async () => {
     POST.mockImplementation(async (duong: string) => {
       if (duong === '/api/v1/toi/don-hang') return ok(don())
       if (duong === '/api/v1/toi/don-hang/{ma_don}/thanh-toan') return ok({ url_thanh_toan: 'https://cong.test/pay?x=1', han_thanh_toan: HAN_TUONG_LAI })
@@ -64,10 +64,20 @@ describe('thanh toán online (KTV03)', () => {
     const nut = await screen.findByRole('button', { name: /Đặt hàng/ })
     await waitFor(() => expect(nut).toBeEnabled())
     await u.click(nut)
-    await waitFor(() => expect(chuyenSangCong.di).toHaveBeenCalledWith('https://cong.test/pay?x=1'))
+    expect(await screen.findByText('Quét mã để thanh toán')).toBeInTheDocument()
+    expect(screen.getByText('DHABCD2345')).toBeInTheDocument()
+    expect(screen.getByText('Số tiền cần thanh toán').parentElement).toHaveTextContent(/27\.000/)
+    expect(screen.getByRole('link', { name: 'Mở trang thanh toán' })).toHaveAttribute('href', 'https://cong.test/pay?x=1')
+    expect(chuyenSangCong.di).not.toHaveBeenCalled()
     const goi = POST.mock.calls.find((c) => c[0] === '/api/v1/toi/don-hang/{ma_don}/thanh-toan')!
     expect(goi[1].params.path.ma_don).toBe('DHABCD2345')
     expect(goi[1].params.header['Idempotency-Key']).toMatch(/^[0-9a-f-]{36}$/)
+  })
+
+  it('chọn MoMo thì báo trước mã QR sẽ hiện sau khi đặt hàng', async () => {
+    renderTai('/thanh-toan', { loai: 'khach' })
+    await userEvent.setup().click(await screen.findByLabelText('MoMo'))
+    expect(screen.getByText(/mã QR MoMo sẽ hiện cùng mã đơn, số tiền và hạn thanh toán/)).toBeInTheDocument()
   })
 
   it('không mở được cổng: vẫn vào trang kết quả để thanh toán lại', async () => {

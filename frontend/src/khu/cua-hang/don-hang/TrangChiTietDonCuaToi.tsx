@@ -58,6 +58,14 @@ export default function TrangChiTietDonCuaToi() {
         {don.trang_thai === 'da_giao' && <DoiTraNut maDon={don.ma_don} dong={don.dong} />}
         {khachHuyDuoc(don.trang_thai) && <Button danger onClick={() => setMoHuy(true)}>Hủy đơn</Button>}
       </Space>
+      {khachHuyDuoc(don.trang_thai) && don.trang_thai_tt === 'da_thanh_toan' && (
+        <Alert
+          type="warning"
+          showIcon
+          message="Đơn đã thanh toán vẫn có thể hủy ở trạng thái hiện tại"
+          description="Nếu bạn hủy đơn, khoản đã thanh toán sẽ được chuyển sang quy trình hoàn tiền của nhà thuốc."
+        />
+      )}
       {don.trang_thai_tt === 'cho_hoan_tien' && (
         <Alert type="info" showIcon message="Nhà thuốc sẽ hoàn lại tiền cho đơn này. Bạn sẽ nhận được thông báo khi hoàn tất." />
       )}
@@ -94,7 +102,12 @@ export default function TrangChiTietDonCuaToi() {
       <Typography.Title level={4} style={{ margin: 0 }}>Trạng thái đơn hàng</Typography.Title>
       <LichSuTrangThai moc={don.lich_su} />
       <Modal title="Hủy đơn hàng" open={moHuy} okText="Hủy đơn" okButtonProps={{ danger: true, loading: dangHuy }} cancelText="Giữ đơn" onOk={() => void huy()} onCancel={() => setMoHuy(false)} destroyOnHidden>
-        <p>Đơn sẽ bị hủy, hàng giữ được nhả lại. Nếu đã thanh toán online, nhà thuốc sẽ hoàn tiền cho bạn.</p>
+        <p>
+          Đơn sẽ bị hủy và hàng được trả lại kho.
+          {don.trang_thai_tt === 'da_thanh_toan'
+            ? ' Khoản thanh toán sẽ được chuyển sang quy trình hoàn tiền của nhà thuốc.'
+            : ' Nếu đơn đã thanh toán online, nhà thuốc sẽ hoàn tiền cho bạn.'}
+        </p>
         <Input.TextArea rows={3} maxLength={500} placeholder="Lý do hủy (không bắt buộc)" value={lyDo} onChange={(e) => setLyDo(e.target.value)} />
       </Modal>
     </Space>

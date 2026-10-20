@@ -20,7 +20,7 @@ export function MenuDanhMuc() {
   const { data } = useCayDanhMuc()
   if (!data?.length) return null
   return (
-    <nav aria-label="Danh mục sản phẩm" style={{ background: '#fff', borderBottom: '1px solid #f0f0f0' }}>
+    <nav className="thanh-danh-muc" aria-label="Danh mục sản phẩm" style={{ background: '#fff', borderBottom: '1px solid #e5e9ef' }}>
       <Menu mode="horizontal" selectable={false} items={data.map(doiThanhMuc)} style={{ maxWidth: 1200, margin: '0 auto' }} />
     </nav>
   )

@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
-import { Alert, DatePicker, Input, Select, Space, Table, Tag } from 'antd'
+import { Alert, Button, DatePicker, Input, Select, Space, Table, Tag, Tooltip } from 'antd'
 import { useState } from 'react'
 import { Link, useLocation, useSearchParams } from 'react-router-dom'
 import { api } from '../../../api/client'
@@ -59,6 +59,12 @@ export default function TrangQuanLyDon() {
         <DatePicker.RangePicker format="DD/MM/YYYY" onChange={(_, s) => { setKhoang(s[0] && s[1] ? [dinhNgayIso(s[0]), dinhNgayIso(s[1])] : null); setTrang(1) }} />
       </Space>
       {ds.isError && <Alert type="error" showIcon message="Không tải được danh sách đơn hàng" />}
+      <Alert
+        type="info"
+        showIcon
+        message="Mở đơn để xem thông tin và thao tác"
+        description="Đơn COD ở trạng thái Chờ xác nhận có thể được dược sĩ xác nhận. Đơn VNPay/MoMo chỉ có thể xác nhận sau khi hệ thống nhận được kết quả thanh toán thành công."
+      />
       <Table<Don>
         rowKey="id"
         loading={ds.isLoading}
@@ -72,6 +78,25 @@ export default function TrangQuanLyDon() {
           { title: 'Thanh toán', key: 'pt', render: (_, d) => (d.phuong_thuc_tt ? (NHAN_PHUONG_THUC_DON[d.phuong_thuc_tt] ?? d.phuong_thuc_tt) : '—') },
           { title: 'Tổng tiền', key: 'tien', align: 'right', render: (_, d) => dinhDangTien(d.tong_tien) },
           { title: 'Trạng thái', key: 'tt', render: (_, d) => { const n = nhanTrangThai('don_hang', d.trang_thai); return <Tag color={n.mau}>{n.nhan}</Tag> } },
+          {
+            title: 'Thao tác',
+            key: 'thao_tac',
+            render: (_, d) => {
+              const dangChoThanhToan = d.trang_thai === 'cho_thanh_toan'
+              const laThanhToanOnline = d.phuong_thuc_tt === 'vnpay' || d.phuong_thuc_tt === 'momo'
+              return (
+                <Space>
+                  <Button size="small" type="primary" ghost href={`${goc}/${d.id}`}>Mở đơn</Button>
+                  {dangChoThanhToan && laThanhToanOnline && (
+                    <Tooltip title="Nút xác nhận đơn sẽ có sau khi cổng thanh toán báo thành công.">
+                      <Tag color="gold">Chờ thanh toán</Tag>
+                    </Tooltip>
+                  )}
+                  {d.trang_thai === 'cho_xac_nhan' && <Tag color="blue">Có thể xử lý</Tag>}
+                </Space>
+              )
+            },
+          },
         ]}
       />
     </Space>

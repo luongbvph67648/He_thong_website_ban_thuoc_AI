@@ -1,10 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Alert, App, Button, Card, Descriptions, Empty, Input, Radio, Select, Space, Spin, Typography } from 'antd'
+import { Alert, App, Button, Card, Descriptions, Empty, Input, Modal, QRCode, Radio, Select, Space, Spin, Typography } from 'antd'
 import { useRef, useState } from 'react'
 import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { api } from '../../../api/client'
 import { goi, thongDiepChung } from '../../../api/goi'
-import { dinhDangTien } from '../../../lib/dinhDang'
+import { dinhDangNgay, dinhDangTien } from '../../../lib/dinhDang'
 import { usePhien } from '../../../stores/phien'
 import { KHOA_GIO_HANG, useGioHang } from './gioHang'
 import { OMaGiamGia, type KetQuaMa } from './OMaGiamGia'
@@ -19,7 +19,7 @@ import {
   thanDatHang,
   type XemTruocRa,
 } from './thanhToan'
-import { chuyenSangCong, LA_ONLINE, layUrlThanhToan } from './thanhToanOnline'
+import { LA_ONLINE, layUrlThanhToan } from './thanhToanOnline'
 
 /** KTV02, KTV03, KTV04: địa chỉ, hình thức nhận, phương thức thanh toán, mã giảm giá, tổng tiền rồi đặt hàng. */
 export default function TrangThanhToan() {
@@ -38,6 +38,13 @@ function NoiDung() {
   const [form, setForm] = useState<FormDat>({ hinhThuc: 'giao_tan_noi', phuongThuc: 'cod', diaChiId: null, maGiamGia: null, ghiChu: '' })
   const [giaMoi, datGiaMoi] = useState<XemTruocRa | null>(null)
   const [dangDat, datDangDat] = useState(false)
+  const [thanhToanQr, datThanhToanQr] = useState<{
+    maDon: string
+    tongTien: string
+    phuongThuc: 'vnpay' | 'momo'
+    hanThanhToan: string | null
+    url: string
+  } | null>(null)
   const khoaRef = useRef<KhoaDat | null>(null)
 
   const diaChi = useQuery({
@@ -79,7 +86,13 @@ function NoiDung() {
       if (LA_ONLINE(r.data.phuong_thuc_tt)) {
         const tt = await layUrlThanhToan(r.data.ma_don)
         if (tt.ok) {
-          chuyenSangCong.di(tt.data.url_thanh_toan)
+          datThanhToanQr({
+            maDon: r.data.ma_don,
+            tongTien: r.data.tong_tien,
+            phuongThuc: r.data.phuong_thuc_tt as 'vnpay' | 'momo',
+            hanThanhToan: tt.data.han_thanh_toan ?? r.data.han_thanh_toan,
+            url: new URL(tt.data.url_thanh_toan, window.location.origin).toString(),
+          })
           return
         }
         void message.warning('Đơn đã được tạo nhưng chưa mở được cổng thanh toán. Bạn có thể bấm "Thanh toán lại" ở trang sau.')
@@ -140,6 +153,14 @@ function NoiDung() {
             ))}
           </Space>
         </Radio.Group>
+        {LA_ONLINE(form.phuongThuc) && (
+          <Alert
+            type="info"
+            showIcon
+            style={{ marginTop: 12 }}
+            message={`Sau khi bấm “Đặt hàng”, mã QR ${NHAN_PHUONG_THUC[form.phuongThuc]} sẽ hiện cùng mã đơn, số tiền và hạn thanh toán.`}
+          />
+        )}
       </Card>
       <Card title="Mã giảm giá và ghi chú" size="small">
         <Space orientation="vertical" style={{ width: '100%' }}>
@@ -163,6 +184,47 @@ function NoiDung() {
       <Button type="primary" size="large" loading={dangDat} disabled={!tong || !sanSang || !!loiTinh} onClick={() => void datHang()}>
         Đặt hàng
       </Button>
+      <Modal
+        title="Quét mã để thanh toán"
+        open={thanhToanQr !== null}
+        width={540}
+        className="thanh-toan-qr-modal"
+        onCancel={() => {
+          if (!thanhToanQr) return
+          navigate(`/thanh-toan/ket-qua?ma=${encodeURIComponent(thanhToanQr.maDon)}`)
+        }}
+        footer={null}
+        destroyOnHidden
+      >
+        {thanhToanQr && (
+          <Space orientation="vertical" size="middle" className="thanh-toan-qr-noi-dung">
+            <Typography.Text type="secondary" className="thanh-toan-qr-huong-dan">
+              Dùng ứng dụng {NHAN_PHUONG_THUC[thanhToanQr.phuongThuc]} để quét mã và xác nhận giao dịch.
+            </Typography.Text>
+            <div className="thanh-toan-qr-khung">
+              <QRCode type="svg" value={thanhToanQr.url} size={224} color="#1677ff" bordered={false} />
+            </div>
+            <div className="thanh-toan-qr-so-tien">
+              <Typography.Text type="secondary">Số tiền cần thanh toán</Typography.Text>
+              <Typography.Title level={2}>{dinhDangTien(thanhToanQr.tongTien)}</Typography.Title>
+            </div>
+            <Descriptions bordered size="small" column={1} className="thanh-toan-qr-thong-tin" items={[
+              { key: 'ma', label: 'Mã đơn hàng', children: thanhToanQr.maDon },
+              { key: 'pt', label: 'Phương thức', children: NHAN_PHUONG_THUC[thanhToanQr.phuongThuc] },
+              ...(thanhToanQr.hanThanhToan ? [{ key: 'han', label: 'Thanh toán trước', children: dinhDangNgay(thanhToanQr.hanThanhToan, 'ngayGio') }] : []),
+            ]} />
+            <Button type="primary" size="large" block href={thanhToanQr.url} target="_blank" rel="noreferrer">
+              Mở trang thanh toán
+            </Button>
+            <Button block onClick={() => navigate(`/thanh-toan/ket-qua?ma=${encodeURIComponent(thanhToanQr.maDon)}`)}>
+              Kiểm tra trạng thái đơn hàng
+            </Button>
+            <Typography.Text type="secondary" className="thanh-toan-qr-luu-y">
+              Chỉ xác nhận hoàn tất khi ứng dụng thanh toán báo giao dịch thành công.
+            </Typography.Text>
+          </Space>
+        )}
+      </Modal>
     </Space>
   )
 }

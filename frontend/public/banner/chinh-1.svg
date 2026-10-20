@@ -1,1 +1,27 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 400" role="img" aria-label="Chăm sóc sức khỏe mỗi ngày"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0e7490"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><rect width="1200" height="400" fill="url(#g)"/><text x="72" y="184" font-family="sans-serif" font-size="48" font-weight="700" fill="#fff">Chăm sóc sức khỏe mỗi ngày</text><text x="72" y="248" font-family="sans-serif" font-size="26" fill="#fff" fill-opacity="0.9">Vitamin, khoáng chất và thực phẩm chức năng chính hãng</text></svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 360" role="img" aria-label="Hình minh họa chăm sóc sức khỏe">
+  <defs>
+    <linearGradient id="nen" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f3f5f8"/><stop offset=".58" stop-color="#eaf3ff"/><stop offset="1" stop-color="#dceafe"/></linearGradient>
+    <linearGradient id="hop" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#fff"/><stop offset="1" stop-color="#f3f5f8"/></linearGradient>
+    <linearGradient id="xanh" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#4b9bff"/><stop offset="1" stop-color="#0958d9"/></linearGradient>
+    <filter id="bong" x="-.3" y="-.3" width="1.8" height="1.8"><feDropShadow dx="0" dy="16" stdDeviation="18" flood-color="#1677ff" flood-opacity=".16"/></filter>
+  </defs>
+  <rect width="1200" height="360" fill="url(#nen)"/>
+  <circle cx="1050" cy="10" r="230" fill="#fff" opacity=".28"/>
+  <circle cx="1120" cy="350" r="210" fill="#e4edf7" opacity=".3"/>
+  <path d="M0 300c180-42 321 8 481-12 161-20 270-74 430-42 105 21 193 41 289 15v99H0z" fill="#fff" opacity=".34"/>
+  <circle cx="777" cy="72" r="9" fill="#9bc4f7"/><circle cx="1111" cy="119" r="6" fill="#fff"/><circle cx="755" cy="279" r="8" fill="#fff"/>
+  <g filter="url(#bong)">
+    <rect x="820" y="57" width="215" height="253" rx="28" fill="url(#hop)" stroke="#fff" stroke-width="3"/>
+    <rect x="820" y="57" width="215" height="67" rx="27" fill="url(#xanh)"/>
+    <path d="M820 94h215v30H820z" fill="url(#xanh)"/>
+    <circle cx="927" cy="190" r="57" fill="#eaf3ff"/>
+    <rect x="916" y="153" width="22" height="74" rx="7" fill="#1677ff"/><rect x="890" y="179" width="74" height="22" rx="7" fill="#1677ff"/>
+    <rect x="861" y="263" width="132" height="8" rx="4" fill="#c7d3e2"/><rect x="882" y="280" width="91" height="7" rx="3.5" fill="#e3e9f0"/>
+  </g>
+  <g filter="url(#bong)" transform="rotate(8 1080 240)">
+    <rect x="1039" y="172" width="96" height="126" rx="24" fill="#fff"/>
+    <rect x="1066" y="151" width="42" height="29" rx="9" fill="#eaf3ff"/>
+    <rect x="1080" y="204" width="14" height="58" rx="5" fill="#1677ff"/><rect x="1058" y="226" width="58" height="14" rx="5" fill="#1677ff"/>
+  </g>
+  <g opacity=".9"><path d="M714 200c-36-42-79-31-89-1 23 26 58 28 89 1z" fill="#9bc4f7"/><path d="M713 199c8-42 44-57 69-40-4 33-29 51-69 40z" fill="#c4dcff"/><path d="M711 201c-23 35-57 39-78 18 12-30 39-38 78-18z" fill="#b1c9e5"/><path d="M715 203v50" stroke="#7a8da5" stroke-width="5" stroke-linecap="round"/></g>
+</svg>
