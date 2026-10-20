@@ -9,6 +9,7 @@ from decimal import Decimal
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 
 from app.core.loi import LoiNghiepVu
 from app.core.ma_chung_tu import ma_don_hang
@@ -179,6 +180,15 @@ async def duyet(db: AsyncSession, nv: NhanVien, yc_id: int, huong: HuongXuLyDoiT
             or 0
         )
         khoi_luong = max(int(so_co_so) * GRAM_MOI_DON_VI_CO_SO, GRAM_MOI_DON_VI_CO_SO)
+        # Adapter GHN thật gửi danh sách hàng (`don.chi_tiet`): quan hệ lazy="raise" nên phải nạp trước
+        don = (
+            await db.execute(
+                select(DonHang)
+                .where(DonHang.id == don.id)
+                .options(selectinload(DonHang.chi_tiet))
+                .execution_options(populate_existing=True)
+            )
+        ).scalar_one()
         try:
             kq = await don_vi.tao_van_don(don, "tra_hang", khoi_luong)
         except Exception as e:  # noqa: BLE001  lỗi đối tác bất kỳ đều là 502, yêu cầu giữ nguyên để thử lại

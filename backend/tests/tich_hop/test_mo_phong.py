@@ -363,3 +363,19 @@ def test_che_do_sandbox_khong_bao_gio_roi_ve_khoa_mo_phong(monkeypatch):
     assert cau_hinh.vnpay_tmn_code() == ""  # thiếu cấu hình là lỗi cấu hình, không âm thầm dùng khóa mô phỏng
     monkeypatch.setattr(settings, "THANH_TOAN_CHE_DO", "mo_phong")
     assert cau_hinh.vnpay_tmn_code() == "MOPHONG1"
+
+
+async def test_ghn_mo_phong_duyet_doi_tra_tao_van_don_tra_hang(mo_phong, dang_nhap_khach, dang_nhap_duoc_si, db):
+    """Vận đơn trả hàng đi qua adapter GHN thật: cần nạp `chi_tiet` của đơn (quan hệ lazy="raise") trước khi gọi."""
+    from sqlalchemy import select as chon
+
+    from app.models.ban_hang import YeuCauDoiTra
+    from tests.doi_tra.test_doi_tra import _don_da_giao, _gui
+
+    don, ct, _ = await _don_da_giao(db, dang_nhap_khach.tai_khoan, ma_phuong_xa="1A0101")
+    ma = (await _gui(dang_nhap_khach, don.ma_don, ct, 1)).json()["ma_yeu_cau"]
+    yc = (await db.execute(chon(YeuCauDoiTra).where(YeuCauDoiTra.ma_yeu_cau == ma))).scalars().one()
+    r = await dang_nhap_duoc_si.post(f"/api/v1/noi-bo/doi-tra/{yc.id}/duyet", json={"huong_xu_ly": "hoan_tien"})
+    assert r.status_code == 200, r.text
+    (vd,) = (await db.execute(chon(VanDon).where(VanDon.don_hang_id == don.id))).scalars().all()
+    assert vd.loai == "tra_hang" and vd.don_vi_van_chuyen == "GHN" and re.fullmatch(r"[A-Z2-9]{8}", vd.ma_van_don)

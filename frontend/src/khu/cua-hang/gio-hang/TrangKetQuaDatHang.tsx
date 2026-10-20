@@ -5,6 +5,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../../../api/client'
 import { goi, thongDiepChung } from '../../../api/goi'
 import { dinhDangNgay, dinhDangTien } from '../../../lib/dinhDang'
+import { usePhien } from '../../../stores/phien'
 import { NHAN_PHUONG_THUC_DON } from '../../../lib/donHang'
 import { chuyenSangCong, layUrlThanhToan, maDonTuGiaoDich } from './thanhToanOnline'
 
@@ -20,9 +21,14 @@ export default function TrangKetQuaDatHang() {
   // ReturnUrl của cổng thật mang mã tham chiếu `<ma_don>-<id>` (VNPay `vnp_TxnRef`, MoMo `orderId`), không có `ma`.
   // Chỉ dùng để biết đơn nào: trạng thái đơn và thanh toán luôn đọc lại từ máy chủ, không tin tham số này.
   const ma = tham.get('ma') ?? maDonTuGiaoDich(tham.get('vnp_TxnRef') ?? tham.get('orderId') ?? '')
+  // Cổng thanh toán đưa khách về bằng chuyển hướng cả trang (ReturnUrl): phiên chỉ nằm trong bộ nhớ nên phải chờ khôi
+  // phục phiên (refresh token) rồi mới hỏi đơn, nếu không sẽ gọi API khi chưa có token và báo nhầm "không tìm thấy".
+  // Khách vãng lai vào bằng link mã truy cập thì không cần phiên.
+  const daKhoiPhuc = usePhien((s) => s.daKhoiPhuc)
+  const coTokenDon = ma !== '' && sessionStorage.getItem(`xacNhanDon:${ma}`) !== null
   const q = useQuery({
     queryKey: ['don-hang', ma],
-    enabled: ma !== '',
+    enabled: ma !== '' && (daKhoiPhuc || coTokenDon),
     retry: false,
     refetchInterval: (query) => (query.state.data?.trang_thai === 'cho_thanh_toan' ? 3000 : false),
     queryFn: async () => {
@@ -32,6 +38,7 @@ export default function TrangKetQuaDatHang() {
       return (await api.GET('/api/v1/toi/don-hang/{ma_don}', { params: { path: { ma_don: ma } } })).data ?? null
     },
   })
+  if (ma !== '' && !daKhoiPhuc && !coTokenDon) return <Spin />
   if (ma === '' || (!q.isLoading && !q.data)) {
     return <Result status="404" title="Không tìm thấy đơn hàng" extra={<Link to="/"><Button type="primary">Về trang chủ</Button></Link>} />
   }
