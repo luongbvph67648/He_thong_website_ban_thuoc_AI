@@ -111,7 +111,8 @@ function NoiDung() {
     await qc.invalidateQueries({ queryKey: KHOA_GIO_HANG })
   }
 
-  if (!g.dangTai && g.gio.dong.length === 0) {
+  // Đặt hàng xong giỏ đã trống: vẫn phải giữ trang để hộp thoại QR còn hiện
+  if (!g.dangTai && g.gio.dong.length === 0 && !thanhToanQr) {
     return <Empty description="Giỏ hàng trống"><Link to="/">Tiếp tục mua sắm</Link></Empty>
   }
   return (

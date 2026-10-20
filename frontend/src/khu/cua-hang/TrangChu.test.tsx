@@ -46,16 +46,16 @@ describe('TrangChu', () => {
     const banChay = screen.getByRole('region', { name: 'Bán chạy' })
     expect(within(banChay).getByRole('link', { name: 'Sản phẩm bán chạy B' })).toHaveAttribute('href', '/san-pham/b?nguon=trang_chu')
 
-    const chinh = screen.getByRole('region', { name: 'Banner chính' })
-    for (const a of within(chinh).getAllByAltText('Khuyến mãi')) expect(a.closest('a')).toHaveAttribute('href', '/danh-muc/thuoc')
+    const chinh = screen.getByRole('region', { name: 'Banner khuyến mãi nổi bật' })
+    for (const a of within(chinh).getAllByText('Khuyến mãi')) expect(a.closest('a')).toHaveAttribute('href', '/danh-muc/thuoc')
     const phu = screen.getByRole('region', { name: 'Banner phụ' })
-    const lienKetNgoai = within(phu).getByAltText('Banner phụ').closest('a') as HTMLAnchorElement
+    const lienKetNgoai = within(phu).getByText('Banner phụ').closest('a') as HTMLAnchorElement
     expect(lienKetNgoai).toHaveAttribute('href', 'https://example.com/km')
     expect(lienKetNgoai).toHaveAttribute('rel', 'noopener noreferrer')
     expect(lienKetNgoai).toHaveAttribute('target', '_blank')
 
     const danhMuc = screen.getByRole('region', { name: 'Danh mục' })
-    expect(within(danhMuc).getByRole('link', { name: 'Dược mỹ phẩm' })).toHaveAttribute('href', '/danh-muc/duoc-my-pham')
+    expect(within(danhMuc).getByRole('link', { name: /Dược mỹ phẩm/ })).toHaveAttribute('href', '/danh-muc/duoc-my-pham')
     expect(within(danhMuc).queryByText('Giảm đau')).not.toBeInTheDocument() // chỉ danh mục gốc
   })
 
@@ -70,14 +70,14 @@ describe('TrangChu', () => {
       }),
     )
     renderTai('/')
-    const chinh = await screen.findByRole('region', { name: 'Banner chính' })
+    const chinh = await screen.findByRole('region', { name: 'Banner khuyến mãi nổi bật' })
     for (const ten of ['Độc hại', 'Giao thức tương đối']) {
       // Carousel nhân bản slide để lặp vòng: kiểm tra mọi bản sao
-      const anh = within(chinh).getAllByAltText(ten)
+      const anh = within(chinh).getAllByText(ten)
       expect(anh.length).toBeGreaterThan(0)
-      for (const a of anh) expect(a.closest('a')).toBeNull() // hiện ảnh nhưng không có liên kết
+      for (const a of anh) expect(a.closest('a')).toBeNull() // hiện banner nhưng không có liên kết
     }
-    expect(within(chinh).queryByAltText('Ảnh lạ')).not.toBeInTheDocument()
+    expect(within(chinh).queryByText('Ảnh lạ')).not.toBeInTheDocument()
     expect(chinh.querySelector('a[href^="javascript"]')).toBeNull()
   })
 
@@ -86,7 +86,7 @@ describe('TrangChu', () => {
     renderTai('/')
     await screen.findByRole('region', { name: 'Sản phẩm nổi bật' })
     expect(screen.queryByRole('region', { name: 'Bán chạy' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('region', { name: 'Banner chính' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: 'Banner khuyến mãi nổi bật' })).not.toBeInTheDocument()
   })
 
   it('lỗi tải hiện cảnh báo có nút thử lại', async () => {
