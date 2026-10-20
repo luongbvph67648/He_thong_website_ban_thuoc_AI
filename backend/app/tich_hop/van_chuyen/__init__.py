@@ -74,10 +74,10 @@ class DonViVanChuyen(Protocol):
 
 
 def lay_don_vi_van_chuyen() -> DonViVanChuyen:
-    """Adapter theo `VAN_CHUYEN_CHE_DO`: `gia` (mặc định, offline) hoặc `ghn` (thật)."""
+    """Adapter theo `VAN_CHUYEN_CHE_DO`: `gia` (mặc định), `mo_phong` (GHN thật tới GHN mô phỏng) hoặc `ghn`."""
     from app.core.config import settings
 
-    if settings.VAN_CHUYEN_CHE_DO == "ghn":
+    if settings.VAN_CHUYEN_CHE_DO in ("ghn", "mo_phong"):
         from app.tich_hop.van_chuyen.ghn import VanChuyenGhn
 
         return VanChuyenGhn()

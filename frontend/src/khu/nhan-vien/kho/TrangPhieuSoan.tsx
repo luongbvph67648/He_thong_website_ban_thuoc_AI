@@ -13,6 +13,13 @@ import { type DaQuet, type DongSoan, SU_KIEN_GIA, dongXong, quetMa, tatCaXong, x
 const CSS_IN = '@media print { body * { visibility: hidden } .phieu-in, .phieu-in * { visibility: visible } .phieu-in { position: absolute; left: 0; top: 0; width: 100% } }'
 
 /** KHO03, KHO04: phiếu soạn hàng. Quét mã vạch xác nhận từng dòng, đổi lô (có lý do), bắt đầu soạn, đóng gói, in phiếu. */
+/** Phát sự kiện vận chuyển: chế độ mô phỏng đi qua "GHN mô phỏng" (webhook đúng khuôn GHN kèm Token), chế độ giả thì webhook giả. */
+function phatSuKien(moPhong: boolean, maVanDon: string, trangThai: string) {
+  return moPhong
+    ? goi(() => api.POST('/api/v1/mo-phong/ghn/phat-su-kien', { body: { order_code: maVanDon, status: trangThai } }))
+    : goi(() => api.POST('/api/v1/webhook/gia-van-chuyen', { body: { ma_van_don: maVanDon, trang_thai_doi_tac: trangThai } }))
+}
+
 export default function TrangPhieuSoan() {
   const { message } = App.useApp()
   const queryClient = useQueryClient()
@@ -139,18 +146,18 @@ export default function TrangPhieuSoan() {
           ]}
         />
       </div>
-      {don.che_do_van_chuyen_gia && don.van_don.length > 0 && (
+      {(don.che_do_van_chuyen_gia || don.van_chuyen_mo_phong) && don.van_don.length > 0 && (
         <Alert
           type="info"
           showIcon
-          message="Giả lập vận chuyển (chỉ khi chạy chế độ giả)"
+          message={don.van_chuyen_mo_phong ? "Mô phỏng GHN: phát webhook trạng thái đúng định dạng GHN (chỉ khi chạy chế độ mô phỏng)" : "Giả lập vận chuyển (chỉ khi chạy chế độ giả)"}
           description={
             <Space wrap>
               {SU_KIEN_GIA.map((s) => (
                 <Button
                   key={s.trangThai}
                   size="small"
-                  onClick={() => void chay(() => goi(() => api.POST('/api/v1/webhook/gia-van-chuyen', { body: { ma_van_don: don.van_don[0].ma_van_don ?? '', trang_thai_doi_tac: s.trangThai } })), `Đã gửi sự kiện: ${s.nhan}`)}
+                  onClick={() => void chay(() => phatSuKien(don.van_chuyen_mo_phong, don.van_don[0].ma_van_don ?? '', s.trangThai), `Đã gửi sự kiện: ${s.nhan}`)}
                 >
                   {s.nhan}
                 </Button>

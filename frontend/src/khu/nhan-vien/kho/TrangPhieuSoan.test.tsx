@@ -100,6 +100,17 @@ describe('soạn hàng của kho (KHO03, KHO04)', () => {
     expect(POST.mock.calls[0]).toEqual(['/api/v1/webhook/gia-van-chuyen', { body: { ma_van_don: 'GIA9123456', trang_thai_doi_tac: 'picked' } }])
   })
 
+  it('GHN mô phỏng: nút phát sự kiện đi qua máy chủ mô phỏng với mã vận đơn và trạng thái GHN', async () => {
+    GET.mockImplementation(async () => ok(PHIEU({ trang_thai: 'cho_lay_hang', che_do_van_chuyen_gia: false, van_chuyen_mo_phong: true, van_don: [{ ma_van_don: 'HZEUUCNP', don_vi_van_chuyen: 'GHN', created_at: '2026-10-16T02:00:00Z' }] })))
+    POST.mockResolvedValue(ok({ ma_phan_hoi: 200 }))
+    dung('/nhan-vien/soan-hang/9')
+    const u = userEvent.setup()
+    expect(await screen.findByText(/Mô phỏng GHN/)).toBeInTheDocument()
+    await u.click(screen.getByText('Đã lấy hàng'))
+    await waitFor(() => expect(POST).toHaveBeenCalled())
+    expect(POST.mock.calls[0]).toEqual(['/api/v1/mo-phong/ghn/phat-su-kien', { body: { order_code: 'HZEUUCNP', status: 'picked' } }])
+  })
+
   it('chỉ có quyền xem thì không có nút thao tác', async () => {
     dung('/nhan-vien/soan-hang/9', { 'order.pick': 'chi_xem' })
     await screen.findByText('Phiếu soạn hàng DHABCD2345')

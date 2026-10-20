@@ -80,8 +80,8 @@ export async function taoDonDaGiao(request: APIRequestContext, slug = 'paracetam
   expect((await request.post(`${API}/noi-bo/soan-hang/${id}/dong-goi`, { headers: kho })).ok()).toBeTruthy()
   const don = await (await request.get(`${API}/toi/don-hang/${ma}`, { headers: khach })).json()
   for (const trangThai of ['picked', 'delivered']) {
-    const r = await request.post(`${API}/webhook/gia-van-chuyen`, {
-      data: { ma_van_don: don.van_don[0].ma_van_don, trang_thai_doi_tac: trangThai },
+    const r = await request.post(`${API}/mo-phong/ghn/phat-su-kien`, {
+      data: { order_code: don.van_don[0].ma_van_don, status: trangThai },
     })
     expect(r.ok()).toBeTruthy()
   }

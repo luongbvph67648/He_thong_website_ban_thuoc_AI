@@ -1,5 +1,6 @@
 """KTV07: khách xác nhận/từ chối đơn từ đơn thuốc (tài khoản hoặc link mã truy cập); vòng đời yêu cầu (T5.3)."""
 
+import re
 import uuid
 from datetime import timedelta
 
@@ -19,12 +20,14 @@ from tests.factories import tao_khach, tao_nhan_vien
 DIA_CHI = {"dia_chi_chi_tiet": "12 Phố Huế", "ma_tinh": "201", "ma_phuong_xa": "2010101"}
 
 
-async def _don_vang_lai(duoc_si_client, db, ton=50):
+async def _don_vang_lai(duoc_si_client, db, kenh, ton=50):
     yc = await _yc(db, None, "dang_tu_van", duoc_si_client.tai_khoan)
     sp = await _thuoc(db, ton=ton)
     r = await duoc_si_client.post(f"{BASE}/{yc.id}/tao-don", json=_tao([_dong(sp, 2)]))
     assert r.status_code == 201, r.text
-    return yc, sp, r.json()["don"]["ma_don"], r.json()["lien_ket_xac_nhan"].rsplit("/", 1)[1]
+    assert r.json()["lien_ket_xac_nhan"] is None  # link chỉ tới khách qua SMS, dược sĩ không cầm
+    token = re.search(r"/xac-nhan-don/(\S+)", kenh.sms[-1][1]).group(1)
+    return yc, sp, r.json()["don"]["ma_don"], token
 
 
 async def _don_thanh_vien(duoc_si_client, db, khach, ton=50):
@@ -39,8 +42,8 @@ async def _don(db, ma):
     return (await db.execute(select(DonHang).where(DonHang.ma_don == ma))).scalars().one()
 
 
-async def test_vang_lai_xem_don_qua_link(dang_nhap_duoc_si, client, db):
-    _, _, ma, token = await _don_vang_lai(dang_nhap_duoc_si, db)
+async def test_vang_lai_xem_don_qua_link(dang_nhap_duoc_si, client, db, kenh_tin_nhan):
+    _, _, ma, token = await _don_vang_lai(dang_nhap_duoc_si, db, kenh_tin_nhan)
     r = await client.get(f"/api/v1/xac-nhan-don/{token}")
     assert r.status_code == 200
     d = r.json()
@@ -53,8 +56,8 @@ async def test_token_sai_la_404(client, token):
     assert (await client.get(f"/api/v1/xac-nhan-don/{token or 'x'}")).status_code == 404
 
 
-async def test_vang_lai_xac_nhan_cod_giao_tan_noi(dang_nhap_duoc_si, client, db):
-    yc, _, ma, token = await _don_vang_lai(dang_nhap_duoc_si, db)
+async def test_vang_lai_xac_nhan_cod_giao_tan_noi(dang_nhap_duoc_si, client, db, kenh_tin_nhan):
+    yc, _, ma, token = await _don_vang_lai(dang_nhap_duoc_si, db, kenh_tin_nhan)
     r = await client.post(
         f"/api/v1/xac-nhan-don/{token}/xac-nhan",
         json={
@@ -77,8 +80,8 @@ async def test_vang_lai_xac_nhan_cod_giao_tan_noi(dang_nhap_duoc_si, client, db)
     assert yc.trang_thai == "da_tao_don" and yc.da_su_dung is False
 
 
-async def test_nhan_tai_nha_thuoc_khong_co_phi_ship(dang_nhap_duoc_si, client, db):
-    _, _, ma, token = await _don_vang_lai(dang_nhap_duoc_si, db)
+async def test_nhan_tai_nha_thuoc_khong_co_phi_ship(dang_nhap_duoc_si, client, db, kenh_tin_nhan):
+    _, _, ma, token = await _don_vang_lai(dang_nhap_duoc_si, db, kenh_tin_nhan)
     r = await client.post(
         f"/api/v1/xac-nhan-don/{token}/xac-nhan", json={"hinh_thuc_nhan": "nhan_tai_nha_thuoc", "phuong_thuc_tt": "cod"}
     )
@@ -87,8 +90,8 @@ async def test_nhan_tai_nha_thuoc_khong_co_phi_ship(dang_nhap_duoc_si, client, d
     assert don.phi_van_chuyen == 0 and don.hinh_thuc_nhan == "nhan_tai_nha_thuoc"
 
 
-async def test_giao_tan_noi_thieu_dia_chi_bi_chan(dang_nhap_duoc_si, client, db):
-    _, _, ma, token = await _don_vang_lai(dang_nhap_duoc_si, db)
+async def test_giao_tan_noi_thieu_dia_chi_bi_chan(dang_nhap_duoc_si, client, db, kenh_tin_nhan):
+    _, _, ma, token = await _don_vang_lai(dang_nhap_duoc_si, db, kenh_tin_nhan)
     r = await client.post(
         f"/api/v1/xac-nhan-don/{token}/xac-nhan", json={"hinh_thuc_nhan": "giao_tan_noi", "phuong_thuc_tt": "cod"}
     )
@@ -96,8 +99,8 @@ async def test_giao_tan_noi_thieu_dia_chi_bi_chan(dang_nhap_duoc_si, client, db)
     assert (await _don(db, ma)).trang_thai == "cho_khach_xac_nhan"
 
 
-async def test_vang_lai_chon_online_roi_tao_thanh_toan(dang_nhap_duoc_si, client, db):
-    _, _, ma, token = await _don_vang_lai(dang_nhap_duoc_si, db)
+async def test_vang_lai_chon_online_roi_tao_thanh_toan(dang_nhap_duoc_si, client, db, kenh_tin_nhan):
+    _, _, ma, token = await _don_vang_lai(dang_nhap_duoc_si, db, kenh_tin_nhan)
     r = await client.post(
         f"/api/v1/xac-nhan-don/{token}/xac-nhan",
         json={"hinh_thuc_nhan": "nhan_tai_nha_thuoc", "phuong_thuc_tt": "vnpay"},
@@ -112,8 +115,8 @@ async def test_vang_lai_chon_online_roi_tao_thanh_toan(dang_nhap_duoc_si, client
     assert (await client.get(f"/api/v1/xac-nhan-don/{token}")).status_code == 200  # còn xem được khi chờ thanh toán
 
 
-async def test_vang_lai_tu_choi_tra_hang_va_cho_tao_lai_don(dang_nhap_duoc_si, client, db):
-    yc, sp, ma, token = await _don_vang_lai(dang_nhap_duoc_si, db)
+async def test_vang_lai_tu_choi_tra_hang_va_cho_tao_lai_don(dang_nhap_duoc_si, client, db, kenh_tin_nhan):
+    yc, sp, ma, token = await _don_vang_lai(dang_nhap_duoc_si, db, kenh_tin_nhan)
     r = await client.post(f"/api/v1/xac-nhan-don/{token}/tu-choi")
     assert r.status_code == 200 and r.json()["trang_thai"] == "da_huy"
     lo = (await db.execute(select(LoThuoc).where(LoThuoc.san_pham_id == sp.id))).scalars().one()
@@ -166,8 +169,8 @@ async def test_thanh_vien_dung_so_dia_chi_cua_minh(dang_nhap_duoc_si, dang_nhap_
     assert r.status_code == 200 and "1 Phố A" in r.json()["don"]["dia_chi_giao"]
 
 
-async def test_qua_han_xac_nhan_ht03_huy_va_tra_yeu_cau(dang_nhap_duoc_si, client, db):
-    yc, _, ma, token = await _don_vang_lai(dang_nhap_duoc_si, db)
+async def test_qua_han_xac_nhan_ht03_huy_va_tra_yeu_cau(dang_nhap_duoc_si, client, db, kenh_tin_nhan):
+    yc, _, ma, token = await _don_vang_lai(dang_nhap_duoc_si, db, kenh_tin_nhan)
     don = await _don(db, ma)
     don.han_xac_nhan = bay_gio_utc() - timedelta(minutes=1)
     await db.flush()
@@ -183,8 +186,8 @@ async def test_qua_han_xac_nhan_ht03_huy_va_tra_yeu_cau(dang_nhap_duoc_si, clien
     assert don.trang_thai == "da_huy" and yc.trang_thai == "dang_tu_van"
 
 
-async def test_da_su_dung_chi_bat_khi_sang_dang_soan_hang(dang_nhap_duoc_si, client, db):
-    yc, _, ma, token = await _don_vang_lai(dang_nhap_duoc_si, db)
+async def test_da_su_dung_chi_bat_khi_sang_dang_soan_hang(dang_nhap_duoc_si, client, db, kenh_tin_nhan):
+    yc, _, ma, token = await _don_vang_lai(dang_nhap_duoc_si, db, kenh_tin_nhan)
     await client.post(
         f"/api/v1/xac-nhan-don/{token}/xac-nhan", json={"hinh_thuc_nhan": "nhan_tai_nha_thuoc", "phuong_thuc_tt": "cod"}
     )

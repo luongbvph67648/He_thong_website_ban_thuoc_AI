@@ -1,5 +1,6 @@
 """Chat tư vấn AI (KVL05): `/api/v1/tu-van/*`, công khai (`khach_tuy_chon`) kèm giới hạn lượt theo IP và theo phiên."""
 
+import asyncio
 import json
 import logging
 import uuid
@@ -45,34 +46,47 @@ def _gioi_han(bo: GioiHanCuaSoTruot, ip: str, ma_phien: uuid.UUID) -> None:
 
 
 async def _phat(tao_phien: TaoPhien, vao: dich_vu.DauVaoLuot, khach_id: int | None, cau_hoi: str) -> AsyncIterator[str]:
-    """Stream SSE: phiên đọc riêng cho tool (đóng trước khi lưu), rồi phiên ngắn lưu tin nhắn của AI."""
-    ket_qua: chatbot.KetQuaLuot | None = None
+    """Stream SSE. KHÔNG giữ kết nối DB trong lúc chờ Claude: mỗi lần đọc dùng phiên ngắn (`tao_phien`), rồi một phiên
+    ngắn lưu tin nhắn của AI. Khách ngắt kết nối giữa chừng thì token đã tốn vẫn được cộng vào chi phí ngày."""
+    kq = chatbot.KetQuaLuot()
+    da_luu = False
     try:
-        async with tao_phien() as db_doc:
-            khach = await db_doc.get(KhachHang, khach_id) if khach_id else None
-            async for ev in chatbot.chay_luot(
-                db=db_doc,
-                khach=khach,
-                cau_hoi=cau_hoi,
-                tin_truoc=vao.tin_truoc,
-                ds_dau_hieu=vao.ds_dau_hieu,
-                nguong_chuyen=vao.nguong_chuyen,
-                loi_nhac=vao.loi_nhac,
-                chat_bat=vao.chat_bat and not vao.da_chuyen_duoc_si,
-                het_ngan_sach=vao.het_ngan_sach,
-            ):
-                if ev["loai"] == "ket_thuc":
-                    ket_qua = ev["ket_qua"]
-                else:
-                    yield _sse(ev["loai"], {k: v for k, v in ev.items() if k != "loai"})
-        if ket_qua is None:
-            raise RuntimeError("Lượt chat không có kết quả")
+        async with tao_phien() as db_khach:
+            khach = await db_khach.get(KhachHang, khach_id) if khach_id else None
+        async for ev in chatbot.chay_luot(
+            db=None,
+            tao_phien=tao_phien,
+            kq=kq,
+            khach=khach,
+            cau_hoi=cau_hoi,
+            tin_truoc=vao.tin_truoc,
+            ds_dau_hieu=vao.ds_dau_hieu,
+            nguong_chuyen=vao.nguong_chuyen,
+            loi_nhac=vao.loi_nhac,
+            chat_bat=vao.chat_bat and not vao.da_chuyen_duoc_si,
+            het_ngan_sach=vao.het_ngan_sach,
+        ):
+            if ev["loai"] != "ket_thuc":
+                yield _sse(ev["loai"], {k: v for k, v in ev.items() if k != "loai"})
         async with tao_phien() as db_ghi:
-            tin_id = await dich_vu.luu_tra_loi(db_ghi, vao.hoi_thoai_id, ket_qua)
+            tin_id = await dich_vu.luu_tra_loi(db_ghi, vao.hoi_thoai_id, kq)
+        da_luu = True
         yield _sse("ket_thuc", {"tin_nhan_id": tin_id})
     except Exception:  # noqa: BLE001  không lộ chi tiết lỗi cho khách; log không chứa nội dung hội thoại
         logger.exception("Lượt chat lỗi")
         yield _sse("loi", {"thong_diep": "Có lỗi xảy ra, vui lòng thử lại hoặc gặp dược sĩ."})
+    finally:
+        if not da_luu and kq.su_dung.tong_token:
+            # Bị hủy (khách đóng tab) hoặc lỗi sau khi đã gọi Claude: Claude vẫn tính tiền nên phải ghi chi phí
+            await asyncio.shield(_ghi_chi_phi_doi_dang(tao_phien, vao.hoi_thoai_id, kq.su_dung))
+
+
+async def _ghi_chi_phi_doi_dang(tao_phien: TaoPhien, hoi_thoai_id: int, su_dung) -> None:
+    try:
+        async with tao_phien() as db:
+            await dich_vu.cong_chi_phi(db, hoi_thoai_id, su_dung)
+    except Exception:  # noqa: BLE001  ghi chi phí là cố gắng tối đa, không che lỗi gốc
+        logger.exception("Không ghi được chi phí AI của lượt chat bị gián đoạn")
 
 
 @router.post(

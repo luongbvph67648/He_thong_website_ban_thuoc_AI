@@ -44,21 +44,25 @@ class Settings(BaseSettings):
     EMBEDDING_GIA_LAP: bool = True
     ADMIN_EMAIL: str = ""
     ADMIN_MAT_KHAU: SecretStr = SecretStr("")
-    # Thanh toán online (spec 08 mục 2-4): `gia` chạy offline với trang "cổng giả"; `sandbox` gọi VNPay/MoMo thật.
-    THANH_TOAN_CHE_DO: Literal["gia", "sandbox"] = "gia"
+    # Thanh toán online (spec 08 mục 2-4): `gia` chạy offline với trang "cổng giả" (dùng cho test); `mo_phong` chạy
+    # adapter thật tới máy chủ mô phỏng đúng giao thức VNPay/MoMo trong ứng dụng (mục 4b, QĐ-56); `sandbox` gọi thật.
+    THANH_TOAN_CHE_DO: Literal["gia", "mo_phong", "sandbox"] = "gia"
     FRONTEND_URL: str = "http://localhost:5173"
     VNPAY_TMN_CODE: str = ""
     VNPAY_HASH_SECRET: SecretStr = SecretStr("")
     VNPAY_URL: str = ""
+    VNPAY_API_URL: str = ""  # API hoàn tiền/truy vấn: https://sandbox.vnpayment.vn/merchant_webapi/api/transaction
     VNPAY_RETURN_URL: str = ""
     MOMO_PARTNER_CODE: str = ""
     MOMO_ACCESS_KEY: str = ""
     MOMO_SECRET_KEY: SecretStr = SecretStr("")
     MOMO_ENDPOINT: str = ""
+    MOMO_REFUND_ENDPOINT: str = ""  # https://test-payment.momo.vn/v2/gateway/api/refund
     MOMO_RETURN_URL: str = ""
     MOMO_IPN_URL: str = ""
-    # Vận chuyển (spec 08 mục 5): `gia` chạy offline kèm webhook giả; `ghn` gọi GHN thật.
-    VAN_CHUYEN_CHE_DO: Literal["gia", "ghn"] = "gia"
+    # Vận chuyển (spec 08 mục 5): `gia` chạy offline kèm webhook giả; `mo_phong` chạy adapter GHN thật tới GHN mô phỏng
+    # trong ứng dụng; `ghn` gọi GHN thật.
+    VAN_CHUYEN_CHE_DO: Literal["gia", "mo_phong", "ghn"] = "gia"
     GHN_TOKEN: SecretStr = SecretStr("")
     GHN_SHOP_ID: str = ""
     GHN_URL: str = ""
@@ -84,11 +88,13 @@ class Settings(BaseSettings):
         if not self.COOKIE_SECURE:
             loi.append("COOKIE_SECURE phải là true")
         if self.THANH_TOAN_CHE_DO != "sandbox":
-            loi.append("THANH_TOAN_CHE_DO=gia (cổng giả) không được dùng ở production")
+            loi.append(f"THANH_TOAN_CHE_DO={self.THANH_TOAN_CHE_DO} (cổng giả/mô phỏng) không được dùng ở production")
         elif not (self.VNPAY_HASH_SECRET.get_secret_value() and self.MOMO_SECRET_KEY.get_secret_value()):
             loi.append("VNPAY_HASH_SECRET và MOMO_SECRET_KEY không được để trống")
         if self.VAN_CHUYEN_CHE_DO != "ghn":
-            loi.append("VAN_CHUYEN_CHE_DO=gia (vận chuyển giả) không được dùng ở production")
+            loi.append(
+                f"VAN_CHUYEN_CHE_DO={self.VAN_CHUYEN_CHE_DO} (vận chuyển giả/mô phỏng) không được dùng ở production"
+            )
         elif not self.GHN_WEBHOOK_TOKEN.get_secret_value():
             loi.append("GHN_WEBHOOK_TOKEN không được để trống")
         if self.AI_GIA_LAP:

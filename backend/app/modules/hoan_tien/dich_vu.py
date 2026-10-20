@@ -19,10 +19,10 @@ from app.models.enums import (
     LoaiGiaoDich,
     TrangThaiDoiTra,
     TrangThaiGiaoDich,
-    TrangThaiThanhToan,
 )
 from app.models.he_thong import NhanVien
 from app.models.khach_hang import KhachHang
+from app.modules.ban_hang.so_tien_da_thu import tinh_so_tien, trang_thai_thanh_toan
 from app.modules.doi_tra.dich_vu import CONG_HOAN_THU_CONG
 from app.modules.hoan_tien.schemas import HoanTienRa
 from app.modules.thong_bao import service as thong_bao
@@ -150,7 +150,9 @@ async def xac_nhan(db: AsyncSession, nv: NhanVien, gd_id: int, chung_tu: tuple[b
         if goc is None or not goc.ma_giao_dich_cong:
             raise LoiNghiepVu("CHUYEN_TRANG_THAI_KHONG_HOP_LE", "Không có giao dịch gốc trên cổng để hoàn tiền")
         try:
-            kq = await lay_cong(gd.cong_thanh_toan).hoan_tien(goc, gd.so_tien, f"Hoàn tiền đơn {don.ma_don}")
+            kq = await lay_cong(gd.cong_thanh_toan).hoan_tien(
+                goc, gd.so_tien, f"Hoan tien don {don.ma_don}", ma_yeu_cau=f"HT{gd.id}"
+            )
         except Exception as e:  # noqa: BLE001  lỗi đối tác bất kỳ đều là 502, giao dịch giữ khởi tạo để thử lại
             logger.warning("Gọi API hoàn tiền thất bại cho giao dịch %s", gd.id, exc_info=True)
             raise LoiNghiepVu("LOI_DOI_TAC", "Không gọi được cổng thanh toán để hoàn tiền, vui lòng thử lại") from e
@@ -161,20 +163,7 @@ async def xac_nhan(db: AsyncSession, nv: NhanVien, gd_id: int, chung_tu: tuple[b
     gd.trang_thai, gd.nhan_vien_xu_ly_id, gd.updated_at = TG.thanh_cong, nv.id, bay_gio
     gd.thong_tin_nhan_hoan = _che_tai_khoan(gd.thong_tin_nhan_hoan)
     await db.flush()
-    con_cho = await db.scalar(
-        select(func.count()).where(
-            ThanhToan.don_hang_id == don.id,
-            ThanhToan.loai == LoaiGiaoDich.hoan_tien,
-            ThanhToan.trang_thai == TG.khoi_tao,
-        )
-    )
-    if con_cho:
-        don.trang_thai_tt = TrangThaiThanhToan.cho_hoan_tien
-    else:
-        tong_hoan = da_hoan + gd.so_tien
-        don.trang_thai_tt = (
-            TrangThaiThanhToan.da_hoan_tien if tong_hoan >= da_thanh_toan else TrangThaiThanhToan.hoan_tien_mot_phan
-        )
+    don.trang_thai_tt = trang_thai_thanh_toan(don, await tinh_so_tien(db, don.id))
     don.updated_at = bay_gio
     if yc is not None and yc.trang_thai == TrangThaiDoiTra.kho_da_nhan:
         yc.trang_thai, yc.updated_at = TrangThaiDoiTra.hoan_tat, bay_gio  # dòng 7 của vòng đời đổi trả

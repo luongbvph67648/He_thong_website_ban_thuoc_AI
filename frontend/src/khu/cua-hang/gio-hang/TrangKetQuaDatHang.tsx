@@ -6,7 +6,7 @@ import { api } from '../../../api/client'
 import { goi, thongDiepChung } from '../../../api/goi'
 import { dinhDangNgay, dinhDangTien } from '../../../lib/dinhDang'
 import { NHAN_PHUONG_THUC_DON } from '../../../lib/donHang'
-import { chuyenSangCong, layUrlThanhToan } from './thanhToanOnline'
+import { chuyenSangCong, layUrlThanhToan, maDonTuGiaoDich } from './thanhToanOnline'
 
 /**
  * Kết quả đặt hàng (KTV02) tại `/thanh-toan/ket-qua?ma=...`: trạng thái luôn đọc lại từ máy chủ, không tin tham số URL
@@ -17,7 +17,9 @@ export default function TrangKetQuaDatHang() {
   const { message } = App.useApp()
   const [dangMo, datDangMo] = useState(false)
   const [tham] = useSearchParams()
-  const ma = tham.get('ma') ?? ''
+  // ReturnUrl của cổng thật mang mã tham chiếu `<ma_don>-<id>` (VNPay `vnp_TxnRef`, MoMo `orderId`), không có `ma`.
+  // Chỉ dùng để biết đơn nào: trạng thái đơn và thanh toán luôn đọc lại từ máy chủ, không tin tham số này.
+  const ma = tham.get('ma') ?? maDonTuGiaoDich(tham.get('vnp_TxnRef') ?? tham.get('orderId') ?? '')
   const q = useQuery({
     queryKey: ['don-hang', ma],
     enabled: ma !== '',

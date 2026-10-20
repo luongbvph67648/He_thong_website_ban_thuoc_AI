@@ -77,6 +77,9 @@ def cau_hinh_co_dinh_cho_test(monkeypatch, tmp_path):
     monkeypatch.setattr(settings, "COOKIE_SECURE", True)
     monkeypatch.setattr(settings, "REFRESH_NGAY", 14)
     monkeypatch.setattr(settings, "JWT_ACCESS_PHUT", 15)
+    # Chế độ cổng thanh toán/vận chuyển mặc định là `gia` (route và adapter giả); `.env` của máy dev có thể đặt `mo_phong`
+    monkeypatch.setattr(settings, "THANH_TOAN_CHE_DO", "gia")
+    monkeypatch.setattr(settings, "VAN_CHUYEN_CHE_DO", "gia")
     xoa_cache_quyen()  # cache quyền của process không được sống sót qua các test (id vai trò, dữ liệu mỗi test một khác)
     yield
     xoa_cache_quyen()

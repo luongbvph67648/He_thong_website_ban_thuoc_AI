@@ -1,5 +1,5 @@
 """Schema API quản lý tài khoản nhân viên của Admin (AD01, spec 06 mục 3.4). Không bao giờ chứa mật khẩu hay hash,
-trừ `mat_khau_tam` trong phản hồi tạo/đặt lại (hiện đúng một lần)."""
+(mật khẩu tạm chỉ gửi qua email cho nhân viên)."""
 
 from datetime import datetime
 from typing import Annotated
@@ -65,7 +65,8 @@ class NhanVienSua(BaseModel):
         return gia_tri
 
 
-class NhanVienCoMatKhauTam(NhanVienQuanTriDoc):
-    """Phản hồi tạo tài khoản và đặt lại mật khẩu: `mat_khau_tam` chỉ hiện lần này, không lưu dạng rõ."""
+class NhanVienDaGuiMatKhau(NhanVienQuanTriDoc):
+    """Phản hồi tạo tài khoản và đặt lại mật khẩu: mật khẩu tạm gửi tới email của nhân viên, Admin không nhận được."""
 
-    mat_khau_tam: str
+    gui_den: str
+    """Email nhận mật khẩu tạm, đã che (`a***@mien.vn`)."""

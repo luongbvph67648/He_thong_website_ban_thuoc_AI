@@ -6,22 +6,25 @@ Bảng chuyển trạng thái là DỮ LIỆU (`BANG_CHUYEN`, số dòng theo sp
 bước nào thì cả lần chuyển bị hoàn tác (hàm này không commit; `Db` commit cuối request).
 """
 
+import logging
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from datetime import datetime
+from decimal import Decimal
 from enum import StrEnum
 
-from sqlalchemy import exists, select
+from sqlalchemy import exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.loi import LoiNghiepVu
 from app.core.thoi_gian import bay_gio_utc
-from app.models.ban_hang import CtDonHang, DonHang, LichSuTrangThai, PhanBoLo, ThanhToan, YeuCauDonThuoc
+from app.models.ban_hang import CtDonHang, DonHang, LichSuTrangThai, PhanBoLo, ThanhToan, VanDon, YeuCauDonThuoc
 from app.models.enums import (
     HinhThucNhan,
     KenhBan,
     LoaiGiaoDich,
     LoaiSanPham,
+    LoaiVanDon,
     PhuongThucThanhToan,
     TrangThaiDon,
     TrangThaiGiaoDich,
@@ -31,10 +34,13 @@ from app.models.enums import (
 )
 from app.models.he_thong import NhanVien
 from app.models.san_pham import SanPham
+from app.modules.ban_hang.so_tien_da_thu import tinh_so_tien, trang_thai_thanh_toan
 from app.modules.kho import ton_kho
 from app.modules.khuyen_mai.ap_dung import tra_luot_khi_huy
 from app.modules.thong_bao import service as thong_bao
+from app.tich_hop.van_chuyen import lay_don_vi_van_chuyen
 
+logger = logging.getLogger(__name__)
 TT = TrangThaiDon
 
 
@@ -332,36 +338,104 @@ async def _danh_dau_da_thanh_toan(db: AsyncSession, don: DonHang, tac_nhan: TacN
 
 
 async def _tao_hoan_tien_khi_huy(db: AsyncSession, don: DonHang, tac_nhan: TacNhan) -> None:
-    """Hủy đơn đã thanh toán (dòng 14, 15, 19, 21, 27): tạo giao dịch `hoan_tien` ở trạng thái `khoi_tao` trỏ về giao
-    dịch gốc, đơn sang `cho_hoan_tien`; Admin xác nhận hoàn ở AD17 (T6.3). Đơn chưa trả tiền thì không có gì để hoàn."""
-    if don.trang_thai_tt != TrangThaiThanhToan.da_thanh_toan or don.phuong_thuc_tt is None:
+    """Hủy đơn đã thu tiền (dòng 14, 15, 19, 21, 27): tạo giao dịch `hoan_tien` `khoi_tao` cho phần tiền đã thu mà chưa
+    có giao dịch hoàn nào bao phủ (tính từ sổ tiền, không dựa vào `trang_thai_tt`: khách có thể đã trả hai lần và một
+    khoản thừa đang chờ hoàn). Mỗi giao dịch hoàn trỏ về MỘT giao dịch thanh toán gốc và không vượt phần còn hoàn
+    được của giao dịch đó (cổng chỉ cho hoàn tối đa số đã trả). Admin xác nhận ở AD17."""
+    if don.phuong_thuc_tt is None or don.tong_tien <= 0:  # đơn thay thế 0đ (dòng 30): không có tiền để hoàn
         return
-    if don.tong_tien <= 0:  # đơn thay thế 0đ (dòng 30): không có tiền để hoàn
-        return
-    goc = (
-        await db.execute(
-            select(ThanhToan)
-            .where(
-                ThanhToan.don_hang_id == don.id,
-                ThanhToan.loai == LoaiGiaoDich.thanh_toan,
-                ThanhToan.trang_thai == TrangThaiGiaoDich.thanh_cong,
+    so = await tinh_so_tien(db, don.id)
+    con = so.con_phai_hoan
+    if con > 0:
+        goc_ds = (
+            (
+                await db.execute(
+                    select(ThanhToan)
+                    .where(
+                        ThanhToan.don_hang_id == don.id,
+                        ThanhToan.loai == LoaiGiaoDich.thanh_toan,
+                        ThanhToan.trang_thai == TrangThaiGiaoDich.thanh_cong,
+                    )
+                    .order_by(ThanhToan.id)
+                )
             )
-            .order_by(ThanhToan.id.desc())
+            .scalars()
+            .all()
+        )
+        da_hoan_theo_goc = dict(
+            (
+                await db.execute(
+                    select(ThanhToan.thanh_toan_goc_id, func.sum(ThanhToan.so_tien))
+                    .where(
+                        ThanhToan.don_hang_id == don.id,
+                        ThanhToan.loai == LoaiGiaoDich.hoan_tien,
+                        ThanhToan.trang_thai.in_((TrangThaiGiaoDich.khoi_tao, TrangThaiGiaoDich.thanh_cong)),
+                        ThanhToan.thanh_toan_goc_id.is_not(None),
+                    )
+                    .group_by(ThanhToan.thanh_toan_goc_id)
+                )
+            ).all()
+        )
+        for goc in goc_ds:
+            if con <= 0:
+                break
+            duoc = goc.so_tien - Decimal(da_hoan_theo_goc.get(goc.id) or 0)
+            if duoc <= 0:
+                continue
+            so_hoan = min(con, duoc)
+            db.add(
+                ThanhToan(
+                    don_hang_id=don.id,
+                    loai=LoaiGiaoDich.hoan_tien,
+                    cong_thanh_toan=goc.cong_thanh_toan,
+                    so_tien=so_hoan,
+                    trang_thai=TrangThaiGiaoDich.khoi_tao,
+                    thanh_toan_goc_id=goc.id,
+                    ghi_chu=f"Hoàn tiền do hủy đơn {don.ma_don}",
+                )
+            )
+            con -= so_hoan
+        await db.flush()
+    don.trang_thai_tt = trang_thai_thanh_toan(don, await tinh_so_tien(db, don.id))
+
+
+async def _huy_van_don_khi_huy(db: AsyncSession, don: DonHang, tac_nhan: TacNhan) -> None:
+    """Dòng 19 (hủy khi hàng chưa rời kho): hủy vận đơn giao hàng còn hiệu lực ở đơn vị vận chuyển, nếu không
+    shipper vẫn tới lấy hàng đã hoàn nhập vào kho. Đơn vị vận chuyển từ chối (đã lấy hàng) hoặc không phản hồi thì
+    KHÔNG hủy đơn: ném lỗi để cả giao dịch hoàn tác (hàng đã thực sự rời kho thì đi theo luồng giao thất bại/hoàn
+    hàng). Chạy SAU các hook kho để lỗi DB không để lại vận đơn đã hủy mà đơn còn sống."""
+    van_don = (
+        await db.execute(
+            select(VanDon)
+            .where(
+                VanDon.don_hang_id == don.id,
+                VanDon.loai == LoaiVanDon.giao_hang,
+                VanDon.ma_van_don.is_not(None),
+                VanDon.trang_thai_doi_tac.is_distinct_from("cancel"),
+            )
+            .order_by(VanDon.id.desc())
             .limit(1)
+            .with_for_update()
         )
     ).scalar_one_or_none()
-    db.add(
-        ThanhToan(
-            don_hang_id=don.id,
-            loai=LoaiGiaoDich.hoan_tien,
-            cong_thanh_toan=goc.cong_thanh_toan if goc else don.phuong_thuc_tt,
-            so_tien=goc.so_tien if goc else don.tong_tien,
-            trang_thai=TrangThaiGiaoDich.khoi_tao,
-            thanh_toan_goc_id=goc.id if goc else None,
-            ghi_chu=f"Hoàn tiền do hủy đơn {don.ma_don}",
+    if van_don is None or van_don.ma_van_don is None:
+        return
+    don_vi = lay_don_vi_van_chuyen()
+    if van_don.don_vi_van_chuyen != don_vi.ten:
+        logger.warning(
+            "Vận đơn %s của %s, adapter hiện tại là %s", van_don.ma_van_don, van_don.don_vi_van_chuyen, don_vi.ten
         )
-    )
-    don.trang_thai_tt = TrangThaiThanhToan.cho_hoan_tien
+        return
+    try:
+        await don_vi.huy_van_don(van_don.ma_van_don)
+    except Exception as e:  # noqa: BLE001  lỗi đối tác bất kỳ: không hủy đơn khi chưa chắc vận đơn đã hủy
+        logger.warning("Hủy vận đơn %s thất bại cho đơn %s", van_don.ma_van_don, don.ma_don, exc_info=True)
+        raise LoiNghiepVu(
+            "LOI_DOI_TAC",
+            "Không hủy được vận đơn ở đơn vị vận chuyển (có thể shipper đã lấy hàng), đơn chưa bị hủy",
+        ) from e
+    van_don.trang_thai_doi_tac = "cancel"
+    van_don.updated_at = bay_gio_utc()
 
 
 async def _ghi_nhan_cod(db: AsyncSession, don: DonHang, tac_nhan: TacNhan) -> None:
@@ -417,6 +491,7 @@ for _so in (14, 15, 19, 21, 27):
 for _so in (19, 21):
     dang_ky_hook(_so, _nha_hang_giu)
     dang_ky_hook(_so, _hoan_nhap_hang_da_xuat)
+dang_ky_hook(19, _huy_van_don_khi_huy)
 
 
 # --- Điểm vào duy nhất ---

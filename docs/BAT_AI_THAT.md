@@ -94,6 +94,14 @@ cd $HOME\Documents\He_thong_website_ban_thuoc_AI\backend
 uv run python -m app.jobs
 ```
 
+### Đã kiểm chứng gì khi chưa có khóa API
+Bộ test chạy **SDK `anthropic` thật** (không phải đối tượng giả) với đường truyền thay bằng phản hồi mẫu đúng định dạng
+Messages API (`tests/ai/test_claude_sdk_that.py`): SDK tự dựng yêu cầu (tiêu đề beta `server-side-fallback-2026-07-01`,
+`fallbacks`, `output_config.format` JSON Schema, `cache_control` ở system prompt), tự phân tích JSON và luồng SSE, vòng lặp
+tool ghép đúng `tool_result` vào MỘT message, cộng token qua nhiều lượt, `refusal`/`max_tokens`/lỗi 401, 429, 500, 529 đều
+thành ngoại lệ của hệ thống. Điều này **không thay** việc gọi Claude thật (API có thể từ chối một tham số mà tài liệu cho
+phép): vẫn phải chạy `uv run python -m app.ai.kiem_tra` với khóa của bạn.
+
 ## Phần 3. Bật embedding thật (BGE-M3), tùy chọn
 
 Bước này tải mô hình khoảng 2,3 GB và thư viện PyTorch (vài GB). Cần ổ đĩa trống khoảng 8 GB và kết nối mạng ổn định. Lần đầu mất
@@ -143,7 +151,9 @@ không cần mạng.
 
 Đây **không phải thanh toán thật**: không có tài khoản VNPay/MoMo thật, không trừ tiền, không kết nối ngân hàng. Hệ thống dựng một
 **cổng thanh toán giả lập** có giao diện và luồng giống cổng thật, chạy hoàn toàn trên máy bạn. Cấu hình đã sẵn sàng
-(`THANH_TOAN_CHE_DO=gia`), không cần sửa gì.
+(`THANH_TOAN_CHE_DO=mo_phong`, `VAN_CHUYEN_CHE_DO=mo_phong` trong `.env.example`), không cần sửa gì.
+
+**Mô phỏng đúng giao thức thật** (spec 08 mục 4b): hệ thống chạy nguyên adapter VNPay, MoMo, GHN thật, chỉ trỏ tới máy chủ mô phỏng nằm trong ứng dụng. VNPay: URL thanh toán ký HMAC-SHA512, IPN `vnp_*` gọi server-to-server, ReturnUrl có chữ ký, **hoàn tiền qua API `merchant_webapi`**. MoMo: `captureWallet` ký HMAC-SHA256, IPN trả HTTP 204, **hoàn tiền qua API `refund`**. GHN: tính phí, tạo và **hủy vận đơn**, webhook có `Token`. Đổi sang sandbox thật chỉ là điền khóa và địa chỉ vào `.env`.
 
 Trang mô phỏng luôn hiện dòng cảnh báo vàng "Môi trường mô phỏng... Không có tiền thật".
 

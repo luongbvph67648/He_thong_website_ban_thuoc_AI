@@ -14,6 +14,8 @@ export ADMIN_EMAIL="admin@example.com"
 export ADMIN_MAT_KHAU="Admin@12345678"
 export E2E_ADMIN_EMAIL="$ADMIN_EMAIL" E2E_ADMIN_MAT_KHAU="$ADMIN_MAT_KHAU"
 export COOKIE_SECURE=false
+# VNPay, MoMo, GHN mô phỏng đúng giao thức (adapter thật + máy chủ mô phỏng trong ứng dụng), không phải cổng "giả" đơn giản
+export THANH_TOAN_CHE_DO=mo_phong VAN_CHUYEN_CHE_DO=mo_phong
 
 psql "$PG_QUAN_TRI" -qc "DROP DATABASE IF EXISTS ${TEN_DB} WITH (FORCE)" -c "CREATE DATABASE ${TEN_DB}"
 psql "${PG_QUAN_TRI%/*}/${TEN_DB}" -qc "CREATE EXTENSION IF NOT EXISTS vector"

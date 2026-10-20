@@ -114,11 +114,12 @@ async def chi_tiet(db: AsyncSession, don_id: int) -> SoanHangRa:
         ten_nguoi_nhan=don.ten_nguoi_nhan,
         sdt_nguoi_nhan=don.sdt_nguoi_nhan,
         dia_chi_giao=don.dia_chi_giao,
-        ghi_chu=don.ghi_chu,
+        ghi_chu=None if don.yeu_cau_don_thuoc_id is not None else don.ghi_chu,  # lời tư vấn dược sĩ có thể nêu dị ứng
         created_at=don.created_at,
         dong=dong,
         van_don=await dat_hang.van_don_giao_hang(db, don.id),
         che_do_van_chuyen_gia=settings.VAN_CHUYEN_CHE_DO == "gia",
+        van_chuyen_mo_phong=settings.VAN_CHUYEN_CHE_DO == "mo_phong",
     )
 
 

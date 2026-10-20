@@ -197,8 +197,10 @@ async def test_chi_gui_phan_can_thiet_cua_ho_so_cho_claude(dang_nhap_khach, db):
     await hoi(dang_nhap_khach, "Mình bị ho")
     goi = gia_lap.KICH_BAN.lan_stream[-1]
     gui_di = json.dumps(goi["lich_su"], ensure_ascii=False) + goi["system"]
-    assert "đang mang thai" in gui_di and hc.ten in gui_di
-    for cam in ("BỆNH-NỀN-BÍ-MẬT", "GHI-CHÚ-BÍ-MẬT", khach.ho_ten, khach.so_dien_thoai):
+    assert "đang mang thai" in gui_di and "có khai dị ứng thuốc" in gui_di
+    # Tên hoạt chất dị ứng cũng không gửi: AI có thể nhắc lại, mà tin nhắn lưu ở `tin_nhan` cho dược sĩ/Admin đọc;
+    # sản phẩm chứa hoạt chất đó đã bị loại ở SQL nên AI không cần biết tên
+    for cam in (hc.ten, "BỆNH-NỀN-BÍ-MẬT", "GHI-CHÚ-BÍ-MẬT", khach.ho_ten, khach.so_dien_thoai):
         assert cam not in gui_di
 
 
@@ -348,3 +350,49 @@ async def test_dau_vao_sai(client):
         {"ma_phien": str(uuid.uuid4()), "noi_dung": "x" * 1001},
     ):
         assert (await client.post(CHAT, json=body)).status_code == 400
+
+
+async def test_khach_ngat_ket_noi_giua_luong_thi_van_ghi_chi_phi_token_da_tieu(app, db, monkeypatch):
+    """Claude vẫn tính tiền phần đã chạy: ngắt SSE giữa chừng không được né ngân sách AI trong ngày."""
+    import asyncio
+
+    from app.ai import chatbot
+    from app.core.db import lay_tao_phien
+    from app.modules.tu_van import dich_vu, router
+
+    ma_phien = uuid.uuid4()
+    vao = await dich_vu.mo_luot(db, None, ma_phien, "Mình bị ho", "9.9.9.9")
+    kq_giu = {}
+
+    async def chay_luot_gia(**kw):
+        kq = kw["kq"]
+        kq_giu["kq"] = kq
+        kq.su_dung.input_tokens, kq.su_dung.output_tokens = 10_000, 2_000  # đã gọi Claude, đang stream giữa chừng
+        yield {"loai": "van_ban", "noi_dung": "Mình gợi ý "}
+        await asyncio.sleep(3600)  # khách đã đóng tab: generator sẽ bị hủy ở đây
+        yield {"loai": "ket_thuc", "ket_qua": kq}
+
+    monkeypatch.setattr(chatbot, "chay_luot", chay_luot_gia)
+    tao_phien = app.dependency_overrides[lay_tao_phien]()
+    gen = router._phat(tao_phien, vao, None, "Mình bị ho")
+    assert "van_ban" in await gen.__anext__()
+    await gen.aclose()  # Starlette đóng generator khi client ngắt kết nối
+    h = await db.scalar(select(HoiThoai).where(HoiThoai.ma_phien == ma_phien))
+    await db.refresh(h)
+    assert h.tong_token == 12_000 and h.chi_phi == kq_giu["kq"].su_dung.chi_phi_usd() > 0
+    assert await db.scalar(select(TinNhan).where(TinNhan.hoi_thoai_id == h.id, TinNhan.vai_tro == "ai")) is None
+
+
+async def test_loi_la_trong_luot_chat_thanh_chuyen_duoc_si_khong_tra_loi_tho(dang_nhap_khach, monkeypatch):
+    """Embedding thật lỗi, SQL lỗi...: khách nhận lời mời gặp dược sĩ thay vì sự kiện lỗi thô."""
+    kich_ban()
+
+    async def hong(**kw):
+        raise RuntimeError("mô hình embedding hỏng")
+        yield
+
+    gia_lap.KICH_BAN.stream = hong
+    ds = sse((await hoi(dang_nhap_khach, "Mình bị ho"))[0].text)
+    assert "loi" not in loai(ds)
+    chuyen = next(x for x in ds if x[0] == "chuyen_duoc_si")
+    assert chuyen[1]["ly_do"] == "ai_loi"

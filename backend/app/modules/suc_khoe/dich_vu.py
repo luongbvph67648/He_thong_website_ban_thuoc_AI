@@ -5,9 +5,12 @@ dụng dữ liệu; thu hồi đồng ý = xóa hồ sơ (QĐ-32). `benh_nen` đ
 hồ sơ ra log hay nhật ký. Hàm không commit.
 """
 
+from datetime import timedelta
+
 from sqlalchemy import delete, exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.core.cau_hinh import doc_cau_hinh
 from app.core.loi import LoiNghiepVu
 from app.core.ma_hoa import giai_ma, ma_hoa
 from app.core.nhat_ky import ghi_nhat_ky
@@ -98,12 +101,14 @@ async def duoc_doc_ho_so_suc_khoe(db: AsyncSession, nhan_vien: NhanVien, khach_h
     dong_y = await db.scalar(select(HoSoSucKhoe.dong_y_su_dung).where(HoSoSucKhoe.khach_hang_id == khach_hang_id))
     if not dong_y:
         return False
+    han_khoa = bay_gio_utc() - timedelta(minutes=int(await doc_cau_hinh(db, "thoi_gian_khoa_don_thuoc_phut", 30)))
     dang_xu_ly = await db.scalar(
         select(
             exists().where(
                 YeuCauDonThuoc.khach_hang_id == khach_hang_id,
                 YeuCauDonThuoc.duoc_si_id == nhan_vien.id,
                 YeuCauDonThuoc.trang_thai == TrangThaiYeuCauDonThuoc.dang_tu_van,
+                YeuCauDonThuoc.khoa_luc > han_khoa,  # khóa hết hạn thì không còn quyền đọc dù job nhả khóa chưa chạy
             )
             | exists().where(
                 HoiThoai.khach_hang_id == khach_hang_id,

@@ -79,7 +79,8 @@ def _khoa_cho_toi(yc: YeuCauDonThuoc, nv: NhanVien) -> bool:
 async def _lay_dang_khoa(db: AsyncSession, nv: NhanVien, yc_id: int, *, khoa: bool = False) -> YeuCauDonThuoc:
     await dam_bao_la_duoc_si(db, nv)  # lớp phòng thủ thứ hai: Admin gán quyền cho vai trò khác cũng không duyệt được
     yc = await _lay(db, yc_id, khoa=khoa)
-    if not _khoa_cho_toi(yc, nv):
+    het_han = yc.khoa_luc is not None and bay_gio_utc() > yc.khoa_luc + timedelta(minutes=await _phut_khoa(db))
+    if not _khoa_cho_toi(yc, nv) or het_han:  # khóa hết hạn (job nhả khóa chưa chạy) coi như đã mất khóa
         raise LoiNghiepVu("KHONG_CO_QUYEN", MA_LOI_KHONG_KHOA)
     return yc
 
@@ -393,14 +394,18 @@ async def tu_choi(db: AsyncSession, nv: NhanVien, yc_id: int, ly_do: str, kenh: 
             noi_dung=yc.ly_do_tu_choi,
             lien_ket="/tai-khoan/don-thuoc",
         )
-    await _gui_sms(kenh, yc.so_dien_thoai, sms_tu_choi(yc.ma_yeu_cau, yc.ly_do_tu_choi[:100]))
+    # SMS không kèm lý do (văn bản tự do có thể nêu bệnh, thuốc): lý do chỉ hiện trong ứng dụng cho thành viên
+    await _gui_sms(kenh, yc.so_dien_thoai, sms_tu_choi(yc.ma_yeu_cau))
 
 
-async def _gui_sms(kenh: KenhTinNhan, sdt: str, noi_dung: str) -> None:
+async def _gui_sms(kenh: KenhTinNhan, sdt: str, noi_dung: str) -> bool:
+    """True khi đã gửi. SMS lỗi không làm hỏng nghiệp vụ (nơi gọi quyết định có đưa link cho dược sĩ hay không)."""
     try:
         await kenh.gui_sms(sdt, noi_dung)
-    except LoiGuiTinNhan:  # SMS lỗi không làm hỏng nghiệp vụ; dược sĩ vẫn thấy link trong phản hồi
+    except LoiGuiTinNhan:
         logger.warning("Không gửi được SMS đơn thuốc", exc_info=True)
+        return False
+    return True
 
 
 # --- Tạo đơn từ đơn thuốc (DS05) ---
@@ -489,7 +494,8 @@ async def tao_don(db: AsyncSession, nv: NhanVien, yc_id: int, vao: TaoDonVao, ke
     link = None
     if token is not None:
         link = f"{settings.FRONTEND_URL.rstrip('/')}/xac-nhan-don/{token}"
-        await _gui_sms(kenh, yc.so_dien_thoai, sms_link_xac_nhan(don.ma_don, link, han))
+        if await _gui_sms(kenh, yc.so_dien_thoai, sms_link_xac_nhan(don.ma_don, link, han)):
+            link = None  # link chỉ tới khách qua SMS: dược sĩ cầm link thì xác nhận/hủy/thanh toán thay khách được
     else:
         assert yc.khach_hang_id is not None
         await thong_bao.gui_cho_khach(

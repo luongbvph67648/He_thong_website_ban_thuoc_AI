@@ -8,6 +8,7 @@ import asyncio
 import hashlib
 import math
 import re
+import threading
 from collections.abc import Sequence
 from typing import Any
 
@@ -17,6 +18,11 @@ from app.core.slug import bo_dau
 SO_CHIEU = 1024
 TEN_MO_HINH_GIA = "gia-lap-hash-1024"
 _model: Any = None
+_khoa_model = threading.Lock()
+"""Nạp mô hình một lần và không chạy hai lượt `encode` cùng lúc trên một mô hình (không an toàn đa luồng; `embed` chạy
+trong `asyncio.to_thread` nên hai request đồng thời sẽ vào đây cùng lúc)."""
+TOI_DA_TOKEN = 512
+"""BGE-M3 mặc định nhận 8192 token (chậm và tốn RAM); đoạn tri thức và câu hỏi của hệ thống ngắn hơn nhiều."""
 _TU = re.compile(r"[a-z0-9]+")
 
 
@@ -41,12 +47,19 @@ def _nap_model() -> Any:
     if _model is None:
         from sentence_transformers import SentenceTransformer  # nhóm phụ thuộc `ai-local`, nạp một lần mỗi process
 
-        _model = SentenceTransformer(settings.EMBEDDING_MODEL)
+        mo_hinh = SentenceTransformer(settings.EMBEDDING_MODEL)
+        mo_hinh.max_seq_length = TOI_DA_TOKEN
+        _model = mo_hinh
     return _model
 
 
 def _ma_hoa(ds: list[str]) -> list[list[float]]:
-    return [list(map(float, v)) for v in _nap_model().encode(ds, normalize_embeddings=True, batch_size=16)]
+    with _khoa_model:
+        vector = [list(map(float, v)) for v in _nap_model().encode(ds, normalize_embeddings=True, batch_size=16)]
+    if vector and len(vector[0]) != SO_CHIEU:
+        # Bảng `tai_lieu_tri_thuc.embedding` là vector(1024): mô hình khác số chiều thì không lưu/so sánh được
+        raise RuntimeError(f"Mô hình {settings.EMBEDDING_MODEL} cho {len(vector[0])} chiều, hệ thống cần {SO_CHIEU}")
+    return vector
 
 
 async def embed(ds: Sequence[str]) -> list[list[float]]:

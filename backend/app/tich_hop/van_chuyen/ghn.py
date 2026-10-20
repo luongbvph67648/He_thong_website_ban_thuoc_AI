@@ -9,7 +9,8 @@ from typing import Any, Literal
 
 import httpx
 
-from app.core.config import settings
+from app.tich_hop import cau_hinh
+from app.tich_hop.http import tao_client
 from app.tich_hop.van_chuyen import DiaChiGiao, KetQuaVanDon, SuKienVanChuyen, WebhookKhongHopLe
 
 THOI_GIAN_CHO_GIAY = 15.0
@@ -23,11 +24,13 @@ class VanChuyenGhn:
     ten = "GHN"
 
     def _tieu_de(self) -> dict[str, str]:
-        return {"Token": settings.GHN_TOKEN.get_secret_value(), "ShopId": settings.GHN_SHOP_ID}
+        return {"Token": cau_hinh.ghn_token(), "ShopId": cau_hinh.ghn_shop_id()}
 
     async def _goi(self, duong_dan: str, thanh: dict[str, Any]) -> dict[str, Any]:
         try:
-            async with httpx.AsyncClient(base_url=settings.GHN_URL, timeout=THOI_GIAN_CHO_GIAY) as client:
+            async with tao_client(
+                cau_hinh.ghn_url(), base_url=cau_hinh.ghn_url(), timeout=THOI_GIAN_CHO_GIAY
+            ) as client:
                 r = await client.post(duong_dan, json=thanh, headers=self._tieu_de())
             du_lieu = r.json()
         except (httpx.HTTPError, ValueError) as e:
@@ -68,10 +71,17 @@ class VanChuyenGhn:
         return KetQuaVanDon(ma_van_don=str(du_lieu["order_code"]), phi=Decimal(int(du_lieu.get("total_fee", 0))))
 
     async def huy_van_don(self, ma_van_don: str) -> None:
-        await self._goi("/shiip/public-api/v2/switch-status/cancel", {"order_codes": [ma_van_don]})
+        """GHN trả mảng kết quả theo từng mã; đã hủy từ trước thì coi như thành công (gọi lại an toàn)."""
+        du_lieu = await self._goi("/shiip/public-api/v2/switch-status/cancel", {"order_codes": [ma_van_don]})
+        for ket_qua in du_lieu if isinstance(du_lieu, list) else []:
+            if ket_qua.get("order_code") == ma_van_don and not ket_qua.get("result"):
+                thong_diep = str(ket_qua.get("message", ""))
+                da_huy_roi = "already" in thong_diep.lower() and "cancel" in thong_diep.lower()
+                if not da_huy_roi:  # "Order is already cancelled" là thành công; "không cho hủy" thì không
+                    raise LoiGhn(f"GHN không hủy được vận đơn: {thong_diep or 'không rõ lý do'}")
 
     def xac_thuc_webhook(self, headers: dict[str, str], body: dict[str, Any]) -> SuKienVanChuyen:
-        mong_doi = settings.GHN_WEBHOOK_TOKEN.get_secret_value()
+        mong_doi = cau_hinh.ghn_webhook_token()
         nhan = {k.lower(): v for k, v in headers.items()}.get("token", "")
         if not mong_doi or not hmac.compare_digest(nhan.encode(), mong_doi.encode()):
             raise WebhookKhongHopLe("Token webhook không đúng")

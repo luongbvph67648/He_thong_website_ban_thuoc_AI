@@ -31,15 +31,32 @@ from app.models.enums import TrangThaiTaiKhoan
 from app.models.he_thong import NhanVien, VaiTro
 from app.modules.nhan_vien.schemas_quan_tri import NhanVienSua, NhanVienTao
 from app.modules.tai_khoan import phien
+from app.tich_hop.tin_nhan import KenhTinNhan, LoiGuiTinNhan
+from app.tich_hop.tin_nhan.mau.nhan_vien import email_mat_khau_tam
 
 MA_VAI_TRO_ADMIN = "ADMIN"
 BANG = "nhan_vien"
 
 
 @dataclass(frozen=True)
-class KetQuaCoMatKhauTam:
+class KetQuaDaGuiMatKhau:
+    """Mật khẩu tạm đã gửi tới email của nhân viên; Admin chỉ biết địa chỉ nhận (đã che), không biết mật khẩu."""
+
     nhan_vien: NhanVien
-    mat_khau_tam: str
+    gui_den: str
+
+
+def che_email(email: str) -> str:
+    phan_dau, _, mien = email.partition("@")
+    return f"{phan_dau[:1]}***@{mien}" if mien else "***"
+
+
+async def _gui_mat_khau_tam(kenh: KenhTinNhan, nv: NhanVien, mat_khau_tam: str, *, dat_lai: bool) -> None:
+    tieu_de, html = email_mat_khau_tam(nv.ho_ten, mat_khau_tam, dat_lai=dat_lai)
+    try:
+        await kenh.gui_email(nv.email, tieu_de, html)
+    except LoiGuiTinNhan as e:
+        raise LoiNghiepVu("LOI_DOI_TAC", "Không gửi được email mật khẩu tạm cho nhân viên, vui lòng thử lại sau") from e
 
 
 def _khong_tim_thay() -> LoiNghiepVu:
@@ -177,8 +194,11 @@ async def chi_tiet(db: AsyncSession, nhan_vien_id: int) -> NhanVien:
 # --- Ghi -------------------------------------------------------------------------------------------------------------
 
 
-async def tao(db: AsyncSession, actor: NhanVien, du_lieu: NhanVienTao, *, ip: str) -> KetQuaCoMatKhauTam:
-    """Tạo tài khoản với mật khẩu tạm ngẫu nhiên, bắt đổi ở lần đăng nhập đầu."""
+async def tao(
+    db: AsyncSession, actor: NhanVien, kenh: KenhTinNhan, du_lieu: NhanVienTao, *, ip: str
+) -> KetQuaDaGuiMatKhau:
+    """Tạo tài khoản với mật khẩu tạm ngẫu nhiên gửi tới email của nhân viên (Admin không thấy), bắt đổi ở lần đăng nhập
+    đầu. Gửi email lỗi thì cả thao tác hoàn tác: không để lại tài khoản mà không ai biết mật khẩu."""
     await dam_bao_la_admin(db, actor)
     vai_tro = await _vai_tro_theo_ma(db, du_lieu.vai_tro)
     await _dam_bao_email_chua_dung(db, du_lieu.email)
@@ -209,7 +229,8 @@ async def tao(db: AsyncSession, actor: NhanVien, du_lieu: NhanVienTao, *, ip: st
         gia_tri_moi={"ma_nhan_vien": nv.ma_nhan_vien, "email": nv.email, "vai_tro": vai_tro.ma},
         ip=ip,
     )
-    return KetQuaCoMatKhauTam(await _tai_nhan_vien(db, nv.id), mat_khau_tam)
+    await _gui_mat_khau_tam(kenh, nv, mat_khau_tam, dat_lai=False)
+    return KetQuaDaGuiMatKhau(await _tai_nhan_vien(db, nv.id), che_email(nv.email))
 
 
 async def sua(db: AsyncSession, actor: NhanVien, nhan_vien_id: int, du_lieu: NhanVienSua, *, ip: str) -> NhanVien:
@@ -289,7 +310,9 @@ async def mo_khoa(db: AsyncSession, actor: NhanVien, nhan_vien_id: int, *, ip: s
     return dich
 
 
-async def dat_lai_mat_khau(db: AsyncSession, actor: NhanVien, nhan_vien_id: int, *, ip: str) -> KetQuaCoMatKhauTam:
+async def dat_lai_mat_khau(
+    db: AsyncSession, actor: NhanVien, kenh: KenhTinNhan, nhan_vien_id: int, *, ip: str
+) -> KetQuaDaGuiMatKhau:
     """Đặt mật khẩu tạm mới, bắt đổi ở lần đăng nhập kế, xóa khóa tạm và thu hồi mọi phiên. Không mở khóa của Admin."""
     await dam_bao_la_admin(db, actor)
     dich, _ = await _khoa_dich_va_cac_admin(db, nhan_vien_id)
@@ -303,7 +326,8 @@ async def dat_lai_mat_khau(db: AsyncSession, actor: NhanVien, nhan_vien_id: int,
     dich.updated_at = bay_gio_utc()
     await phien.thu_hoi_tat_ca(db, "noi_bo", dich.id)
     await ghi_nhat_ky(db, nhan_vien_id=actor.id, hanh_dong="dat_lai_mat_khau", bang=BANG, ban_ghi_id=dich.id, ip=ip)
-    return KetQuaCoMatKhauTam(dich, mat_khau_tam)
+    await _gui_mat_khau_tam(kenh, dich, mat_khau_tam, dat_lai=True)
+    return KetQuaDaGuiMatKhau(dich, che_email(dich.email))
 
 
 async def xoa_mem(db: AsyncSession, actor: NhanVien, nhan_vien_id: int, *, ip: str) -> None:

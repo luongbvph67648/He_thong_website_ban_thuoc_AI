@@ -323,3 +323,48 @@ async def test_khach_thay_dong_thoi_gian_va_ma_van_don(dang_nhap_khach, dang_nha
     assert (
         noi_bo["van_don"][0]["ma_van_don"] == vd.ma_van_don and noi_bo["lich_su"][-1]["nguoi_thuc_hien"] == "Hệ thống"
     )
+
+
+async def _don_cho_lay_hang(khach, duoc_si, kho, db):
+    sp, o, don = await don_dang_soan(khach, duoc_si, kho, db)
+    assert (await kho.post(f"{SH}/{don.id}/dong-goi")).status_code == 200
+    return o, don
+
+
+async def test_duoc_si_huy_don_cho_lay_hang_thi_huy_ca_van_don(
+    dang_nhap_khach, dang_nhap_duoc_si, dang_nhap_kho, db, monkeypatch
+):
+    """Hủy khi hàng chưa rời kho phải hủy vận đơn, nếu không shipper vẫn tới lấy hàng đã hoàn nhập."""
+    da_huy = []
+
+    async def huy(self, ma):
+        da_huy.append(ma)
+
+    monkeypatch.setattr(VanChuyenGia, "huy_van_don", huy)
+    o, don = await _don_cho_lay_hang(dang_nhap_khach, dang_nhap_duoc_si, dang_nhap_kho, db)
+    (vd,) = await van_don_cua(db, don.id)
+    r = await dang_nhap_duoc_si.post(f"{NB}/{don.id}/huy", json={"ly_do": "Khách đổi ý"})
+    assert r.status_code == 200, r.text
+    assert da_huy == [vd.ma_van_don]
+    await db.refresh(vd)
+    assert vd.trang_thai_doi_tac == "cancel"
+    assert (await don_cua(db, o["ma_don"])).trang_thai == "da_huy"
+
+
+async def test_huy_van_don_that_bai_thi_don_khong_bi_huy(
+    dang_nhap_khach, dang_nhap_duoc_si, dang_nhap_kho, db, monkeypatch
+):
+    """Shipper đã lấy hàng (GHN từ chối hủy) hoặc GHN không phản hồi: đơn giữ nguyên, hàng chưa hoàn nhập."""
+
+    async def huy(self, ma):
+        raise RuntimeError("GHN: order is picked")
+
+    monkeypatch.setattr(VanChuyenGia, "huy_van_don", huy)
+    o, don = await _don_cho_lay_hang(dang_nhap_khach, dang_nhap_duoc_si, dang_nhap_kho, db)
+    ton_truoc = await db.scalar(select(func.sum(LoThuoc.so_luong_ton)))
+    r = await dang_nhap_duoc_si.post(f"{NB}/{don.id}/huy", json={"ly_do": "Khách đổi ý"})
+    assert (r.status_code, r.json()["ma_loi"]) == (502, "LOI_DOI_TAC")
+    assert (await don_cua(db, o["ma_don"])).trang_thai == "cho_lay_hang"
+    (vd,) = await van_don_cua(db, don.id)
+    assert vd.trang_thai_doi_tac != "cancel"
+    assert await db.scalar(select(func.sum(LoThuoc.so_luong_ton))) == ton_truoc  # chưa hoàn nhập

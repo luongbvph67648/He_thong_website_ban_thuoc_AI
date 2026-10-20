@@ -7,7 +7,8 @@ from sqlalchemy import select
 
 from app.core.thoi_gian import hom_nay_vn
 from app.models.ban_hang import DonHang, PhanBoLo, ThanhToan, YeuCauDonThuoc
-from app.models.he_thong import NhanVien
+from app.models.he_thong import NhanVien, NhatKyHeThong
+from app.models.khach_hang import HoSoSucKhoe
 from app.models.kho import BienDongKho, LoThuoc
 from app.models.san_pham import HoatChat, ThanhPhan, TuongTacHoatChat
 from tests.factories import tao_khach, tao_lo, tao_nhan_vien, tao_san_pham
@@ -244,11 +245,14 @@ async def test_gan_khach_theo_sdt_va_canh_bao_di_ung_khong_lo_ho_so(dang_nhap_du
         [
             ThanhPhan(san_pham_id=sp.id, hoat_chat_id=amox.id),
             DiUng(khach_hang_id=khach.id, hoat_chat_id=amox.id, ghi_chu="BI-MAT-12"),
+            HoSoSucKhoe(khach_hang_id=khach.id, dong_y_su_dung=True),
         ]
     )
     await db.flush()
     cb = await dang_nhap_duoc_si.post(f"{POS}/canh-bao", json={"dong": [_dong(sp)], "sdt_khach": khach.so_dien_thoai})
     assert cb.json()["di_ung"][0]["ten_hoat_chat"] == amox.ten and "BI-MAT-12" not in cb.text
+    nk = (await db.execute(select(NhatKyHeThong).where(NhatKyHeThong.hanh_dong == "doc_suc_khoe"))).scalars().all()
+    assert [(n.bang, n.ban_ghi_id, n.gia_tri_moi) for n in nk] == [("di_ung", str(khach.id), None)]  # có dấu vết
     r = await _gui(dang_nhap_duoc_si, _ban([_dong(sp)], sdt_khach=khach.so_dien_thoai))
     assert r.status_code == 409  # dị ứng: phải xác nhận
     r = await _gui(dang_nhap_duoc_si, _ban([_dong(sp)], sdt_khach=khach.so_dien_thoai, xac_nhan_canh_bao=True))
@@ -268,3 +272,45 @@ async def test_hoa_don_in_lai(dang_nhap_duoc_si, clients_theo_vai_tro, db):
     online = (await db.execute(select(NhanVien))).first()  # chỉ để chắc có dữ liệu
     assert online is not None
     assert (await dang_nhap_duoc_si.get(f"{POS}/don/999999/hoa-don")).status_code == 404
+
+
+async def test_pos_khong_tra_di_ung_khi_khach_chua_dong_y_dung_ho_so(dang_nhap_duoc_si, db):
+    from app.models.khach_hang import DiUng
+
+    khach = await tao_khach(db)
+    hc = HoatChat(ten=f"Pen-{uuid.uuid4().hex[:6]}")
+    db.add(hc)
+    await db.flush()
+    sp = await _sp(db)
+    db.add_all([ThanhPhan(san_pham_id=sp.id, hoat_chat_id=hc.id), DiUng(khach_hang_id=khach.id, hoat_chat_id=hc.id)])
+    await db.flush()
+    cb = await dang_nhap_duoc_si.post(f"{POS}/canh-bao", json={"dong": [_dong(sp)], "sdt_khach": khach.so_dien_thoai})
+    assert cb.json()["di_ung"] == [] and cb.json()["can_xac_nhan"] is False
+
+
+async def test_pos_gioi_han_so_khach_tra_di_ung_moi_gio(dang_nhap_duoc_si, db, monkeypatch):
+    """Dò dị ứng của người lạ bằng cách thử nhiều số điện thoại phải bị chặn."""
+    from app.models.khach_hang import DiUng
+    from app.modules.ban_hang import pos
+
+    monkeypatch.setattr(pos, "SO_KHACH_TOI_DA_MOI_GIO", 2)
+    sp = await _sp(db)
+    hc = HoatChat(ten=f"Mac-{uuid.uuid4().hex[:6]}")
+    db.add(hc)
+    await db.flush()
+    db.add(ThanhPhan(san_pham_id=sp.id, hoat_chat_id=hc.id))
+    khach_ds = [await tao_khach(db) for _ in range(3)]
+    for k in khach_ds:
+        db.add_all(
+            [HoSoSucKhoe(khach_hang_id=k.id, dong_y_su_dung=True), DiUng(khach_hang_id=k.id, hoat_chat_id=hc.id)]
+        )
+    await db.flush()
+    ma = []
+    for k in khach_ds:
+        r = await dang_nhap_duoc_si.post(f"{POS}/canh-bao", json={"dong": [_dong(sp)], "sdt_khach": k.so_dien_thoai})
+        ma.append(r.status_code)
+    assert ma == [200, 200, 429]
+    r = await dang_nhap_duoc_si.post(
+        f"{POS}/canh-bao", json={"dong": [_dong(sp)], "sdt_khach": khach_ds[0].so_dien_thoai}
+    )
+    assert r.status_code == 200  # khách đã tra trong giờ thì tra lại không tính thêm

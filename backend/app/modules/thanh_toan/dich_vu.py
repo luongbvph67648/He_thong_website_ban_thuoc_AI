@@ -11,6 +11,7 @@ from app.core.thoi_gian import bay_gio_utc
 from app.core.tien import lam_tron_vnd
 from app.models.ban_hang import DonHang, ThanhToan
 from app.models.enums import LoaiGiaoDich, PhuongThucThanhToan, TrangThaiDon, TrangThaiGiaoDich, TrangThaiThanhToan
+from app.modules.ban_hang.so_tien_da_thu import tinh_so_tien, trang_thai_thanh_toan
 from app.modules.ban_hang.trang_thai import NGUON_THANH_TOAN, TacNhan, chuyen_trang_thai
 from app.tich_hop.thanh_toan import KetQuaIpn, lay_cong
 
@@ -58,15 +59,33 @@ async def tao_thanh_toan_don(db: AsyncSession, don: DonHang, chu_idem: int, khoa
     if don.han_thanh_toan is not None and bay_gio_utc() > don.han_thanh_toan:
         raise LoiNghiepVu("CHUYEN_TRANG_THAI_KHONG_HOP_LE", "Đơn hàng đã quá hạn thanh toán")
     assert don.phuong_thuc_tt is not None
-    giao_dich = ThanhToan(
+    if don.trang_thai_tt == TrangThaiThanhToan.da_thanh_toan:
+        raise LoiNghiepVu("CHUYEN_TRANG_THAI_KHONG_HOP_LE", "Đơn hàng đã được thanh toán")
+    dang_mo = (
+        await db.execute(
+            select(ThanhToan)
+            .where(
+                ThanhToan.don_hang_id == don.id,
+                ThanhToan.loai == LoaiGiaoDich.thanh_toan,
+                ThanhToan.trang_thai == TrangThaiGiaoDich.khoi_tao,
+                ThanhToan.cong_thanh_toan == don.phuong_thuc_tt,
+            )
+            .order_by(ThanhToan.id.desc())
+            .limit(1)
+        )
+    ).scalar_one_or_none()
+    # Khách mở hai tab hoặc bấm "Thanh toán lại" khi giao dịch cũ còn chờ: dùng lại giao dịch đó (cùng mã tham chiếu,
+    # cổng không nhận hai lần trả cho một mã) thay vì mở giao dịch thứ hai rồi có thể bị trừ tiền hai lần.
+    giao_dich = dang_mo or ThanhToan(
         don_hang_id=don.id,
         loai=LoaiGiaoDich.thanh_toan,
         cong_thanh_toan=don.phuong_thuc_tt,
         so_tien=lam_tron_vnd(don.tong_tien),
         trang_thai=TrangThaiGiaoDich.khoi_tao,
     )
-    db.add(giao_dich)
-    await db.flush()
+    if dang_mo is None:
+        db.add(giao_dich)
+        await db.flush()
     url = await lay_cong(don.phuong_thuc_tt).tao_url_thanh_toan(don, giao_dich, ip)
     ra = {"url_thanh_toan": url, "han_thanh_toan": don.han_thanh_toan.isoformat() if don.han_thanh_toan else None}
     idempotency.ghi_nho(THAO_TAC, chu_idem, khoa, dau_van_tay, {"giao_dich_id": giao_dich.id, "ket_qua": ra})
@@ -119,7 +138,7 @@ async def xu_ly_ipn(db: AsyncSession, cong: PhuongThucThanhToan, ket_qua: KetQua
     if don.trang_thai == TrangThaiDon.cho_thanh_toan and don.trang_thai_tt != TrangThaiThanhToan.da_thanh_toan:
         den = TrangThaiDon.cho_xac_nhan if don.nhan_vien_tao_id is None else TrangThaiDon.da_xac_nhan
         await chuyen_trang_thai(db, don, den, TacNhan.he_thong(), NGUON_THANH_TOAN, "Thanh toán online thành công")
-    else:  # đến muộn (đơn đã hủy quá hạn) hoặc trả tiền hai lần: tiền đã vào nên phải hoàn
+    else:  # đến muộn (đơn đã hủy quá hạn) hoặc trả tiền hai lần: tiền đã vào nên phải hoàn đúng khoản thừa
         db.add(
             ThanhToan(
                 don_hang_id=don.id,
@@ -128,10 +147,16 @@ async def xu_ly_ipn(db: AsyncSession, cong: PhuongThucThanhToan, ket_qua: KetQua
                 so_tien=giao_dich.so_tien,
                 trang_thai=TrangThaiGiaoDich.khoi_tao,
                 thanh_toan_goc_id=giao_dich.id,
-                ghi_chu="Thanh toán đến sau khi đơn không còn chờ thanh toán",
+                ghi_chu=(
+                    "Khách thanh toán trùng một đơn, hoàn khoản thừa"
+                    if don.trang_thai_tt == TrangThaiThanhToan.da_thanh_toan
+                    else "Thanh toán đến sau khi đơn không còn chờ thanh toán"
+                ),
             )
         )
-        don.trang_thai_tt = TrangThaiThanhToan.cho_hoan_tien
-        don.updated_at = bay_gio_utc()
+    await db.flush()
+    # Đơn đang còn hiệu lực và đã thu đủ thì khoản hoàn thừa không đổi trạng thái; đơn đã hủy thì chờ hoàn tiền
+    don.trang_thai_tt = trang_thai_thanh_toan(don, await tinh_so_tien(db, don.id))
+    don.updated_at = bay_gio_utc()
     await db.flush()
     return KetQuaXuLy.thanh_cong

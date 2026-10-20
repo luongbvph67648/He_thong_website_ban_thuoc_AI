@@ -51,12 +51,8 @@ Mục đích: cho thấy toàn bộ vòng đời một đơn hàng COD qua 3 vai
 2. Bấm **Giỏ hàng**, rồi **Tiến hành thanh toán**, rồi **Đặt hàng** (mặc định là giao tận nơi, thanh toán khi nhận hàng). Màn hình hiện mã đơn dạng `DHxxxxxxxx`. **Ghi lại.**
 3. **Dược sĩ** (ẩn danh): đăng nhập, vào **Quản lý đơn**, bấm mã đơn, bấm **Xác nhận đơn**.
 4. **Kho** (Edge): đăng nhập, vào **Soạn hàng, đóng gói**, bấm đơn, bấm **Bắt đầu soạn hàng**. Bấm **Xác nhận tay** ở từng dòng. Bấm **Đóng gói & tạo vận đơn**.
-5. **Khách**: **Tài khoản**, **Đơn hàng của tôi**, bấm đơn. Thấy "Chờ lấy hàng" và mã vận đơn dạng `GIA123456789`. **Ghi lại.**
-6. **Giả lập shipper**: mở http://localhost:8000/docs, mở mục `POST /api/v1/webhook/gia-van-chuyen`, bấm **Try it out**, dán vào ô nội dung (đổi mã vận đơn cho đúng):
-   ```json
-   {"ma_van_don": "GIA123456789", "trang_thai_doi_tac": "picked"}
-   ```
-   bấm **Execute**. Làm lại lần nữa với `"delivered"`.
+5. **Khách**: **Tài khoản**, **Đơn hàng của tôi**, bấm đơn. Thấy "Chờ lấy hàng" và mã vận đơn GHN dạng `GHN HZEUUCNP` (8 ký tự). **Ghi lại.**
+6. **Giả lập GHN** (`VAN_CHUYEN_CHE_DO=mo_phong`): **Kho** mở lại phiếu soạn của đơn, ở khung xanh "Mô phỏng GHN" bấm **Đã lấy hàng**, rồi **Giao thành công**. Mỗi nút làm GHN mô phỏng gửi webhook đúng khuôn GHN (có `Token`) tới `/api/v1/webhook/ghn`, y như GHN thật gọi cửa hàng. (Nếu chạy chế độ giả `VAN_CHUYEN_CHE_DO=gia` thì dùng http://localhost:8000/docs, `POST /api/v1/webhook/gia-van-chuyen`.)
 7. **Khách**: tải lại trang đơn, thấy **Đã giao** và **Đã thanh toán**, kèm dòng thời gian các trạng thái.
 
 Điểm để nói: dược sĩ xác nhận, kho soạn theo lô gần hết hạn trước (FEFO), tiền COD chỉ ghi nhận khi giao thành công.
@@ -151,7 +147,7 @@ Cần một đơn đã **Đã giao** (làm xong kịch bản 1).
 
 Đăng nhập **Admin**:
 - **Tổng quan**: doanh thu, hoàn tiền, lợi nhuận gộp, số đơn hoàn tất, giá trị tồn kho, biểu đồ doanh thu theo ngày (3 tháng dữ liệu demo), sản phẩm bán chạy. Đổi khoảng ngày ở ô trên cùng. Bấm **Xuất Excel** để tải báo cáo.
-- **Nhân viên**: tạo tài khoản nhân viên mới, khóa hoặc mở khóa, đặt lại mật khẩu.
+- **Nhân viên**: tạo tài khoản nhân viên mới, khóa hoặc mở khóa, đặt lại mật khẩu. Mật khẩu tạm **không hiện cho Admin**: hệ thống gửi thẳng tới email của nhân viên (mở hộp thư giả Mailpit http://localhost:8025 để lấy), nhân viên phải đổi mật khẩu ở lần đăng nhập đầu. Đây là chủ ý: Admin không được biết mật khẩu của người khác (tách nhiệm vụ).
 - **Vai trò và phân quyền**: bảng quyền của từng vai trò, có thể thay đổi.
 - **Khách hàng**: danh sách khách, lịch sử mua. Lưu ý Admin không đọc được hồ sơ sức khỏe của khách.
 - **Sản phẩm**, **Danh mục**, **Khuyến mãi**, **Nội dung website**: quản lý hàng hóa, mã giảm giá, banner, bài viết.

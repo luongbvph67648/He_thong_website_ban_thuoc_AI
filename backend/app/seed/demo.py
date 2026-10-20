@@ -20,6 +20,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import luu_tru
+from app.core.config import settings
 from app.core.thoi_gian import bay_gio_utc
 from app.models.ban_hang import DonHang
 from app.models.enums import LoaiSanPham, TrangThaiKinhDoanh, TrangThaiLo
@@ -269,9 +270,14 @@ async def seed_demo(app, db: AsyncSession, *, hat_giong: int = 2026) -> dict[str
             if den >= 3:
                 ma_vd = await db.scalar(text("SELECT ma_van_don FROM van_don WHERE don_hang_id = :d"), {"d": don_id})
                 for tt in ("picked", "delivered")[: den - 2]:
-                    r = await ngoai.post(
-                        f"{BASE}/webhook/gia-van-chuyen", json={"ma_van_don": ma_vd, "trang_thai_doi_tac": tt}
-                    )
+                    if settings.VAN_CHUYEN_CHE_DO == "mo_phong":  # GHN mô phỏng phát webhook đúng khuôn GHN
+                        r = await ngoai.post(
+                            f"{BASE}/mo-phong/ghn/phat-su-kien", json={"order_code": ma_vd, "status": tt}
+                        )
+                    else:
+                        r = await ngoai.post(
+                            f"{BASE}/webhook/gia-van-chuyen", json={"ma_van_don": ma_vd, "trang_thai_doi_tac": tt}
+                        )
                     if r.status_code != 200:
                         raise LoiDemo(f"Webhook vận chuyển lỗi: {r.text}")
             return don_id

@@ -10,7 +10,7 @@ type Buoc = 'chon' | 'the' | 'qr' | 'otp'
 /** Giao diện mô phỏng cổng VNPay: chọn phương thức, nhập thẻ nội địa, OTP (hoặc quét QR), rồi báo IPN cho máy chủ. */
 export default function GiaVnpay({ gd }: { gd: GiaoDichGia }) {
   const giayCon = useDemNguoc(gd.het_han_luc)
-  const { dang, ketQua, hoanTat, veTrangKetQua } = useHoanTat(gd.giao_dich)
+  const { dang, ketQua, hoanTat, veTrangKetQua } = useHoanTat(gd.giao_dich, gd.nguon)
   const [buoc, datBuoc] = useState<Buoc>('chon')
   const [phuongThuc, datPhuongThuc] = useState<'the' | 'qr'>('the')
   const [nganHang, datNganHang] = useState('NCB')
@@ -39,12 +39,12 @@ export default function GiaVnpay({ gd }: { gd: GiaoDichGia }) {
     if (otp.trim() !== OTP_THU_NGHIEM) {
       const lan = lanSai + 1
       datLanSai(lan)
-      if (lan >= SO_LAN_NHAP_TOI_DA) void hoanTat(false, 'Bạn đã nhập sai mã OTP quá số lần cho phép.')
+      if (lan >= SO_LAN_NHAP_TOI_DA) void hoanTat(false, 'Bạn đã nhập sai mã OTP quá số lần cho phép.', 'sai_otp')
       else datLoiOtp(`Mã OTP không đúng. Bạn còn ${SO_LAN_NHAP_TOI_DA - lan} lần thử.`)
       return
     }
-    if (ketQuaThe === 'hop_le') void hoanTat(true)
-    else void hoanTat(false, LY_DO_THAT_BAI[ketQuaThe])
+    if (ketQuaThe === 'hop_le') void hoanTat(true, undefined, 'thanh_cong', nganHang)
+    else void hoanTat(false, LY_DO_THAT_BAI[ketQuaThe], ketQuaThe === 'khong_du_so_du' ? 'khong_du_so_du' : 'the_chua_dang_ky', nganHang)
   }
 
   const chi = buoc === 'chon' ? 0 : buoc === 'otp' ? 2 : 1

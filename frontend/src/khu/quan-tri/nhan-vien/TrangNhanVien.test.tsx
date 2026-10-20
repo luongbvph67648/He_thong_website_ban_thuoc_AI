@@ -128,8 +128,8 @@ describe('TrangNhanVien', () => {
     expect(within(hang).queryByRole('button', { name: 'Khóa' })).not.toBeInTheDocument()
   })
 
-  it('tạo nhân viên: gửi đúng thân, hiện mật khẩu tạm MỘT LẦN kèm cảnh báo, đóng rồi không còn', async () => {
-    POST.mockResolvedValueOnce(ok({ ...nv(9, { ho_ten: 'Trần Văn Mới' }), mat_khau_tam: 'Abc23456xyz9' }))
+  it('tạo nhân viên: gửi đúng thân, báo mật khẩu tạm đã gửi tới email nhân viên và không hiện mật khẩu', async () => {
+    POST.mockResolvedValueOnce(ok({ ...nv(9, { ho_ten: 'Trần Văn Mới' }), gui_den: 'm***@example.com' }))
     const nguoi = userEvent.setup()
     dung()
     await nguoi.click(await screen.findByRole('button', { name: /Thêm nhân viên/ }))
@@ -140,14 +140,11 @@ describe('TrangNhanVien', () => {
     await nguoi.click(await screen.findByTitle('Nhân viên kho'))
     await nguoi.click(screen.getByRole('button', { name: 'Lưu' }))
 
-    expect(await screen.findByText('Mật khẩu tạm chỉ hiện một lần')).toBeInTheDocument()
-    expect(screen.getByLabelText('Mật khẩu tạm')).toHaveTextContent('Abc23456xyz9')
+    expect(await screen.findByText(/Mật khẩu tạm đã gửi tới email m\*\*\*@example\.com/)).toBeInTheDocument()
+    expect(screen.queryByLabelText('Mật khẩu tạm')).not.toBeInTheDocument() // Admin không nhận mật khẩu
     expect(POST).toHaveBeenCalledWith('/api/v1/noi-bo/nhan-vien', {
       body: { ho_ten: 'Trần Văn Mới', email: 'moi@example.com', so_dien_thoai: '0912345678', vai_tro: 'WAREHOUSE' },
     })
-    await nguoi.click(screen.getByRole('button', { name: /Đã ghi lại, đóng/ }))
-    // Hộp thoại gỡ khỏi DOM ngay khi đóng: mật khẩu tạm không nằm lại trong trang.
-    await waitFor(() => expect(document.body.textContent).not.toContain('Abc23456xyz9'))
   })
 
   it('tạo: để trống hoặc sai định dạng thì báo ngay và không gọi API', async () => {
@@ -228,13 +225,13 @@ describe('TrangNhanVien', () => {
     expect(DELETE).not.toHaveBeenCalled()
   })
 
-  it('đặt lại mật khẩu: hiện mật khẩu tạm mới một lần', async () => {
-    POST.mockResolvedValueOnce(ok({ ...nv(2), mat_khau_tam: 'Moi45678abcd', phai_doi_mat_khau: true }))
+  it('đặt lại mật khẩu: báo đã gửi mật khẩu tạm mới qua email', async () => {
+    POST.mockResolvedValueOnce(ok({ ...nv(2), gui_den: 'n***@example.com', phai_doi_mat_khau: true }))
     const nguoi = userEvent.setup()
     dung()
     await nguoi.click(within(await dong('Nhân viên 2')).getByRole('button', { name: 'Đặt lại mật khẩu' }))
     await nguoi.click(within(await screen.findByRole('tooltip')).getByRole('button', { name: 'Đặt lại' }))
-    expect(await screen.findByLabelText('Mật khẩu tạm')).toHaveTextContent('Moi45678abcd')
+    expect(await screen.findByText(/Mật khẩu tạm đã gửi tới email n\*\*\*@example\.com/)).toBeInTheDocument()
     expect(POST).toHaveBeenCalledWith('/api/v1/noi-bo/nhan-vien/{nhan_vien_id}/dat-lai-mat-khau', { params: { path: { nhan_vien_id: 2 } } })
   })
 

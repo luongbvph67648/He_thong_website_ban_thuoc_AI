@@ -111,6 +111,11 @@ def ipn_momo(ref, so_tien, ok=True, trans_id=777001):
 # --- Tạo giao dịch (KTV03) ---
 
 
+async def client_ipn_that_bai(c, db, o, gd):
+    gd.trang_thai = "that_bai"
+    await db.flush()
+
+
 async def test_tao_giao_dich_vnpay_url_ky_dung_va_idempotent(dang_nhap_khach, db):
     c = dang_nhap_khach
     _, o = await dat_online(c, db)
@@ -128,8 +133,12 @@ async def test_tao_giao_dich_vnpay_url_ky_dung_va_idempotent(dang_nhap_khach, db
     r2 = await tao_gd(c, o["ma_don"], k)  # cùng khóa: URL cũ, không giao dịch mới
     assert r2.json() == r1.json()
     assert await db.scalar(select(func.count()).select_from(ThanhToan)) == 1
-    r3 = await tao_gd(c, o["ma_don"])  # khóa mới: thanh toán lại
-    assert r3.json()["url_thanh_toan"] != url and await db.scalar(select(func.count()).select_from(ThanhToan)) == 2
+    r3 = await tao_gd(c, o["ma_don"])  # khóa mới nhưng giao dịch cũ còn chờ: dùng lại, không mở giao dịch thứ hai
+    assert dict(parse_qsl(urlsplit(r3.json()["url_thanh_toan"]).query))["vnp_TxnRef"] == tham_so["vnp_TxnRef"]
+    assert await db.scalar(select(func.count()).select_from(ThanhToan)) == 1
+    await client_ipn_that_bai(c, db, o, gd)  # sau khi lần trước thất bại thì thanh toán lại tạo giao dịch mới
+    r4 = await tao_gd(c, o["ma_don"])
+    assert r4.json()["url_thanh_toan"] != url and await db.scalar(select(func.count()).select_from(ThanhToan)) == 2
 
 
 async def test_tao_giao_dich_dieu_kien_va_quyen(dang_nhap_khach, db, client):
@@ -501,3 +510,71 @@ async def test_hai_ipn_dong_thoi_chi_xu_ly_mot_lan(db_that):
     async with db_that() as s:
         n = await s.scalar(select(func.count()).select_from(LichSuTrangThai).where(LichSuTrangThai.don_hang_id == don_id, LichSuTrangThai.den_trang_thai == "cho_xac_nhan"))  # fmt: skip
         assert n == 1 and await s.scalar(select(func.count()).select_from(ThanhToan)) == 1
+
+
+async def _tra_hai_lan(c, client, db, o):
+    """Hai giao dịch cùng mở cho một đơn (hai tab, cổng cũ còn mở) rồi cả hai cùng báo thành công."""
+    await tao_gd(c, o["ma_don"])
+    gd1 = await lay_gd(db, o["ma_don"])
+    gd2 = ThanhToan(
+        don_hang_id=gd1.don_hang_id, loai="thanh_toan", cong_thanh_toan=gd1.cong_thanh_toan,
+        so_tien=gd1.so_tien, trang_thai="khoi_tao",
+    )  # fmt: skip
+    db.add(gd2)
+    await db.flush()
+    for gd in (gd1, gd2):
+        r = await client.post(GIA_IPN, json={"giao_dich": f"{o['ma_don']}-{gd.id}", "thanh_cong": True})
+        assert r.json()["RspCode"] == "00"
+    don = await db.scalar(select(DonHang).where(DonHang.ma_don == o["ma_don"]))
+    await db.refresh(don)
+    return don, gd1, gd2
+
+
+async def test_thanh_toan_hai_lan_chi_hoan_khoan_thua_va_don_van_la_da_thanh_toan(
+    cong_gia, dang_nhap_khach, dang_nhap_admin, client, db
+):
+    c = dang_nhap_khach
+    _, o = await dat_online(c, db)
+    don, gd1, gd2 = await _tra_hai_lan(c, client, db, o)
+    assert (don.trang_thai, don.trang_thai_tt) == ("cho_xac_nhan", "da_thanh_toan")  # đơn vẫn hiệu lực, đã trả đủ
+    (hoan,) = (await db.execute(select(ThanhToan).where(ThanhToan.loai == "hoan_tien"))).scalars().all()
+    assert (hoan.so_tien, hoan.trang_thai, hoan.thanh_toan_goc_id) == (Decimal(o["tong_tien"]), "khoi_tao", gd2.id)
+    r = await dang_nhap_admin.post(f"/api/v1/noi-bo/hoan-tien/{hoan.id}/xac-nhan")
+    assert r.status_code == 200, r.text
+    await db.refresh(don)
+    assert don.trang_thai_tt == "da_thanh_toan"  # khoản thừa đã hoàn, đơn không thành "hoàn một phần"
+
+
+async def test_huy_don_sau_khi_tra_hai_lan_hoan_not_khoan_con_lai(
+    cong_gia, dang_nhap_khach, dang_nhap_admin, dang_nhap_duoc_si, client, db
+):
+    c = dang_nhap_khach
+    _, o = await dat_online(c, db)
+    don, gd1, gd2 = await _tra_hai_lan(c, client, db, o)
+    (thua,) = (await db.execute(select(ThanhToan).where(ThanhToan.loai == "hoan_tien"))).scalars().all()
+    assert (await c.post(f"{DON}/{o['ma_don']}/huy", json={})).status_code == 200
+    hoan = (
+        (await db.execute(select(ThanhToan).where(ThanhToan.loai == "hoan_tien").order_by(ThanhToan.id)))
+        .scalars()
+        .all()
+    )
+    assert [h.so_tien for h in hoan] == [Decimal(o["tong_tien"])] * 2  # khoản thừa + khoản của đơn bị hủy
+    assert {h.thanh_toan_goc_id for h in hoan} == {gd1.id, gd2.id}  # mỗi giao dịch gốc chỉ bị hoàn tối đa số đã trả
+    await db.refresh(don)
+    assert (don.trang_thai, don.trang_thai_tt) == ("da_huy", "cho_hoan_tien")
+    for h in hoan:
+        assert (await dang_nhap_admin.post(f"/api/v1/noi-bo/hoan-tien/{h.id}/xac-nhan")).status_code == 200
+    await db.refresh(don)
+    assert don.trang_thai_tt == "da_hoan_tien"
+
+
+async def test_khong_tao_giao_dich_moi_khi_don_da_thanh_toan(cong_gia, dang_nhap_khach, client, db):
+    c = dang_nhap_khach
+    _, o = await dat_online(c, db)
+    await tao_gd(c, o["ma_don"])
+    gd = await lay_gd(db, o["ma_don"])
+    assert (
+        await client.post(GIA_IPN, json={"giao_dich": f"{o['ma_don']}-{gd.id}", "thanh_cong": True})
+    ).status_code == 200
+    r = await tao_gd(c, o["ma_don"])
+    assert r.status_code == 409 and r.json()["ma_loi"] == "CHUYEN_TRANG_THAI_KHONG_HOP_LE"

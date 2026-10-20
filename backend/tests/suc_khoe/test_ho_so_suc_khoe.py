@@ -8,6 +8,7 @@ from sqlalchemy import select, text
 
 from app.core import ma_hoa
 from app.core.config import settings
+from app.core.thoi_gian import bay_gio_utc
 from app.models.ai import HoiThoai
 from app.models.ban_hang import YeuCauDonThuoc
 from app.models.he_thong import NhatKyHeThong
@@ -36,7 +37,7 @@ async def _yeu_cau(db, khach, duoc_si, trang_thai="dang_tu_van"):
     db.add(
         YeuCauDonThuoc(
             ma_yeu_cau=f"YC{n}", khach_hang_id=khach.id, ho_ten="A", so_dien_thoai="0900000000",
-            anh_don_thuoc=[], trang_thai=trang_thai, duoc_si_id=duoc_si.id,
+            anh_don_thuoc=[], trang_thai=trang_thai, duoc_si_id=duoc_si.id, khoa_luc=bay_gio_utc(),
         )
     )  # fmt: skip
     await db.flush()
@@ -143,6 +144,19 @@ async def _khach_co_ho_so(db, dong_y=True):
     db.add(HoSoSucKhoe(khach_hang_id=khach.id, dong_y_su_dung=dong_y, benh_nen=ma_hoa.ma_hoa(BENH)))
     await db.flush()
     return khach
+
+
+async def test_cong_dong_khi_khoa_yeu_cau_het_han_du_job_nha_khoa_chua_chay(db):
+    """Khóa quá `thoi_gian_khoa_don_thuoc_phut` mất quyền đọc hồ sơ ngay, không chờ job HT08 nhả khóa."""
+    from datetime import timedelta
+
+    khach, ds = await _khach_co_ho_so(db), await tao_nhan_vien(db, "PHARMACIST")
+    await _yeu_cau(db, khach, ds)
+    assert await dich_vu.duoc_doc_ho_so_suc_khoe(db, ds, khach.id) is True
+    yc = (await db.execute(select(YeuCauDonThuoc))).scalars().one()
+    yc.khoa_luc = bay_gio_utc() - timedelta(minutes=31)  # mặc định khóa 30 phút
+    await db.flush()
+    assert await dich_vu.duoc_doc_ho_so_suc_khoe(db, ds, khach.id) is False
 
 
 async def test_cong_duoc_si_duoc_gan_doc_duoc_va_ghi_nhat_ky(db):

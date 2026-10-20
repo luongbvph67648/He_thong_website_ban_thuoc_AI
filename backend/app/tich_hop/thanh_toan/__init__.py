@@ -38,11 +38,16 @@ class CongThanhToan(Protocol):
 
     def xac_thuc_ipn(self, tham_so: dict[str, Any]) -> KetQuaIpn: ...
 
-    async def hoan_tien(self, giao_dich_goc: ThanhToan, so_tien: Decimal, ly_do: str) -> KetQuaHoan: ...
+    async def hoan_tien(
+        self, giao_dich_goc: ThanhToan, so_tien: Decimal, ly_do: str, ma_yeu_cau: str = ""
+    ) -> KetQuaHoan:
+        """`ma_yeu_cau` cố định theo giao dịch hoàn (`HT<id>`): gọi lại cùng mã thì cổng không hoàn hai lần."""
+        ...
 
 
 def lay_cong(phuong_thuc: PhuongThucThanhToan) -> CongThanhToan:
-    """Chọn bản theo `THANH_TOAN_CHE_DO`; `gia` dùng một bản cho cả VNPay và MoMo."""
+    """Chọn bản theo `THANH_TOAN_CHE_DO`: `gia` dùng một bản cho cả VNPay và MoMo; `mo_phong` và `sandbox` dùng adapter
+    thật (khác nhau ở địa chỉ và khóa, xem `tich_hop/cau_hinh.py`)."""
     if settings.THANH_TOAN_CHE_DO == "gia":
         from app.tich_hop.thanh_toan.gia import CongGia
 

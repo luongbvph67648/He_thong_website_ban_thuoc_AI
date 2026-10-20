@@ -35,14 +35,14 @@ test('khách đặt COD → dược sĩ xác nhận → kho soạn và đóng g�
   await khoPage.getByRole('button', { name: /Đóng gói/ }).click()
   await expect(khoPage.getByRole('button', { name: /Đóng gói/ })).toHaveCount(0)
 
-  // 4. Đối tác vận chuyển (giả) báo lấy hàng rồi giao thành công; COD được ghi nhận
+  // 4. GHN (mô phỏng) phát webhook đúng khuôn GHN: lấy hàng rồi giao thành công; COD được ghi nhận
   await page.goto(`/tai-khoan/don-hang/${ma}`)
   await expect(page.getByText('Mã vận đơn')).toBeVisible()
-  const maVanDon = (await page.locator('body').innerText()).match(/\bGIA[A-Z0-9-]+/)?.[0]
+  const maVanDon = (await page.locator('body').innerText()).match(/\bGHN\s+([A-Z0-9]{8})\b/)?.[1]
   expect(maVanDon, 'trang đơn của khách phải hiện mã vận đơn').toBeTruthy()
   for (const trangThai of ['picked', 'delivered']) {
-    const r = await request.post(`${API}/webhook/gia-van-chuyen`, {
-      data: { ma_van_don: maVanDon, trang_thai_doi_tac: trangThai },
+    const r = await request.post(`${API}/mo-phong/ghn/phat-su-kien`, {
+      data: { order_code: maVanDon, status: trangThai },
     })
     expect(r.ok()).toBeTruthy()
   }

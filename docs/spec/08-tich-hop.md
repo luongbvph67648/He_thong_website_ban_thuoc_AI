@@ -48,7 +48,29 @@ class CongThanhToan(Protocol):
   - Cả hai có đồng hồ đếm ngược theo `han_thanh_toan` của đơn, nút Hủy giao dịch, màn kết quả rồi tự quay về `/thanh-toan/ket-qua`, và dòng cảnh báo "môi trường mô phỏng, không có tiền thật".
   - Giao dịch đã xử lý thì không cho thanh toán lại trên cùng trang (thanh toán lại tạo giao dịch mới).
 - Khi khách hoàn tất, frontend gọi `POST /api/v1/webhook/gia-ipn`. Route này **chỉ tồn tại khi `THANH_TOAN_CHE_DO=gia`**, tạo IPN đã ký bằng khóa giả và đi qua **cùng** hàm xử lý IPN thật.
-- `hoan_tien` luôn thành công và trả mã giả.
+- `hoan_tien` luôn thành công và trả mã giả. Muốn kiểm cả giao thức thật (chữ ký, IPN, hoàn tiền) thì dùng `mo_phong` (mục 4b).
+
+## 4b. Máy chủ mô phỏng VNPay, MoMo, GHN (`*_CHE_DO=mo_phong`, QĐ-56)
+Cổng "giả" ở mục 4 dùng chữ ký và route riêng nên không kiểm chứng được adapter thật. Chế độ `mo_phong` thì **chạy nguyên
+adapter thật** (`vnpay.py`, `momo.py`, `ghn.py`), chỉ đổi địa chỉ đối tác sang máy chủ mô phỏng nằm trong chính ứng dụng
+(`app/tich_hop/mo_phong/`, route dưới `/api/v1/mo-phong`). Máy chủ mô phỏng nói đúng giao thức đối tác:
+- **VNPay:** `vpcpay.html` kiểm chữ ký HMAC-SHA512 rồi chuyển khách sang trang mô phỏng; khách thao tác (thẻ thử nghiệm,
+  OTP, hoặc QR) rồi máy chủ mô phỏng **gọi IPN server-to-server** (`GET /webhook/vnpay-ipn` với `vnp_*` đã ký) và trả
+  `vnp_ReturnUrl` có chữ ký cho trình duyệt. Mã phản hồi `00`, `24` khách hủy, `51` không đủ số dư, `11` hết hạn, `09`
+  thẻ chưa đăng ký, `12` thẻ khóa, `13` sai OTP. **Hoàn tiền** `merchant_webapi/api/transaction` (JSON, ký `|` theo thứ
+  tự trường), mã `00` thành công, `91` không thấy giao dịch, `93` số tiền không hợp lệ, `97` sai chữ ký.
+- **MoMo:** `POST /v2/gateway/api/create` (ký HMAC-SHA256 theo thứ tự trường) trả `payUrl`; khách xác nhận bằng PIN; IPN là
+  `POST` JSON tới `ipnUrl`, cửa hàng trả HTTP 204; `resultCode` 0, 1006 từ chối, 1001 không đủ tiền, 1005 hết hạn, 13
+  sai chữ ký, 22 số tiền sai (1.000 đến 50.000.000 ₫). **Hoàn tiền** `POST /v2/gateway/api/refund` theo `transId` gốc.
+- **GHN:** `/shiip/public-api/v2/shipping-order/{fee,create}` và `/switch-status/cancel` với tiêu đề `Token` + `ShopId`,
+  khuôn `{code, message, data}`; hủy chỉ được khi vận đơn còn `ready_to_pick`/`picking`; công cụ demo
+  `POST /mo-phong/ghn/phat-su-kien` phát webhook đúng khuôn GHN kèm `Token` tới `/webhook/ghn`.
+- Máy chủ mô phỏng **không lưu trạng thái riêng**: thông tin giao dịch nằm trong tham số đã ký (VNPay) hoặc token ký (MoMo),
+  số liệu hoàn tiền và trạng thái vận đơn đọc từ chính CSDL của cửa hàng. Cùng `requestId` hoàn tiền thì cùng mã giao dịch
+  (gọi lại không hoàn hai lần).
+- Mặc định khóa/URL của chế độ này tự điền (`config.py`), không cần đăng ký tài khoản đối tác. Chuyển sang sandbox thật:
+  đặt `*_CHE_DO=sandbox` (thanh toán) hoặc `ghn` (vận chuyển) và điền địa chỉ + khóa thật; không sửa code.
+- **Không dùng ở production**: `MOI_TRUONG=production` từ chối cả `gia` lẫn `mo_phong`.
 
 ## 5. Vận chuyển GHN
 ```python

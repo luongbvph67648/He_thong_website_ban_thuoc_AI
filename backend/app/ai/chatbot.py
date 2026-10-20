@@ -7,23 +7,25 @@ Mọi lỗi AI (tắt, hết ngân sách, từ chối, lỗi mạng) đều quay
 import json
 import logging
 from collections.abc import AsyncIterator, Callable
+from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, Field, ValidationError
-from sqlalchemy import select
+from sqlalchemy import exists, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai import claude, embedding
 from app.ai.dau_hieu import MAU_NGUY_HIEM, tim_dau_hieu
+from app.core.db import TaoPhien
 from app.core.phan_trang import ThamSoPhanTrang
 from app.core.thoi_gian import hom_nay_vn
 from app.models.ai import TaiLieuTriThuc
 from app.models.ban_hang import DonHang, LichSuTrangThai
 from app.models.enums import LoaiSanPham, NguonTriThuc
 from app.models.khach_hang import DiUng, HoSoSucKhoe, KhachHang
-from app.models.san_pham import HoatChat, SanPham
+from app.models.san_pham import SanPham
 from app.modules.chuyen_mon.noi_dung import noi_dung_da_duyet
 from app.modules.cua_hang import tim_kiem, tim_kiem_lai
 from app.modules.cua_hang.loc_an_toan import di_ung_cua_khach, loc_tri_thuc_san_pham, the_hop_le
@@ -194,9 +196,12 @@ TRUONG_CHUYEN_MON = (
 class NguCanh:
     """Trạng thái một lượt: ai hỏi, hoạt chất dị ứng, id sản phẩm tool đã trả, cờ đề nghị gặp dược sĩ."""
 
-    db: AsyncSession
+    db: AsyncSession | None
     khach: KhachHang | None
     ids_di_ung: list[int] = field(default_factory=list)
+    tao_phien: TaoPhien | None = None
+    # Có thì MỖI lần đọc DB mở một phiên ngắn rồi đóng: lượt chat chờ Claude hàng chục giây không được giữ một kết nối
+    # DB (pool mặc định 15: chỉ 15 lượt chat đồng thời là mọi API khác bị treo chờ kết nối).
     san_pham_xuat_hien: list[int] = field(default_factory=list)
     de_nghi_duoc_si: bool = False
     ly_do_duoc_si: str | None = None
@@ -238,8 +243,23 @@ def _the_ra(the: list[SanPhamThe]) -> list[dict[str, Any]]:
     ]
 
 
+@asynccontextmanager
+async def phien_doc(db: AsyncSession | None, tao_phien: TaoPhien | None) -> AsyncIterator[AsyncSession]:
+    """`tao_phien` thì phiên ngắn riêng (đóng ngay khi xong), không thì dùng `db` của nơi gọi (test, đánh giá AI)."""
+    if tao_phien is not None:
+        async with tao_phien() as phien:
+            yield phien
+    else:
+        assert db is not None
+        yield db
+
+
 async def _chay_tool(ten: str, thamso: dict[str, Any], ctx: NguCanh) -> Any:
-    db = ctx.db
+    async with phien_doc(ctx.db, ctx.tao_phien) as db:
+        return await _chay_tool_voi_db(ten, thamso, ctx, db)
+
+
+async def _chay_tool_voi_db(ten: str, thamso: dict[str, Any], ctx: NguCanh, db: AsyncSession) -> Any:
     if ten == "tim_san_pham":
         vao = TimSanPhamIn.model_validate(thamso)
         q = tim_kiem.chuan_hoa_tu_khoa(vao.tu_khoa)
@@ -317,6 +337,9 @@ def tao_thuc_thi_tool(ctx: NguCanh) -> Callable[[Any], Any]:
             kq = await _chay_tool(block.name, block.input if isinstance(block.input, dict) else {}, ctx)
         except (ValidationError, ValueError):
             return {"type": "tool_result", "tool_use_id": block.id, "content": "Tham số không hợp lệ", "is_error": True}
+        except Exception:  # noqa: BLE001  lỗi SQL, embedding... trong một tool: báo cho Claude, không làm hỏng cả lượt chat
+            logger.exception("Tool %s lỗi", block.name)
+            return {"type": "tool_result", "tool_use_id": block.id, "content": "Tra cứu tạm thời lỗi", "is_error": True}
         return {
             "type": "tool_result",
             "tool_use_id": block.id,
@@ -380,24 +403,16 @@ async def ngu_canh_suc_khoe(db: AsyncSession, khach: KhachHang | None) -> str | 
     if ho_so.nam_sinh:
         tuoi = hom_nay_vn().year - ho_so.nam_sinh
         phan.append("trẻ em" if tuoi < 12 else "người cao tuổi" if tuoi >= 65 else "người lớn")
-    ten_di_ung = list(
-        (
-            await db.execute(
-                select(HoatChat.ten)
-                .join(DiUng, DiUng.hoat_chat_id == HoatChat.id)
-                .where(DiUng.khach_hang_id == khach.id)
-                .order_by(HoatChat.ten)
-            )
-        ).scalars()
-    )
-    if ten_di_ung:
-        phan.append("dị ứng hoạt chất: " + ", ".join(ten_di_ung))
+    co_di_ung = await db.scalar(select(exists().where(DiUng.khach_hang_id == khach.id)))
+    if co_di_ung:
+        # Không gửi (và không để AI có thể nhắc lại) tên hoạt chất: sản phẩm chứa chúng đã bị loại ở SQL (`loc_di_ung`)
+        phan.append("có khai dị ứng thuốc; sản phẩm liên quan đã được hệ thống loại khỏi gợi ý, không nêu chi tiết")
     return "; ".join(phan) or None
 
 
 async def chay_luot(
     *,
-    db: AsyncSession,
+    db: AsyncSession | None,
     khach: KhachHang | None,
     cau_hoi: str,
     tin_truoc: list[tuple[str, str]],
@@ -406,9 +421,14 @@ async def chay_luot(
     loi_nhac: str,
     chat_bat: bool,
     het_ngan_sach: bool,
+    tao_phien: TaoPhien | None = None,
+    kq: KetQuaLuot | None = None,
 ) -> AsyncIterator[dict[str, Any]]:
-    """Sinh các sự kiện `{loai, ...}` của SSE; sự kiện cuối `ket_thuc` mang kết quả (`ket_qua`) để nơi gọi lưu DB."""
-    kq = KetQuaLuot()
+    """Sinh các sự kiện `{loai, ...}` của SSE; sự kiện cuối `ket_thuc` mang kết quả (`ket_qua`) để nơi gọi lưu DB.
+
+    `kq` do nơi gọi tạo để vẫn đọc được token đã tốn nếu khách ngắt kết nối giữa chừng (generator bị hủy).
+    `tao_phien`: mỗi lần đọc DB dùng phiên ngắn riêng, không giữ kết nối suốt lúc chờ Claude (xem `NguCanh`)."""
+    kq = kq or KetQuaLuot()
 
     def chuyen(thong_diep: str, ly_do: str):
         kq.chuyen_duoc_si, kq.ly_do_chuyen = True, ly_do
@@ -441,8 +461,11 @@ async def chay_luot(
             yield {"loai": "ket_thuc", "ket_qua": kq}
             return
         # 3. AI03
-        ctx = NguCanh(db=db, khach=khach, ids_di_ung=await di_ung_cua_khach(db, khach))
-        lich_su = chuoi_lich_su(tin_truoc, cau_hoi, await ngu_canh_suc_khoe(db, khach))
+        async with phien_doc(db, tao_phien) as p:
+            ids_di_ung = await di_ung_cua_khach(p, khach)
+            suc_khoe = await ngu_canh_suc_khoe(p, khach)
+        ctx = NguCanh(db=db, khach=khach, ids_di_ung=ids_di_ung, tao_phien=tao_phien)
+        lich_su = chuoi_lich_su(tin_truoc, cau_hoi, suc_khoe)
         doan_chu: list[str] = []
         async for doan in claude.stream_chat(
             system=system_chat(loi_nhac),
@@ -459,7 +482,8 @@ async def chay_luot(
             raise claude.AiLoi("Trả lời rỗng")
         yield {"loai": "van_ban", "noi_dung": f"\n\n{LUU_Y_THAM_KHAO}"}
         kq.noi_dung += f"\n\n{LUU_Y_THAM_KHAO}"
-        the = await the_hop_le(db, list(dict.fromkeys(ctx.san_pham_xuat_hien)), ctx.ids_di_ung)
+        async with phien_doc(db, tao_phien) as p:
+            the = await the_hop_le(p, list(dict.fromkeys(ctx.san_pham_xuat_hien)), ctx.ids_di_ung)
         the = the[:TOI_DA_THE_SAN_PHAM]
         if the:
             kq.san_pham_goi_y = [t.id for t in the]
@@ -470,5 +494,8 @@ async def chay_luot(
         yield chuyen(MAU_CHUYEN_DUOC_SI, "ai_tu_choi")
     except claude.AiLoi:
         logger.warning("Chatbot lỗi AI, chuyển dược sĩ")
+        yield chuyen(MAU_AI_KHONG_KHA_DUNG, "ai_loi")
+    except Exception:  # noqa: BLE001  mọi lỗi AI/DB khác (embedding thật lỗi, SQL...) cũng quay về dược sĩ, không trả lỗi thô
+        logger.exception("Chatbot lỗi ngoài dự kiến, chuyển dược sĩ")
         yield chuyen(MAU_AI_KHONG_KHA_DUNG, "ai_loi")
     yield {"loai": "ket_thuc", "ket_qua": kq}

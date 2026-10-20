@@ -50,6 +50,8 @@ class SoanHangRa(BaseModel):
     dong: list[DongSoanRa]
     van_don: list[VanDonRa]
     che_do_van_chuyen_gia: bool
+    van_chuyen_mo_phong: bool = False
+    """Chạy với GHN mô phỏng (`VAN_CHUYEN_CHE_DO=mo_phong`): kho được phát webhook trạng thái đúng khuôn GHN."""
 
 
 class DoiLoVao(BaseModel):

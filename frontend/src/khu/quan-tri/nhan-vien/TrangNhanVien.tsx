@@ -20,10 +20,10 @@ const KICH_THUOC = 20
 const KHOA_QUERY = ['noi-bo', 'nhan-vien'] as const
 const TEN_VAI_TRO: Record<string, string> = { ADMIN: 'Quản trị', PHARMACIST: 'Dược sĩ bán hàng', WAREHOUSE: 'Nhân viên kho' }
 
-/** Mật khẩu tạm trong phản hồi tạo/đặt lại (chỉ có ở hai thao tác đó). */
-function matKhauTamCua(data: unknown): string | null {
-  if (typeof data !== 'object' || data === null || !('mat_khau_tam' in data)) return null
-  return typeof data.mat_khau_tam === 'string' ? data.mat_khau_tam : null
+/** Email nhận mật khẩu tạm (đã che) trong phản hồi tạo/đặt lại; Admin không bao giờ nhận chính mật khẩu. */
+function guiDenCua(data: unknown): string | null {
+  if (typeof data !== 'object' || data === null || !('gui_den' in data)) return null
+  return typeof data.gui_den === 'string' ? data.gui_den : null
 }
 
 interface FormNhanVien {
@@ -33,19 +33,12 @@ interface FormNhanVien {
   vai_tro: string
 }
 
-interface MatKhauTam {
-  nhanVien: string
-  matKhau: string
-  lyDo: 'tao' | 'dat-lai'
-}
-
 /** Quản lý tài khoản nhân viên (AD01): danh sách có tìm/lọc, tạo, sửa, gán vai trò, khóa/mở, đặt lại mật khẩu, xóa mềm. */
 export default function TrangNhanVien() {
   const { message } = App.useApp()
   const queryClient = useQueryClient()
   const [tham, datTham] = useSearchParams()
   const [formMo, setFormMo] = useState<{ sua?: NhanVien } | null>(null)
-  const [matKhauTam, setMatKhauTam] = useState<MatKhauTam | null>(null)
   const [form] = Form.useForm<FormNhanVien>()
   const toi = usePhien((s) => s.hoSo?.id)
 
@@ -103,9 +96,9 @@ export default function TrangNhanVien() {
       const dangSua = formMo?.sua
       setFormMo(null)
       await lamMoi()
-      const tam = matKhauTamCua(kq.data)
-      if (!dangSua && tam) {
-        setMatKhauTam({ nhanVien: `${gia_tri.ho_ten.trim()} (${(kq.data as NhanVien).ma_nhan_vien})`, matKhau: tam, lyDo: 'tao' })
+      const guiDen = guiDenCua(kq.data)
+      if (!dangSua && guiDen) {
+        void message.success(`Đã tạo ${gia_tri.ho_ten.trim()}. Mật khẩu tạm đã gửi tới email ${guiDen}`, 6)
       } else void message.success(`Đã lưu ${gia_tri.ho_ten.trim()}`)
     },
   })
@@ -127,9 +120,9 @@ export default function TrangNhanVien() {
     onSuccess: async (kq, { loai, nv }) => {
       if (!kq.ok) return baoLoi(kq.loi)
       await lamMoi()
-      const tam = matKhauTamCua(kq.data)
-      if (loai === 'dat-lai' && tam) {
-        setMatKhauTam({ nhanVien: `${nv.ho_ten} (${nv.ma_nhan_vien})`, matKhau: tam, lyDo: 'dat-lai' })
+      const guiDen = guiDenCua(kq.data)
+      if (loai === 'dat-lai' && guiDen) {
+        void message.success(`Đã đặt lại mật khẩu ${nv.ho_ten}. Mật khẩu tạm đã gửi tới email ${guiDen}`, 6)
       } else {
         const viec = { khoa: 'Đã khóa', 'mo-khoa': 'Đã mở khóa', xoa: 'Đã xóa', 'dat-lai': 'Đã đặt lại mật khẩu' }[loai]
         void message.success(`${viec} ${nv.ho_ten}`)
@@ -329,35 +322,6 @@ export default function TrangNhanVien() {
           </Form.Item>
         </Form>
       </Modal>
-
-      {/* Gắn hộp thoại CHỈ khi có mật khẩu tạm: đóng là gỡ khỏi DOM ngay, không để mật khẩu nằm lại trong hiệu ứng ẩn. */}
-      {matKhauTam && (
-        <Modal
-          title={matKhauTam.lyDo === 'tao' ? 'Đã tạo tài khoản' : 'Đã đặt lại mật khẩu'}
-          open
-          onCancel={() => setMatKhauTam(null)}
-          footer={
-            <Button type="primary" onClick={() => setMatKhauTam(null)}>
-              Đã ghi lại, đóng
-            </Button>
-          }
-          mask={{ closable: false }}
-        >
-          <Alert
-            type="warning"
-            showIcon
-            style={{ marginBottom: 16 }}
-            title="Mật khẩu tạm chỉ hiện một lần"
-            description="Hãy chép và gửi cho nhân viên qua kênh riêng. Sau khi đóng cửa sổ này sẽ không xem lại được; nhân viên phải đổi mật khẩu ở lần đăng nhập đầu."
-          />
-          <Typography.Paragraph>
-            Nhân viên: <strong>{matKhauTam.nhanVien}</strong>
-          </Typography.Paragraph>
-          <Typography.Paragraph copyable={{ text: matKhauTam.matKhau, tooltips: ['Sao chép', 'Đã chép'] }} style={{ fontSize: 20 }}>
-            <code aria-label="Mật khẩu tạm">{matKhauTam.matKhau}</code>
-          </Typography.Paragraph>
-        </Modal>
-      )}
     </div>
   )
 }

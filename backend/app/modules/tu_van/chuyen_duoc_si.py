@@ -216,10 +216,13 @@ async def chi_tiet(db: AsyncSession, nv: NhanVien, hoi_thoai_id: int) -> ChatChi
     if h.trang_thai not in (TT.cho_duoc_si, TT.cho_goi_lai) and h.duoc_si_id != nv.id:
         raise LoiNghiepVu("KHONG_TIM_THAY", "Không tìm thấy phiên tư vấn")
     ten = await db.scalar(select(KhachHang.ho_ten).where(KhachHang.id == h.khach_hang_id)) if h.khach_hang_id else None
+    # Phiên đang chờ chỉ lộ bản tóm tắt AI04: toàn bộ lời khách (có thể nêu bệnh) chỉ dược sĩ đã nhận phiên mới đọc
     tin = (
         (await db.execute(select(TinNhan).where(TinNhan.hoi_thoai_id == h.id).order_by(TinNhan.id).limit(300)))
         .scalars()
         .all()
+        if h.duoc_si_id == nv.id
+        else []
     )
     ho_so = None
     dang_xu_ly = h.khach_hang_id is not None and h.duoc_si_id == nv.id and h.trang_thai == TT.duoc_si_dang_xu_ly

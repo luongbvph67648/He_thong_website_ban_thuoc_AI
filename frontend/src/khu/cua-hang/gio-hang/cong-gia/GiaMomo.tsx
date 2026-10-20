@@ -8,7 +8,7 @@ import { PIN_THU_NGHIEM, SO_LAN_NHAP_TOI_DA, dongHoDemNguoc } from './quyTac'
 /** Giao diện mô phỏng cổng MoMo: hiện mã QR, khách "quét" bằng khung điện thoại giả rồi nhập mã PIN. */
 export default function GiaMomo({ gd }: { gd: GiaoDichGia }) {
   const giayCon = useDemNguoc(gd.het_han_luc)
-  const { dang, ketQua, hoanTat, veTrangKetQua } = useHoanTat(gd.giao_dich)
+  const { dang, ketQua, hoanTat, veTrangKetQua } = useHoanTat(gd.giao_dich, gd.nguon)
   const [dienThoai, datDienThoai] = useState(false)
   const [pin, datPin] = useState('')
   const [loiPin, datLoiPin] = useState<string | null>(null)

@@ -101,6 +101,20 @@ async def mo_luot(db: AsyncSession, khach: KhachHang | None, ma_phien: uuid.UUID
     )
 
 
+async def cong_chi_phi(db: AsyncSession, hoi_thoai_id: int, su: SuDung) -> None:
+    """Cộng token và chi phí của lượt bị gián đoạn (khách ngắt kết nối): không lưu tin nhắn vì khách không nhận được."""
+    h = (
+        await db.execute(
+            select(HoiThoai)
+            .where(HoiThoai.id == hoi_thoai_id)
+            .with_for_update()
+            .execution_options(populate_existing=True)
+        )
+    ).scalar_one()
+    h.tong_token += su.tong_token
+    h.chi_phi += su.chi_phi_usd()
+
+
 async def luu_tra_loi(db: AsyncSession, hoi_thoai_id: int, kq: chatbot.KetQuaLuot) -> int:
     """Lưu tin nhắn của AI/hệ thống, cộng token và chi phí, gắn cờ khi có dấu hiệu nguy hiểm."""
     h = (

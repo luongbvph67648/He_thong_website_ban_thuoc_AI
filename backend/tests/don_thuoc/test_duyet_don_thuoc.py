@@ -1,5 +1,6 @@
 """DS04, DS05: hàng chờ, khóa, màn duyệt, cảnh báo, tạo đơn từ đơn thuốc (T5.3)."""
 
+import re
 import uuid
 from datetime import timedelta
 
@@ -188,11 +189,12 @@ async def test_tao_don_vang_lai_giu_hang_gui_link(dang_nhap_duoc_si, kenh_tin_nh
     assert r.status_code == 201, r.text
     d = r.json()
     assert d["don"]["trang_thai"] == "cho_khach_xac_nhan" and d["don"]["han_xac_nhan"]
-    assert d["lien_ket_xac_nhan"].startswith("http") and "/xac-nhan-don/" in d["lien_ket_xac_nhan"]
-    assert d["lien_ket_xac_nhan"] in kenh_tin_nhan.sms[-1][1] and kenh_tin_nhan.sms[-1][0] == yc.so_dien_thoai
+    assert d["lien_ket_xac_nhan"] is None  # link chỉ tới khách qua SMS: dược sĩ cầm link thì xác nhận thay khách được
+    lien_ket = re.search(r"https?://\S+/xac-nhan-don/\S+", kenh_tin_nhan.sms[-1][1]).group(0)
+    assert kenh_tin_nhan.sms[-1][0] == yc.so_dien_thoai
     don = (await db.execute(select(DonHang).where(DonHang.ma_don == d["don"]["ma_don"]))).scalars().one()
     assert don.khach_hang_id is None and don.nhan_vien_tao_id == ds.id and don.yeu_cau_don_thuoc_id == yc.id
-    assert don.token_truy_cap_hash and d["lien_ket_xac_nhan"].rsplit("/", 1)[1] not in don.token_truy_cap_hash
+    assert don.token_truy_cap_hash and lien_ket.rsplit("/", 1)[1] not in don.token_truy_cap_hash
     assert don.giam_gia == 0 and don.phuong_thuc_tt is None
     lo = (await db.execute(select(LoThuoc).where(LoThuoc.san_pham_id == ke_don.id))).scalars().one()
     assert lo.so_luong_giu == 3 and lo.so_luong_ton == 50
@@ -235,7 +237,7 @@ async def test_het_hang_hoan_tac_ca_don(dang_nhap_duoc_si, db):
     assert yc.trang_thai == "dang_tu_van"
 
 
-async def test_canh_bao_tuong_tac_nghiem_trong_bat_buoc_ghi_chu(dang_nhap_duoc_si, db):
+async def test_canh_bao_tuong_tac_nghiem_trong_bat_buoc_ghi_chu(dang_nhap_duoc_si, dang_nhap_admin, dang_nhap_kho, db):
     ds = dang_nhap_duoc_si.tai_khoan
     yc = await _yc(db, None, "dang_tu_van", ds)
     a, b = await _hoat_chat(db, "HoatChatA"), await _hoat_chat(db, "HoatChatB")
@@ -252,6 +254,15 @@ async def test_canh_bao_tuong_tac_nghiem_trong_bat_buoc_ghi_chu(dang_nhap_duoc_s
     r = await dang_nhap_duoc_si.post(f"{BASE}/{yc.id}/tao-don", json=_tao(dong, ghi_chu_tu_van="Uống cách nhau 4 giờ"))
     assert r.status_code == 201
     assert r.json()["don"]["ghi_chu"] == "Uống cách nhau 4 giờ"
+    # Ghi chú tư vấn có thể nêu dị ứng: dược sĩ thấy, Admin và kho thì không (quy tắc 7)
+    don = await db.scalar(select(DonHang).where(DonHang.ma_don == r.json()["don"]["ma_don"]))
+    ct = await dang_nhap_duoc_si.get(f"/api/v1/noi-bo/don-hang/{don.id}")
+    assert ct.json()["ghi_chu"] == "Uống cách nhau 4 giờ"
+    don.trang_thai, don.phuong_thuc_tt = "da_xac_nhan", "cod"  # kho chỉ thấy đơn từ "Đã xác nhận" trở đi
+    await db.flush()
+    for client_noi_bo, duong in ((dang_nhap_admin, "don-hang"), (dang_nhap_kho, "soan-hang")):
+        r2 = await client_noi_bo.get(f"/api/v1/noi-bo/{duong}/{don.id}")
+        assert r2.status_code == 200 and r2.json()["ghi_chu"] is None and "Uống cách nhau" not in r2.text
 
 
 async def test_canh_bao_di_ung_khong_lo_ho_so(dang_nhap_duoc_si, db):

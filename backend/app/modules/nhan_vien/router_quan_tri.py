@@ -12,25 +12,27 @@ from app.models.enums import TrangThaiTaiKhoan
 from app.models.he_thong import NhanVien
 from app.modules.nhan_vien import quan_tri
 from app.modules.nhan_vien.schemas_quan_tri import (
-    NhanVienCoMatKhauTam,
+    NhanVienDaGuiMatKhau,
     NhanVienQuanTriDoc,
     NhanVienSua,
     NhanVienTao,
 )
 from app.modules.tai_khoan.phien_http import dia_chi_ip
+from app.tich_hop.tin_nhan import KenhTinNhan, lay_kenh_tin_nhan
 
 router = APIRouter(prefix="/noi-bo/nhan-vien", tags=["Quản lý nhân viên"])
 
 QuanLyXem = Annotated[NhanVien, Depends(yeu_cau_quyen("staff.manage", "xem"))]
 QuanLySua = Annotated[NhanVien, Depends(yeu_cau_quyen("staff.manage"))]
+Kenh = Annotated[KenhTinNhan, Depends(lay_kenh_tin_nhan)]
 
 
 def _doc(nv: NhanVien) -> NhanVienQuanTriDoc:
     return NhanVienQuanTriDoc.model_validate(nv)
 
 
-def _co_mat_khau_tam(ket_qua: quan_tri.KetQuaCoMatKhauTam) -> NhanVienCoMatKhauTam:
-    return NhanVienCoMatKhauTam(**_doc(ket_qua.nhan_vien).model_dump(), mat_khau_tam=ket_qua.mat_khau_tam)
+def _da_gui(ket_qua: quan_tri.KetQuaDaGuiMatKhau) -> NhanVienDaGuiMatKhau:
+    return NhanVienDaGuiMatKhau(**_doc(ket_qua.nhan_vien).model_dump(), gui_den=ket_qua.gui_den)
 
 
 @router.get("", response_model=Trang[NhanVienQuanTriDoc], summary="Danh sách nhân viên (AD01)")
@@ -53,10 +55,10 @@ async def chi_tiet(nhan_vien_id: IdInt, actor: QuanLyXem, db: Db):
     return _doc(await quan_tri.chi_tiet(db, nhan_vien_id))
 
 
-@router.post("", status_code=201, response_model=NhanVienCoMatKhauTam, summary="Tạo tài khoản nhân viên (AD01)")
-async def tao(du_lieu: NhanVienTao, request: Request, actor: QuanLySua, db: Db):
-    """Mật khẩu tạm sinh ngẫu nhiên, chỉ hiện trong phản hồi này; nhân viên bị bắt đổi ở lần đăng nhập đầu."""
-    return _co_mat_khau_tam(await quan_tri.tao(db, actor, du_lieu, ip=dia_chi_ip(request)))
+@router.post("", status_code=201, response_model=NhanVienDaGuiMatKhau, summary="Tạo tài khoản nhân viên (AD01)")
+async def tao(du_lieu: NhanVienTao, request: Request, actor: QuanLySua, db: Db, kenh: Kenh):
+    """Mật khẩu tạm gửi tới email của nhân viên (Admin không thấy); nhân viên bị bắt đổi ở lần đăng nhập đầu."""
+    return _da_gui(await quan_tri.tao(db, actor, kenh, du_lieu, ip=dia_chi_ip(request)))
 
 
 @router.patch("/{nhan_vien_id}", response_model=NhanVienQuanTriDoc, summary="Sửa nhân viên, gán vai trò (AD01)")
@@ -75,11 +77,11 @@ async def mo_khoa(nhan_vien_id: IdInt, request: Request, actor: QuanLySua, db: D
 
 
 @router.post(
-    "/{nhan_vien_id}/dat-lai-mat-khau", response_model=NhanVienCoMatKhauTam, summary="Đặt lại mật khẩu tạm (AD01)"
+    "/{nhan_vien_id}/dat-lai-mat-khau", response_model=NhanVienDaGuiMatKhau, summary="Đặt lại mật khẩu tạm (AD01)"
 )
-async def dat_lai_mat_khau(nhan_vien_id: IdInt, request: Request, actor: QuanLySua, db: Db):
-    """Sinh mật khẩu tạm mới (chỉ hiện một lần), bắt đổi ở lần đăng nhập kế, thu hồi mọi phiên của nhân viên đó."""
-    return _co_mat_khau_tam(await quan_tri.dat_lai_mat_khau(db, actor, nhan_vien_id, ip=dia_chi_ip(request)))
+async def dat_lai_mat_khau(nhan_vien_id: IdInt, request: Request, actor: QuanLySua, db: Db, kenh: Kenh):
+    """Mật khẩu tạm mới gửi tới email nhân viên (Admin không thấy), bắt đổi ở lần đăng nhập kế, thu hồi mọi phiên."""
+    return _da_gui(await quan_tri.dat_lai_mat_khau(db, actor, kenh, nhan_vien_id, ip=dia_chi_ip(request)))
 
 
 @router.delete("/{nhan_vien_id}", status_code=204, summary="Xóa mềm nhân viên (AD01)")

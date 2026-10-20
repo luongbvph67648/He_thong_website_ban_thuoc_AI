@@ -73,8 +73,8 @@ Mật khẩu chung của tài khoản mẫu: `Mau@12345` (công khai, **chỉ d�
 | Nhân viên kho | `kho@example.com` | http://localhost:5173/nhan-vien/dang-nhap |
 | Admin | `ADMIN_EMAIL` / `ADMIN_MAT_KHAU` trong `backend/.env` (phải đổi mật khẩu lần đầu) | http://localhost:5173/nhan-vien/dang-nhap |
 
-Chế độ mặc định chạy hoàn toàn offline: AI giả (`AI_GIA_LAP=true`), embedding giả, cổng thanh toán giả (trang "cổng giả" của
-VNPay/MoMo), vận chuyển giả (webhook `POST /api/v1/webhook/gia-van-chuyen`), SMS giả (OTP ghi ra log backend), email qua Mailpit.
+Chế độ mặc định chạy hoàn toàn offline: AI giả (`AI_GIA_LAP=true`), embedding giả, VNPay/MoMo/GHN **mô phỏng đúng giao thức thật** (`THANH_TOAN_CHE_DO=mo_phong`, `VAN_CHUYEN_CHE_DO=mo_phong`: adapter thật +
+máy chủ mô phỏng trong ứng dụng, gồm IPN có chữ ký, hoàn tiền, hủy vận đơn), SMS giả (OTP ghi ra log backend), email qua Mailpit.
 Muốn dùng Claude thật: `AI_GIA_LAP=false` và `ANTHROPIC_API_KEY` trong `backend/.env`.
 
 ## Kiểm thử

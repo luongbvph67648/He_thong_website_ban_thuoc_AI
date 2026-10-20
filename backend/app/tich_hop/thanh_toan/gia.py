@@ -50,5 +50,7 @@ class CongGia:
             du_lieu,
         )
 
-    async def hoan_tien(self, giao_dich_goc: ThanhToan, so_tien: Decimal, ly_do: str) -> KetQuaHoan:
+    async def hoan_tien(
+        self, giao_dich_goc: ThanhToan, so_tien: Decimal, ly_do: str, ma_yeu_cau: str = ""
+    ) -> KetQuaHoan:
         return KetQuaHoan(True, f"GIA-HOAN-{giao_dich_goc.id}-{secrets.token_hex(4)}")  # mỗi lần hoàn một mã riêng

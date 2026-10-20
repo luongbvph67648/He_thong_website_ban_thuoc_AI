@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import re
 
 import pytest
 from sqlalchemy import select
@@ -13,6 +14,7 @@ from app.models.he_thong import NhanVien, PhienDangNhap
 from app.modules.nhan_vien import quan_tri
 from app.modules.nhan_vien.schemas_quan_tri import NhanVienSua
 from app.modules.tai_khoan import phien
+from tests.conftest import KenhGhiNho
 from tests.factories import MAT_KHAU_TEST, tao_khach, tao_nhan_vien
 from tests.nhan_vien.dung_chung import (
     cookie_refresh,
@@ -29,6 +31,13 @@ def la_loi(phan_hoi, status, ma_loi):
     return phan_hoi.status_code == status and phan_hoi.json()["ma_loi"] == ma_loi
 
 
+def mat_khau_trong_email(kenh) -> str:
+    """Mật khẩu tạm nằm trong thẻ <strong> của email gần nhất gửi cho nhân viên."""
+    khop = re.search(r"<strong>(.+?)</strong>", kenh.email[-1][2])
+    assert khop, "Email không có mật khẩu tạm"
+    return khop.group(1)
+
+
 async def tao_qua_api(client, **tuy_chon):
     than = {"ho_ten": "Trần Văn Mới", "email": "moi@example.com", "vai_tro": "WAREHOUSE", **tuy_chon}
     return await client.post(GOC, json=than)
@@ -37,16 +46,21 @@ async def tao_qua_api(client, **tuy_chon):
 # --- Tạo ------------------------------------------------------------------------------------------------------------
 
 
-async def test_tao_nhan_vien_sinh_mat_khau_tam_mot_lan_va_bat_doi_mat_khau(dang_nhap_admin, client, db):
+async def test_tao_nhan_vien_gui_mat_khau_tam_qua_email_admin_khong_thay_va_bat_doi(
+    dang_nhap_admin, client, db, kenh_tin_nhan
+):
     phan_hoi = await tao_qua_api(dang_nhap_admin, so_dien_thoai="+84 912 345 678", email="  Moi@Example.COM ")
     assert phan_hoi.status_code == 201
     than = phan_hoi.json()
     assert than["ma_nhan_vien"].startswith("NV") and than["email"] == "moi@example.com"
     assert than["vai_tro"]["ma"] == "WAREHOUSE" and than["trang_thai"] == "hoat_dong"
     assert than["phai_doi_mat_khau"] is True and than["so_dien_thoai"] == "0912345678"
-    tam = than["mat_khau_tam"]
+    assert "mat_khau_tam" not in phan_hoi.text and than["gui_den"] == "m***@example.com"
+    (den, tieu_de, _) = kenh_tin_nhan.email[-1]
+    tam = mat_khau_trong_email(kenh_tin_nhan)
+    assert den == "moi@example.com" and tam not in tieu_de  # mật khẩu chỉ nằm trong thân email, không ở tiêu đề
     assert mat_khau_du_manh(tam) and len(tam) >= 12
-    assert "mat_khau_hash" not in than
+    assert tam not in phan_hoi.text and "mat_khau_hash" not in than
 
     nv = (await db.execute(select(NhanVien).where(NhanVien.id == than["id"]))).scalar_one()
     assert tam not in nv.mat_khau_hash and nv.phai_doi_mat_khau is True
@@ -58,14 +72,17 @@ async def test_tao_nhan_vien_sinh_mat_khau_tam_mot_lan_va_bat_doi_mat_khau(dang_
     assert "mat_khau_tam" not in doc.json() and tam not in doc.text
 
 
-async def test_mat_khau_tam_khong_vao_nhat_ky_va_moi_lan_khac_nhau(dang_nhap_admin, db):
+async def test_mat_khau_tam_khong_vao_nhat_ky_va_moi_lan_khac_nhau(dang_nhap_admin, db, kenh_tin_nhan):
     a = (await tao_qua_api(dang_nhap_admin, email="a@example.com")).json()
-    b = (await tao_qua_api(dang_nhap_admin, email="b@example.com")).json()
-    assert a["mat_khau_tam"] != b["mat_khau_tam"]
+    assert a["id"]
+    tam_a = mat_khau_trong_email(kenh_tin_nhan)
+    await tao_qua_api(dang_nhap_admin, email="b@example.com")
+    tam_b = mat_khau_trong_email(kenh_tin_nhan)
+    assert tam_a != tam_b
     cac_dong = await nhat_ky(db, dang_nhap_admin.tai_khoan.id, "tao")
     assert len(cac_dong) == 2
     toan_bo = json.dumps([[d.gia_tri_cu, d.gia_tri_moi, d.ban_ghi_id] for d in cac_dong])
-    assert a["mat_khau_tam"] not in toan_bo and b["mat_khau_tam"] not in toan_bo and "argon2" not in toan_bo
+    assert tam_a not in toan_bo and tam_b not in toan_bo and "argon2" not in toan_bo
     assert cac_dong[0].gia_tri_moi["vai_tro"] == "WAREHOUSE" and cac_dong[0].ban_ghi_id == str(a["id"])
 
 
@@ -297,12 +314,15 @@ async def test_mo_khoa_tai_khoan_dang_binh_thuong_khong_ghi_nhat_ky(dang_nhap_ad
 # --- Đặt lại mật khẩu -----------------------------------------------------------------------------------------------
 
 
-async def test_dat_lai_mat_khau_sinh_mat_khau_tam_bat_doi_xoa_khoa_tam_va_thu_hoi_phien(dang_nhap_admin, client, db):
+async def test_dat_lai_mat_khau_gui_email_bat_doi_xoa_khoa_tam_va_thu_hoi_phien(
+    dang_nhap_admin, client, db, kenh_tin_nhan
+):
     nv = await tao_nhan_vien(db, email="quen@example.com", phai_doi_mat_khau=False, so_lan_dang_nhap_sai=3)
     refresh = cookie_refresh(await dang_nhap(client, "quen@example.com"))
     phan_hoi = await dang_nhap_admin.post(f"{GOC}/{nv.id}/dat-lai-mat-khau")
     assert phan_hoi.status_code == 200
-    tam = phan_hoi.json()["mat_khau_tam"]
+    tam = mat_khau_trong_email(kenh_tin_nhan)
+    assert "mat_khau_tam" not in phan_hoi.text and tam not in phan_hoi.text
     assert mat_khau_du_manh(tam) and phan_hoi.json()["phai_doi_mat_khau"] is True
     await db.refresh(nv)
     assert nv.so_lan_dang_nhap_sai == 0 and nv.khoa_den is None and tam not in nv.mat_khau_hash
@@ -315,9 +335,10 @@ async def test_dat_lai_mat_khau_sinh_mat_khau_tam_bat_doi_xoa_khoa_tam_va_thu_ho
     assert tam not in json.dumps([dong.gia_tri_cu, dong.gia_tri_moi])
 
 
-async def test_dat_lai_mat_khau_khong_mo_khoa_cua_admin(dang_nhap_admin, client, db):
+async def test_dat_lai_mat_khau_khong_mo_khoa_cua_admin(dang_nhap_admin, client, db, kenh_tin_nhan):
     nv = await tao_nhan_vien(db, email="bi.khoa@example.com", trang_thai=TrangThaiTaiKhoan.bi_khoa)
-    tam = (await dang_nhap_admin.post(f"{GOC}/{nv.id}/dat-lai-mat-khau")).json()["mat_khau_tam"]
+    await dang_nhap_admin.post(f"{GOC}/{nv.id}/dat-lai-mat-khau")
+    tam = mat_khau_trong_email(kenh_tin_nhan)
     assert la_loi(await dang_nhap(client, "bi.khoa@example.com", tam), 403, "TAI_KHOAN_BI_KHOA")
 
 
@@ -457,7 +478,11 @@ async def test_hai_admin_tao_cung_email_cung_luc_chi_mot_thanh_cong(db_that):
             actor = await s.get(NhanVien, admin_id)
             try:
                 await quan_tri.tao(
-                    s, actor, NhanVienTao(ho_ten="X", email="trung@example.com", vai_tro="WAREHOUSE"), ip="127.0.0.1"
+                    s,
+                    actor,
+                    KenhGhiNho(),
+                    NhanVienTao(ho_ten="X", email="trung@example.com", vai_tro="WAREHOUSE"),
+                    ip="127.0.0.1",
                 )
                 await asyncio.sleep(0.2)
                 return "ok"
@@ -537,3 +562,13 @@ async def test_sap_xep_truong_ngoai_danh_sach_la_400(dang_nhap_admin, sap_xep):
     phan_hoi = await dang_nhap_admin.get(GOC, params={"sap_xep": sap_xep})
     assert la_loi(phan_hoi, 400, "DU_LIEU_KHONG_HOP_LE")
     assert "mat_khau" not in phan_hoi.text.replace("mat_khau_hash", "")  # không lộ gì về cột bí mật
+
+
+async def test_gui_email_mat_khau_tam_loi_thi_khong_tao_tai_khoan(dang_nhap_admin, db, kenh_tin_nhan):
+    """Không để lại tài khoản mà không ai biết mật khẩu: email lỗi thì hoàn tác cả việc tạo."""
+    from app.tich_hop.tin_nhan import LoiGuiTinNhan
+
+    kenh_tin_nhan.loi = LoiGuiTinNhan("SMTP down")
+    r = await tao_qua_api(dang_nhap_admin, email="khong.gui.duoc@example.com")
+    assert la_loi(r, 502, "LOI_DOI_TAC")
+    assert await db.scalar(select(NhanVien).where(NhanVien.email == "khong.gui.duoc@example.com")) is None

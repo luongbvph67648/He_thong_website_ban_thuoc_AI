@@ -335,7 +335,7 @@ export interface paths {
         put?: never;
         /**
          * Tạo tài khoản nhân viên (AD01)
-         * @description Mật khẩu tạm sinh ngẫu nhiên, chỉ hiện trong phản hồi này; nhân viên bị bắt đổi ở lần đăng nhập đầu.
+         * @description Mật khẩu tạm gửi tới email của nhân viên (Admin không thấy); nhân viên bị bắt đổi ở lần đăng nhập đầu.
          */
         post: operations["tao_api_v1_noi_bo_nhan_vien_post"];
         delete?: never;
@@ -408,7 +408,7 @@ export interface paths {
         put?: never;
         /**
          * Đặt lại mật khẩu tạm (AD01)
-         * @description Sinh mật khẩu tạm mới (chỉ hiện một lần), bắt đổi ở lần đăng nhập kế, thu hồi mọi phiên của nhân viên đó.
+         * @description Mật khẩu tạm mới gửi tới email nhân viên (Admin không thấy), bắt đổi ở lần đăng nhập kế, thu hồi mọi phiên.
          */
         post: operations["dat_lai_mat_khau_api_v1_noi_bo_nhan_vien__nhan_vien_id__dat_lai_mat_khau_post"];
         delete?: never;
@@ -4205,6 +4205,216 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mo-phong/vnpay/vpcpay.html": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Trang thanh toán VNPay (mô phỏng): kiểm chữ ký rồi chuyển sang giao diện mô phỏng */
+        get: operations["trang_thanh_toan_api_v1_mo_phong_vnpay_vpcpay_html_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mo-phong/vnpay/giao-dich": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Thông tin giao dịch từ URL thanh toán (mô phỏng) */
+        get: operations["giao_dich_api_v1_mo_phong_vnpay_giao_dich_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mo-phong/vnpay/thanh-toan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Khách hoàn tất trên trang VNPay: báo IPN, trả ReturnUrl */
+        post: operations["thanh_toan_api_v1_mo_phong_vnpay_thanh_toan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mo-phong/vnpay/merchant_webapi/api/transaction": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * API hoàn tiền VNPay (mô phỏng)
+         * @description `vnp_Command=refund`. Cùng `vnp_RequestId` cho cùng `vnp_TransactionNo` hoàn: gọi lại an toàn.
+         */
+        post: operations["hoan_tien_api_v1_mo_phong_vnpay_merchant_webapi_api_transaction_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mo-phong/momo/v2/gateway/api/create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tạo giao dịch thanh toán MoMo (mô phỏng) */
+        post: operations["tao_giao_dich_api_v1_mo_phong_momo_v2_gateway_api_create_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mo-phong/momo/giao-dich": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Thông tin giao dịch từ payUrl (mô phỏng) */
+        get: operations["giao_dich_api_v1_mo_phong_momo_giao_dich_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mo-phong/momo/thanh-toan": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Khách hoàn tất trên MoMo: báo IPN, trả redirectUrl */
+        post: operations["thanh_toan_api_v1_mo_phong_momo_thanh_toan_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mo-phong/momo/v2/gateway/api/refund": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hoàn tiền MoMo (mô phỏng) */
+        post: operations["hoan_tien_api_v1_mo_phong_momo_v2_gateway_api_refund_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mo-phong/ghn/shiip/public-api/v2/shipping-order/fee": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tính phí vận chuyển GHN (mô phỏng) */
+        post: operations["tinh_phi_api_v1_mo_phong_ghn_shiip_public_api_v2_shipping_order_fee_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mo-phong/ghn/shiip/public-api/v2/shipping-order/create": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Tạo vận đơn GHN (mô phỏng) */
+        post: operations["tao_van_don_api_v1_mo_phong_ghn_shiip_public_api_v2_shipping_order_create_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mo-phong/ghn/shiip/public-api/v2/switch-status/cancel": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Hủy vận đơn GHN (mô phỏng) */
+        post: operations["huy_van_don_api_v1_mo_phong_ghn_shiip_public_api_v2_switch_status_cancel_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mo-phong/ghn/phat-su-kien": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Phát webhook trạng thái GHN tới cửa hàng (công cụ demo)
+         * @description Giả lập GHN đổi trạng thái vận đơn: gửi webhook đúng khuôn GHN, kèm `Token`, tới `/webhook/ghn` của cửa hàng.
+         */
+        post: operations["phat_su_kien_api_v1_mo_phong_ghn_phat_su_kien_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -6492,6 +6702,25 @@ export interface components {
             /** Gia Tri */
             gia_tri: string;
         };
+        /**
+         * GiaoDichMoPhongRa
+         * @description Thông tin giao dịch để trang đối tác mô phỏng (frontend) dựng giao diện giống VNPay/MoMo thật.
+         */
+        GiaoDichMoPhongRa: {
+            cong: components["schemas"]["PhuongThucThanhToan"];
+            /** Tham Chieu */
+            tham_chieu: string;
+            /** Ma Don */
+            ma_don: string;
+            /** So Tien */
+            so_tien: number;
+            /** Noi Dung */
+            noi_dung: string;
+            /** Trang Thai */
+            trang_thai: string;
+            /** Het Han Luc */
+            het_han_luc?: string | null;
+        };
         /** GiaoDichRa */
         GiaoDichRa: {
             /** Id */
@@ -6911,14 +7140,6 @@ export interface components {
             ly_do: string;
         };
         /**
-         * HuyVao
-         * @description Khách hủy đơn: lý do không bắt buộc.
-         */
-        HuyVao: {
-            /** Ly Do */
-            ly_do?: string | null;
-        };
-        /**
          * KenhBan
          * @enum {string}
          */
@@ -6994,6 +7215,18 @@ export interface components {
          * @enum {string}
          */
         KetQuaLienHeThuHoi: "chua_lien_he" | "da_lien_he" | "da_hen_tra_hang" | "da_thu_ve" | "khong_lien_lac_duoc";
+        /**
+         * KetQuaMoPhongRa
+         * @description Kết quả sau khi khách thao tác trên trang đối tác: nơi đưa trình duyệt về (như `ReturnUrl` thật).
+         */
+        KetQuaMoPhongRa: {
+            /** Thanh Cong */
+            thanh_cong: boolean;
+            /** Redirect Url */
+            redirect_url: string;
+            /** Ma Phan Hoi */
+            ma_phan_hoi: string;
+        };
         /** KhachHangChiTiet */
         KhachHangChiTiet: {
             /** Id */
@@ -7799,10 +8032,10 @@ export interface components {
             so_luong_nhan: number;
         };
         /**
-         * NhanVienCoMatKhauTam
-         * @description Phản hồi tạo tài khoản và đặt lại mật khẩu: `mat_khau_tam` chỉ hiện lần này, không lưu dạng rõ.
+         * NhanVienDaGuiMatKhau
+         * @description Phản hồi tạo tài khoản và đặt lại mật khẩu: mật khẩu tạm gửi tới email của nhân viên, Admin không nhận được.
          */
-        NhanVienCoMatKhauTam: {
+        NhanVienDaGuiMatKhau: {
             /** Id */
             id: number;
             /** Ma Nhan Vien */
@@ -7826,8 +8059,8 @@ export interface components {
             created_at: string;
             /** Updated At */
             updated_at: string | null;
-            /** Mat Khau Tam */
-            mat_khau_tam: string;
+            /** Gui Den */
+            gui_den: string;
         };
         /** NhanVienQuanTriDoc */
         NhanVienQuanTriDoc: {
@@ -8765,6 +8998,11 @@ export interface components {
             van_don: components["schemas"]["VanDonRa"][];
             /** Che Do Van Chuyen Gia */
             che_do_van_chuyen_gia: boolean;
+            /**
+             * Van Chuyen Mo Phong
+             * @default false
+             */
+            van_chuyen_mo_phong: boolean;
         };
         /** SuKienGiaVao */
         SuKienGiaVao: {
@@ -8772,6 +9010,13 @@ export interface components {
             ma_van_don: string;
             /** Trang Thai Doi Tac */
             trang_thai_doi_tac: string;
+        };
+        /** SuKienVao */
+        SuKienVao: {
+            /** Order Code */
+            order_code: string;
+            /** Status */
+            status: string;
         };
         /** SuaDong */
         SuaDong: {
@@ -9933,6 +10178,14 @@ export interface components {
             /** Ham Luong */
             ham_luong?: string | null;
         };
+        /**
+         * HuyVao
+         * @description Khách hủy đơn: lý do không bắt buộc.
+         */
+        app__modules__ban_hang__schemas__HuyVao: {
+            /** Ly Do */
+            ly_do?: string | null;
+        };
         /** LoGoiY */
         app__modules__ban_hang__schemas_soan_hang__LoGoiY: {
             /** Lo Id */
@@ -9997,6 +10250,36 @@ export interface components {
             ten_khac: string | null;
             /** Mo Ta */
             mo_ta: string | null;
+        };
+        /** HuyVao */
+        app__tich_hop__mo_phong__ghn__HuyVao: {
+            /** Order Codes */
+            order_codes: string[];
+        };
+        /** ThanhToanVao */
+        app__tich_hop__mo_phong__momo__ThanhToanVao: {
+            /** Token */
+            token: string;
+            /**
+             * Ket Qua
+             * @enum {string}
+             */
+            ket_qua: "thanh_cong" | "tu_choi" | "khong_du_tien" | "het_han";
+        };
+        /** ThanhToanVao */
+        app__tich_hop__mo_phong__vnpay__ThanhToanVao: {
+            /** Query */
+            query: string;
+            /**
+             * Ket Qua
+             * @enum {string}
+             */
+            ket_qua: "thanh_cong" | "khach_huy" | "khong_du_so_du" | "the_chua_dang_ky" | "the_bi_khoa" | "het_han" | "sai_otp";
+            /**
+             * Ngan Hang
+             * @default NCB
+             */
+            ngan_hang: string;
         };
     };
     responses: never;
@@ -10594,7 +10877,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NhanVienCoMatKhauTam"];
+                    "application/json": components["schemas"]["NhanVienDaGuiMatKhau"];
                 };
             };
             /** @description Validation Error */
@@ -10782,7 +11065,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NhanVienCoMatKhauTam"];
+                    "application/json": components["schemas"]["NhanVienDaGuiMatKhau"];
                 };
             };
             /** @description Validation Error */
@@ -14597,7 +14880,7 @@ export interface operations {
         };
         requestBody: {
             content: {
-                "application/json": components["schemas"]["HuyVao"];
+                "application/json": components["schemas"]["app__modules__ban_hang__schemas__HuyVao"];
             };
         };
         responses: {
@@ -19174,6 +19457,393 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PhieuHuyChiTiet"] | components["schemas"]["PhieuXuatTraChiTiet"] | components["schemas"]["DieuChinhChiTiet"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trang_thanh_toan_api_v1_mo_phong_vnpay_vpcpay_html_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+        };
+    };
+    giao_dich_api_v1_mo_phong_vnpay_giao_dich_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GiaoDichMoPhongRa"];
+                };
+            };
+        };
+    };
+    thanh_toan_api_v1_mo_phong_vnpay_thanh_toan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__tich_hop__mo_phong__vnpay__ThanhToanVao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KetQuaMoPhongRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hoan_tien_api_v1_mo_phong_vnpay_merchant_webapi_api_transaction_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tao_giao_dich_api_v1_mo_phong_momo_v2_gateway_api_create_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    giao_dich_api_v1_mo_phong_momo_giao_dich_get: {
+        parameters: {
+            query: {
+                token: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GiaoDichMoPhongRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    thanh_toan_api_v1_mo_phong_momo_thanh_toan_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__tich_hop__mo_phong__momo__ThanhToanVao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KetQuaMoPhongRa"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    hoan_tien_api_v1_mo_phong_momo_v2_gateway_api_refund_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tinh_phi_api_v1_mo_phong_ghn_shiip_public_api_v2_shipping_order_fee_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                token?: string | null;
+                shopid?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    tao_van_don_api_v1_mo_phong_ghn_shiip_public_api_v2_shipping_order_create_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                token?: string | null;
+                shopid?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": {
+                    [key: string]: unknown;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    huy_van_don_api_v1_mo_phong_ghn_shiip_public_api_v2_switch_status_cancel_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                token?: string | null;
+                shopid?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["app__tich_hop__mo_phong__ghn__HuyVao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    phat_su_kien_api_v1_mo_phong_ghn_phat_su_kien_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuKienVao"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

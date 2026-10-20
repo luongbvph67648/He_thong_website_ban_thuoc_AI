@@ -257,3 +257,85 @@ describe('cổng thanh toán giả', () => {
     expect(screen.queryByText('Tiếp tục')).not.toBeInTheDocument()
   })
 })
+
+describe('trang đối tác mô phỏng đúng giao thức (THANH_TOAN_CHE_DO=mo_phong)', () => {
+  const VNP = 'vnp_Amount=2700000&vnp_TxnRef=DHABCD2345-17&vnp_SecureHash=abc'
+  const TT = (cong: string, rieng: object = {}) => ({ cong, tham_chieu: 'DHABCD2345-17', ma_don: 'DHABCD2345', so_tien: 27000, noi_dung: 'Thanh toan don hang DHABCD2345', trang_thai: 'khoi_tao', het_han_luc: HAN_TUONG_LAI, ...rieng })
+  const fetchGia = vi.fn()
+
+  beforeEach(() => {
+    fetchGia.mockReset()
+    vi.stubGlobal('fetch', fetchGia)
+    GET.mockImplementation(async (duong: string) => (duong === '/api/v1/toi/gio-hang' ? ok({ dong: [], tam_tinh: '0.00', tong_so_luong: 0 }) : ok([])))
+    POST.mockResolvedValue(ok({ thanh_cong: true, redirect_url: 'http://localhost:5173/thanh-toan/ket-qua?vnp_TxnRef=DHABCD2345-17&vnp_ResponseCode=00', ma_phan_hoi: '00' }))
+  })
+
+  it('VNPay: đọc giao dịch bằng chính tham số đã ký rồi gửi kết quả cho đối tác mô phỏng (không dùng IPN giả)', async () => {
+    fetchGia.mockResolvedValue({ ok: true, json: async () => TT('vnpay') })
+    renderTai(`/thanh-toan-gia?cong=vnpay&${VNP}`, { loai: 'khach' })
+    const u = userEvent.setup()
+    expect(await screen.findByText('27.000 ₫')).toBeInTheDocument()
+    expect(fetchGia).toHaveBeenCalledWith(`/api/v1/mo-phong/vnpay/giao-dich?${VNP}`)
+    await u.click(screen.getByText('Tiếp tục'))
+    await u.type(screen.getByLabelText('Số thẻ'), '9704198526191432198')
+    await u.type(screen.getByLabelText('Tên chủ thẻ'), 'NGUYEN VAN A')
+    await u.type(screen.getByLabelText('Ngày phát hành'), '07/15')
+    await u.click(screen.getByText('Tiếp tục'))
+    await u.type(await screen.findByLabelText('Mã OTP'), '123456')
+    await u.click(screen.getByText('Xác nhận'))
+    await waitFor(() =>
+      expect(POST).toHaveBeenCalledWith('/api/v1/mo-phong/vnpay/thanh-toan', { body: { query: VNP, ngan_hang: 'NCB', ket_qua: 'thanh_cong' } }),
+    )
+    expect(POST).not.toHaveBeenCalledWith('/api/v1/webhook/gia-ipn', expect.anything())
+    expect(await screen.findByText('Giao dịch thành công')).toBeInTheDocument()
+  })
+
+  it('VNPay: thẻ không đủ số dư báo mã 51 qua kết quả khong_du_so_du, hủy giao dịch báo khach_huy', async () => {
+    fetchGia.mockResolvedValue({ ok: true, json: async () => TT('vnpay') })
+    renderTai(`/thanh-toan-gia?cong=vnpay&${VNP}`)
+    const u = userEvent.setup()
+    await u.click(await screen.findByText('Tiếp tục'))
+    await u.type(screen.getByLabelText('Số thẻ'), '9704195798459170488')
+    await u.type(screen.getByLabelText('Tên chủ thẻ'), 'NGUYEN VAN A')
+    await u.type(screen.getByLabelText('Ngày phát hành'), '07/15')
+    await u.click(screen.getByText('Tiếp tục'))
+    await u.type(await screen.findByLabelText('Mã OTP'), '123456')
+    await u.click(screen.getByText('Xác nhận'))
+    await waitFor(() => expect(POST.mock.calls[0][1].body.ket_qua).toBe('khong_du_so_du'))
+  })
+
+  it('VNPay: hủy giao dịch gửi khach_huy', async () => {
+    fetchGia.mockResolvedValue({ ok: true, json: async () => TT('vnpay') })
+    renderTai(`/thanh-toan-gia?cong=vnpay&${VNP}`)
+    await userEvent.setup().click(await screen.findByText('Hủy giao dịch'))
+    await waitFor(() => expect(POST.mock.calls[0][1].body.ket_qua).toBe('khach_huy'))
+  })
+
+  it('MoMo: đọc giao dịch bằng token trong payUrl, PIN đúng gửi thanh_cong, hủy gửi tu_choi', async () => {
+    fetchGia.mockResolvedValue({ ok: true, json: async () => TT('momo') })
+    renderTai('/thanh-toan-gia?cong=momo&token=abc.def')
+    const u = userEvent.setup()
+    await u.click(await screen.findByText(/Mô phỏng: mở ứng dụng MoMo/))
+    expect(fetchGia).toHaveBeenCalledWith('/api/v1/mo-phong/momo/giao-dich?token=abc.def')
+    await u.type(screen.getByLabelText('Mã PIN'), '123456')
+    await u.click(screen.getByText('Xác nhận'))
+    await waitFor(() => expect(POST).toHaveBeenCalledWith('/api/v1/mo-phong/momo/thanh-toan', { body: { token: 'abc.def', ket_qua: 'thanh_cong' } }))
+  })
+
+  it('đối tác mô phỏng báo sai chữ ký (400): không tìm thấy giao dịch, không có nút thanh toán', async () => {
+    fetchGia.mockResolvedValue({ ok: false, json: async () => ({}) })
+    renderTai(`/thanh-toan-gia?cong=vnpay&${VNP}`)
+    expect(await screen.findByText('Không tìm thấy giao dịch')).toBeInTheDocument()
+    expect(screen.queryByText('Tiếp tục')).not.toBeInTheDocument()
+  })
+
+  it('ReturnUrl của cổng không có ?ma=: lấy mã đơn từ vnp_TxnRef/orderId, trạng thái vẫn đọc từ máy chủ', async () => {
+    giaLapDon(don({ trang_thai: 'cho_xac_nhan', trang_thai_tt: 'da_thanh_toan' }))
+    renderTai('/thanh-toan/ket-qua?vnp_TxnRef=DHABCD2345-17&vnp_ResponseCode=00&vnp_SecureHash=x', { loai: 'khach' })
+    expect(await screen.findByText('Thanh toán thành công')).toBeInTheDocument()
+    expect(GET).toHaveBeenCalledWith('/api/v1/toi/don-hang/{ma_don}', { params: { path: { ma_don: 'DHABCD2345' } } })
+    giaLapDon(don({ trang_thai: 'cho_thanh_toan' }))
+    renderTai('/thanh-toan/ket-qua?orderId=DHABCD2345-17&resultCode=1006', { loai: 'khach' })
+    expect(await screen.findByText('Đơn hàng đang chờ thanh toán')).toBeInTheDocument() // không tin resultCode trên URL
+  })
+})

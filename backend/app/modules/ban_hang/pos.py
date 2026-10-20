@@ -6,6 +6,7 @@ thuốc kênh `tai_quay` do chính dược sĩ lập trước (ảnh + người 
 """
 
 import secrets
+from datetime import timedelta
 from decimal import Decimal
 
 from sqlalchemy import exists, func, or_, select, text
@@ -14,6 +15,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.core import idempotency, luu_tru
 from app.core.loi import LoiNghiepVu
 from app.core.ma_chung_tu import ma_don_hang
+from app.core.nhat_ky import ghi_nhat_ky
 from app.core.phan_quyen import dam_bao_la_duoc_si
 from app.core.thoi_gian import bay_gio_utc, hom_nay_vn
 from app.core.tien import lam_tron_vnd
@@ -32,8 +34,8 @@ from app.models.enums import (
     TrangThaiThanhToan,
     TrangThaiYeuCauDonThuoc,
 )
-from app.models.he_thong import NhanVien
-from app.models.khach_hang import KhachHang
+from app.models.he_thong import NhanVien, NhatKyHeThong
+from app.models.khach_hang import HoSoSucKhoe, KhachHang
 from app.models.kho import LoThuoc
 from app.models.san_pham import DonViQuyDoi, HoatChat, SanPham, ThanhPhan
 from app.modules.ban_hang import dat_hang
@@ -212,9 +214,32 @@ async def _khach_theo_sdt(db: AsyncSession, sdt: str | None) -> KhachHang | None
     ).scalar_one_or_none()
 
 
-async def _canh_bao(db: AsyncSession, khach: KhachHang | None, sp_ids: list[int]) -> CanhBaoPosRa:
+SO_KHACH_TOI_DA_MOI_GIO = 15
+"""Số khách khác nhau một dược sĩ được tra dị ứng qua POS trong một giờ (chống dò hồ sơ theo số điện thoại)."""
+
+
+async def _di_ung_cua_khach_tai_quay(db: AsyncSession, nv: NhanVien, khach: KhachHang, sp_ids: list[int]):
+    """Dị ứng của thành viên đứng tại quầy. Khác cổng đọc hồ sơ (khách không có yêu cầu hay phiên chat với dược sĩ này)
+    nên: chỉ khi khách đã đồng ý dùng hồ sơ sức khỏe; mỗi lần tra ghi nhật ký `doc_suc_khoe` (không ghi nội dung); và
+    giới hạn số khách khác nhau mỗi giờ để không dò được dị ứng của người lạ bằng cách thử số điện thoại."""
+    dong_y = await db.scalar(select(HoSoSucKhoe.dong_y_su_dung).where(HoSoSucKhoe.khach_hang_id == khach.id))
+    if not dong_y:
+        return []
+    mot_gio_truoc = bay_gio_utc() - timedelta(hours=1)
+    nhat_ky = (NhatKyHeThong.nhan_vien_id == nv.id, NhatKyHeThong.hanh_dong == "doc_suc_khoe")
+    nhat_ky += (NhatKyHeThong.bang == "di_ung", NhatKyHeThong.created_at > mot_gio_truoc)
+    da_tra_khach_nay = await db.scalar(select(func.count()).where(*nhat_ky, NhatKyHeThong.ban_ghi_id == str(khach.id)))
+    if not da_tra_khach_nay:
+        so_khach = await db.scalar(select(func.count(func.distinct(NhatKyHeThong.ban_ghi_id))).where(*nhat_ky))
+        if (so_khach or 0) >= SO_KHACH_TOI_DA_MOI_GIO:
+            raise LoiNghiepVu("QUA_GIOI_HAN", "Đã tra dị ứng quá nhiều khách trong một giờ, vui lòng thử lại sau")
+    await ghi_nhat_ky(db, nhan_vien_id=nv.id, hanh_dong="doc_suc_khoe", bang="di_ung", ban_ghi_id=khach.id)
+    return await canh_bao.kiem_tra_di_ung(db, khach.id, sp_ids)
+
+
+async def _canh_bao(db: AsyncSession, nv: NhanVien, khach: KhachHang | None, sp_ids: list[int]) -> CanhBaoPosRa:
     tuong_tac = await canh_bao.kiem_tra_tuong_tac(db, sp_ids)
-    di_ung = [] if khach is None else await canh_bao.kiem_tra_di_ung(db, khach.id, sp_ids)
+    di_ung = [] if khach is None else await _di_ung_cua_khach_tai_quay(db, nv, khach, sp_ids)
     nang = any(c.muc_do in MUC_NANG for c in tuong_tac) or bool(di_ung)
     return CanhBaoPosRa(tuong_tac=tuong_tac, di_ung=di_ung, can_xac_nhan=nang)
 
@@ -222,7 +247,7 @@ async def _canh_bao(db: AsyncSession, khach: KhachHang | None, sp_ids: list[int]
 async def tinh_canh_bao(db: AsyncSession, nv: NhanVien, vao: CanhBaoPosVao) -> CanhBaoPosRa:
     await dam_bao_la_duoc_si(db, nv)
     khach = await _khach_theo_sdt(db, vao.sdt_khach)
-    return await _canh_bao(db, khach, [d.san_pham_id for d in vao.dong])
+    return await _canh_bao(db, nv, khach, [d.san_pham_id for d in vao.dong])
 
 
 async def _yeu_cau_quay_hop_le(db: AsyncSession, nv: NhanVien, yc_id: int | None) -> YeuCauDonThuoc:
@@ -292,7 +317,7 @@ async def ban_hang(db: AsyncSession, nv: NhanVien, vao: DonPosVao, khoa: str) ->
             )
     elif vao.yeu_cau_don_thuoc_id is not None:
         raise _khong_hop_le("yeu_cau_don_thuoc_id", "Đơn không có thuốc kê đơn nên không gắn yêu cầu đơn thuốc")
-    cb = await _canh_bao(db, khach, [d.sp.id for d in dong_dat])
+    cb = await _canh_bao(db, nv, khach, [d.sp.id for d in dong_dat])
     if cb.can_xac_nhan and not vao.xac_nhan_canh_bao:
         raise LoiNghiepVu(
             "CAN_XAC_NHAN_CANH_BAO",
