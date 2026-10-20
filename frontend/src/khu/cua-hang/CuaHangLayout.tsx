@@ -1,4 +1,4 @@
-import { GiftOutlined, LogoutOutlined, PercentageOutlined, UserOutlined } from '@ant-design/icons'
+import { LogoutOutlined, UserOutlined } from '@ant-design/icons'
 import { useQueryClient } from '@tanstack/react-query'
 import { Button, Layout, Skeleton, Space } from 'antd'
 import { Link, Outlet, useNavigate } from 'react-router-dom'
@@ -81,23 +81,9 @@ export default function CuaHangLayout() {
       </Header>
       <MenuDanhMuc />
       <div className="khung-trang-khach">
-        <aside className="quang-cao-ben quang-cao-trai" aria-label="Chương trình chăm sóc sức khỏe">
-          <span className="quang-cao-icon"><GiftOutlined /></span>
-          <span className="quang-cao-nhan">GỢI Ý CHO BẠN</span>
-          <strong>Chăm sóc sức khỏe</strong>
-          <span className="quang-cao-mo-ta">Khám phá sản phẩm phù hợp cho cả gia đình.</span>
-          <Link to="/danh-muc/thuc-pham-chuc-nang">Khám phá <span aria-hidden="true">→</span></Link>
-        </aside>
-        <Content className="noi-dung-cua-hang" style={{ padding: 24, maxWidth: 1200, width: '100%', margin: '0 auto' }}>
+        <Content className="noi-dung-cua-hang" style={{ padding: 24, maxWidth: 1760, width: '100%', margin: '0 auto' }}>
           <Outlet />
         </Content>
-        <aside className="quang-cao-ben quang-cao-phai" aria-label="Ưu đãi và giảm giá">
-          <span className="quang-cao-icon"><PercentageOutlined /></span>
-          <span className="quang-cao-nhan">ƯU ĐÃI MUA SẮM</span>
-          <strong>Tiết kiệm mỗi đơn</strong>
-          <span className="quang-cao-mo-ta">Kiểm tra mã giảm giá và ưu đãi tại giỏ hàng.</span>
-          <Link to="/gio-hang">Xem giỏ hàng <span aria-hidden="true">→</span></Link>
-        </aside>
       </div>
       <ChanTrang />
       <WidgetChat />

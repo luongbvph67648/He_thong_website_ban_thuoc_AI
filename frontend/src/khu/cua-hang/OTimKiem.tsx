@@ -1,6 +1,6 @@
-import { CameraOutlined, SearchOutlined } from '@ant-design/icons'
+import { AudioOutlined, CameraOutlined } from '@ant-design/icons'
 import { useQuery } from '@tanstack/react-query'
-import { AutoComplete, Button, Input, Tag } from 'antd'
+import { AutoComplete, Button, Input, Tag, Tooltip, message } from 'antd'
 import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../../api/client'
@@ -9,12 +9,24 @@ import { chuanHoaTuKhoa, duDieuKienTim, duongDanGoiY, duongDanTimKiem, TRE_GOI_Y
 
 const KHOA_GOI_Y = /^(san_pham|hoat_chat):\d+$/
 
+type KetQuaGiongNoi = { results: ArrayLike<ArrayLike<{ transcript: string }>> }
+type NhanDangGiongNoi = {
+  lang: string
+  onresult: ((event: KetQuaGiongNoi) => void) | null
+  onend: (() => void) | null
+  onerror: (() => void) | null
+  start: () => void
+  stop: () => void
+}
+
 /** Ô tìm kiếm ở header: gợi ý khi gõ (trễ 250 ms, từ 2 ký tự); Enter hoặc nút tìm chạy tìm kiếm đầy đủ. */
 export function OTimKiem() {
   const [go, datGo] = useState('')
   const [daTre, datDaTre] = useState('')
+  const [dangNghe, datDangNghe] = useState(false)
   const dieuHuong = useNavigate()
   const choTim = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const nhanDang = useRef<NhanDangGiongNoi | null>(null)
 
   useEffect(() => {
     const h = setTimeout(() => datDaTre(chuanHoaTuKhoa(go)), TRE_GOI_Y_MS)
@@ -36,6 +48,7 @@ export function OTimKiem() {
 
   useEffect(() => () => {
     if (choTim.current) clearTimeout(choTim.current)
+    nhanDang.current?.stop()
   }, [])
 
   // Nhấn Enter khi đang tô sáng một gợi ý làm cả `onSelect` lẫn `onSearch` chạy (thứ tự tùy trình duyệt): hoãn tìm đầy đủ
@@ -46,10 +59,37 @@ export function OTimKiem() {
     choTim.current = setTimeout(() => dieuHuong(duongDanTimKiem(q)), 0)
   }
 
+  const batDauTimBangGiongNoi = () => {
+    const cuaSo = window as Window & {
+      SpeechRecognition?: new () => NhanDangGiongNoi
+      webkitSpeechRecognition?: new () => NhanDangGiongNoi
+    }
+    const BoNhanDang = cuaSo.SpeechRecognition ?? cuaSo.webkitSpeechRecognition
+    if (!BoNhanDang) {
+      void message.info('Trình duyệt này chưa hỗ trợ tìm kiếm bằng giọng nói.')
+      return
+    }
+    nhanDang.current?.stop()
+    const boNhanDang = new BoNhanDang()
+    boNhanDang.lang = 'vi-VN'
+    boNhanDang.onresult = (event) => {
+      const tuKhoa = event.results[0]?.[0]?.transcript?.trim()
+      if (tuKhoa) {
+        datGo(tuKhoa)
+        timDayDu(tuKhoa)
+      }
+    }
+    boNhanDang.onend = () => datDangNghe(false)
+    boNhanDang.onerror = () => datDangNghe(false)
+    nhanDang.current = boNhanDang
+    datDangNghe(true)
+    boNhanDang.start()
+  }
+
   return (
-    <div className="tim-kiem-header" style={{ display: 'flex', gap: 8, flex: '1 1 240px', maxWidth: 560 }}>
+    <div className="tim-kiem-header">
     <AutoComplete
-      style={{ flex: 1, minWidth: 0 }}
+      className="tim-kiem-goi-y"
       value={go}
       onChange={(v) => {
         // Chọn một gợi ý cũng phát `onChange` với giá trị của gợi ý đó (khóa nội bộ): bỏ qua, ô vẫn giữ chữ người dùng gõ.
@@ -75,18 +115,24 @@ export function OTimKiem() {
         dieuHuong(duongDanGoiY(g))
       }}
     >
-      <Input.Search
-        placeholder="Tìm thuốc, thực phẩm chức năng, thiết bị y tế…"
+      <Input
+        placeholder="Tìm thuốc, thực phẩm chức năng, thiết bị y tế..."
         aria-label="Tìm kiếm"
         allowClear
-        enterButton={<SearchOutlined aria-label="Tìm" />}
         maxLength={100}
-        onSearch={timDayDu}
+        onPressEnter={(event) => timDayDu(event.currentTarget.value)}
       />
     </AutoComplete>
-    <Link to="/tra-cuu-anh" aria-label="Tra cứu thuốc bằng ảnh" title="Tra cứu thuốc bằng ảnh">
-      <Button icon={<CameraOutlined />} aria-hidden tabIndex={-1} />
-    </Link>
+    <div className="tim-kiem-cong-cu">
+      <Tooltip title={dangNghe ? 'Đang nghe...' : 'Tìm kiếm bằng giọng nói'}>
+        <Button className={dangNghe ? 'dang-nghe' : ''} type="text" icon={<AudioOutlined />} aria-label="Tìm kiếm bằng giọng nói" onClick={batDauTimBangGiongNoi} />
+      </Tooltip>
+      <Tooltip title="Tra cứu thuốc bằng ảnh">
+        <Link to="/tra-cuu-anh" className="nut-tra-cuu-anh" aria-label="Tra cứu thuốc bằng ảnh">
+          <CameraOutlined />
+        </Link>
+      </Tooltip>
+    </div>
     </div>
   )
 }
