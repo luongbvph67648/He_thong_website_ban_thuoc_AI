@@ -7,7 +7,7 @@ toán ở trang của mình (nên cần tài khoản khách, tra bằng SĐT).
 
 from datetime import timedelta
 
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import idempotency
@@ -65,6 +65,7 @@ async def tim_khach(db: AsyncSession, sdt: str) -> KhachTimRa:
 
 async def tao_don_ho(db: AsyncSession, nv: NhanVien, vao: DonHoVao, khoa: str) -> DonHoRa:
     dau_van_tay = idempotency.dau_van_tay(vao.model_dump(mode="json"))
+    await db.execute(text("SELECT pg_advisory_xact_lock(hashtext(:k))"), {"k": f"{THAO_TAC}:{nv.id}:{khoa}"})
     da_co = idempotency.tra_cuu(THAO_TAC, nv.id, khoa, dau_van_tay)
     if da_co is not None:
         ton_tai = await db.scalar(select(DonHang.id).where(DonHang.ma_don == da_co["don"]["ma_don"]))

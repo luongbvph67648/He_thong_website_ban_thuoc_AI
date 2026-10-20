@@ -85,11 +85,22 @@ async def test_anh_khong_hop_le(client, kenh_tin_nhan, files):
 
 
 async def test_gioi_han_moi_sdt_moi_ngay(client, kenh_tin_nhan, dang_nhap_khach):
+    sdt = dang_nhap_khach.tai_khoan.so_dien_thoai
     for _ in range(5):
-        r = await dang_nhap_khach.post("/api/v1/don-thuoc", data={"ho_ten": "A", "so_dien_thoai": SDT}, files=_anh(PNG))
+        r = await dang_nhap_khach.post("/api/v1/don-thuoc", data={"ho_ten": "A"}, files=_anh(PNG))
         assert r.status_code == 201
-    r = await _gui_vang_lai(client, kenh_tin_nhan)
+    r = await _gui_vang_lai(client, kenh_tin_nhan, so_dien_thoai=sdt)
     assert r.status_code == 429 and r.json()["ma_loi"] == "QUA_GIOI_HAN"
+
+
+async def test_thanh_vien_khong_gui_duoc_bang_sdt_tuy_y(dang_nhap_khach, db):
+    """Thành viên luôn dùng SĐT của tài khoản: không né giới hạn theo SĐT, không gửi SMS tới số chưa xác thực."""
+    r = await dang_nhap_khach.post(
+        "/api/v1/don-thuoc", data={"ho_ten": "A", "so_dien_thoai": "0987654321"}, files=_anh(PNG)
+    )
+    assert r.status_code == 201
+    yc = (await db.execute(select(YeuCauDonThuoc))).scalars().one()
+    assert yc.so_dien_thoai == dang_nhap_khach.tai_khoan.so_dien_thoai != "0987654321"
 
 
 async def test_thanh_vien_gui_khong_can_otp_va_xem_hai_anh(dang_nhap_khach, db):

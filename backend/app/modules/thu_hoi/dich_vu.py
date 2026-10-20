@@ -31,13 +31,6 @@ from app.modules.thu_hoi.schemas import KhachThuHoi, LenhChiTiet, LenhTao, LenhT
 
 logger = logging.getLogger(__name__)
 MA_VAI_TRO_DUOC_SI = "PHARMACIST"
-XU_LY_XONG = (
-    KetQuaLienHeThuHoi.da_thu_ve,
-    KetQuaLienHeThuHoi.khong_lien_lac_duoc,
-    KetQuaLienHeThuHoi.da_hen_tra_hang,
-    KetQuaLienHeThuHoi.da_lien_he,
-)
-"""Mọi kết quả khác `chua_lien_he` là dược sĩ đã xử lý dòng đó."""
 
 
 def _khong_thay() -> LoiNghiepVu:

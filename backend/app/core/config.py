@@ -91,6 +91,10 @@ class Settings(BaseSettings):
             loi.append("VAN_CHUYEN_CHE_DO=gia (vận chuyển giả) không được dùng ở production")
         elif not self.GHN_WEBHOOK_TOKEN.get_secret_value():
             loi.append("GHN_WEBHOOK_TOKEN không được để trống")
+        if self.AI_GIA_LAP:
+            loi.append(
+                "AI_GIA_LAP=true (Claude giả) không được dùng ở production: chatbot sẽ chuyển mọi câu cho dược sĩ"
+            )
         if self.TIN_NHAN_CHE_DO != "that":
             loi.append("TIN_NHAN_CHE_DO=gia ghi OTP ra log, phải dùng `that`")
         return loi

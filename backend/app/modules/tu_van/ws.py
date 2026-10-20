@@ -30,7 +30,6 @@ from app.modules.tu_van.hub import HUB
 
 logger = logging.getLogger(__name__)
 THOI_GIAN_XAC_THUC_GIAY = 10
-MA_DONG_KHONG_HOP_LE = 4400
 MA_DONG_CHUA_XAC_THUC = 4401
 MA_DONG_KHONG_CO_QUYEN = 4403
 MA_DONG_KHONG_TIM_THAY = 4404

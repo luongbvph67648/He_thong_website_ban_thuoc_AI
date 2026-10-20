@@ -6,7 +6,7 @@ hợp lệ. Giá và tồn kho không bao giờ đưa vào vector.
 
 import hashlib
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum
 from typing import Any
 
@@ -89,11 +89,6 @@ class KetQuaDongBo(BaseModel):
     bo_qua: int = 0
     tong_doan: int = 0
     mo_hinh: str = ""
-
-
-@dataclass
-class _Dem:
-    ds: list[Doan] = field(default_factory=list)
 
 
 def chia_doan(van_ban: str, kich_thuoc: int = KICH_THUOC_DOAN, chong_lan: int = CHONG_LAN) -> list[str]:

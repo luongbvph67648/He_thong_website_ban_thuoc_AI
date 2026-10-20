@@ -9,7 +9,6 @@ from pydantic.functional_validators import BeforeValidator
 from app.core.kieu_du_lieu import DuongDanTuyChon, chuan_hoa_van_ban, kieu_ten, van_ban_tuy_chon
 from app.models.enums import LoaiBaiViet, TrangThaiNoiDung
 
-VI_TRI_BANNER = ("trang_chu_chinh", "trang_chu_phu")
 ViTriBanner = Literal["trang_chu_chinh", "trang_chu_phu"]
 PhienBan = Annotated[str, Field(min_length=16, max_length=16, pattern=r"^[0-9a-f]{16}$")]
 TOI_DA_NOI_DUNG = 100_000

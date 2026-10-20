@@ -184,7 +184,8 @@ async def bat_dau_soan(db: AsyncSession, nv: NhanVien, don_id: int) -> SoanHangR
             )
         ).all()
         for so_lo, trang_thai, han in lo:
-            if trang_thai != TrangThaiLo.dang_ban or han <= hom_nay:
+            # Lô đã giữ cho đơn chuyển sang cận hạn (còn hạn) vẫn xuất được: chỉ lô khóa/thu hồi/hết hạn mới chặn
+            if trang_thai not in (TrangThaiLo.dang_ban, TrangThaiLo.can_han) or han <= hom_nay:
                 raise _sai_trang_thai(f"Lô {so_lo} không còn bán được, hãy đổi lô trước khi soạn hàng")
     tac_nhan = TacNhan.kho(nv.id)
     await chuyen_trang_thai(db, don, TT.dang_soan_hang, tac_nhan, NGUON_NGUOI_DUNG)

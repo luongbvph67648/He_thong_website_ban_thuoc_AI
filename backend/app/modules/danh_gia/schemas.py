@@ -5,7 +5,6 @@ from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field
 
-VAN_BAN_DAI = Annotated[str, Field(min_length=1, max_length=2000, pattern=r"^[^\x00]*$")]
 CAU_HOI = Annotated[str, Field(min_length=5, max_length=1000, pattern=r"^[^\x00]*$")]
 TRA_LOI = Annotated[str, Field(min_length=2, max_length=2000, pattern=r"^[^\x00]*$")]
 

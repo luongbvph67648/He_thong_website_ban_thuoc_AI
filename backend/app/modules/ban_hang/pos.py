@@ -8,7 +8,7 @@ thuốc kênh `tai_quay` do chính dược sĩ lập trước (ảnh + người 
 import secrets
 from decimal import Decimal
 
-from sqlalchemy import exists, func, or_, select
+from sqlalchemy import exists, func, or_, select, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core import idempotency, luu_tru
@@ -249,6 +249,9 @@ async def _yeu_cau_quay_hop_le(db: AsyncSession, nv: NhanVien, yc_id: int | None
 async def ban_hang(db: AsyncSession, nv: NhanVien, vao: DonPosVao, khoa: str) -> DonPosRa:
     await dam_bao_la_duoc_si(db, nv)
     dau_van_tay = idempotency.dau_van_tay(vao.model_dump(mode="json"))
+    # Hai request cùng khóa chạy song song (bấm đúp, thử lại khi timeout) phải nối đuôi nhau, nếu không cả hai cùng
+    # thấy "chưa có" và tạo hai đơn, trừ tồn hai lần
+    await db.execute(text("SELECT pg_advisory_xact_lock(hashtext(:k))"), {"k": f"{THAO_TAC}:{nv.id}:{khoa}"})
     da_co = idempotency.tra_cuu(THAO_TAC, nv.id, khoa, dau_van_tay)
     if da_co is not None:
         ton_tai = await db.scalar(select(DonHang.id).where(DonHang.id == da_co["don_id"]))

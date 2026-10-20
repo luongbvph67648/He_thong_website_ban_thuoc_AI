@@ -24,7 +24,6 @@ from app.models.ban_hang import DonHang, LichSuTrangThai
 from app.models.enums import LoaiSanPham, NguonTriThuc
 from app.models.khach_hang import DiUng, HoSoSucKhoe, KhachHang
 from app.models.san_pham import HoatChat, SanPham
-from app.modules.ai_quan_tri import cau_hinh_ai
 from app.modules.chuyen_mon.noi_dung import noi_dung_da_duyet
 from app.modules.cua_hang import tim_kiem, tim_kiem_lai
 from app.modules.cua_hang.loc_an_toan import di_ung_cua_khach, loc_tri_thuc_san_pham, the_hop_le
@@ -40,7 +39,6 @@ MAU_CHUYEN_DUOC_SI = (
 MAU_AI_KHONG_KHA_DUNG = (
     'Trợ lý AI tạm thời không trả lời được lúc này. Bạn bấm "Gặp dược sĩ" để được hỗ trợ trực tiếp nhé.'
 )
-MAU_GIOI_HAN_SO_LUONG_TIN_NHAN = 4000
 MAU_Y_DINH = (
     "hoi_san_pham", "cach_dung", "trieu_chung", "chinh_sach", "don_hang", "can_duoc_si", "ngoai_pham_vi", "khac",
 )  # fmt: skip
@@ -474,7 +472,3 @@ async def chay_luot(
         logger.warning("Chatbot lỗi AI, chuyển dược sĩ")
         yield chuyen(MAU_AI_KHONG_KHA_DUNG, "ai_loi")
     yield {"loai": "ket_thuc", "ket_qua": kq}
-
-
-async def chat_bat(db: AsyncSession) -> bool:
-    return await cau_hinh_ai.module_bat(db, "chat")

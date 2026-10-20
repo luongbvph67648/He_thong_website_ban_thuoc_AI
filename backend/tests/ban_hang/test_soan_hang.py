@@ -146,6 +146,18 @@ async def test_bat_dau_soan_chan_khi_lo_giu_het_han(dang_nhap_khach, dang_nhap_d
     assert (await don_cua(db, o["ma_don"])).trang_thai == "da_xac_nhan"
 
 
+async def test_bat_dau_soan_lo_can_han_da_giu_van_xuat_duoc(dang_nhap_khach, dang_nhap_duoc_si, dang_nhap_kho, db):
+    """Lô đã giữ cho đơn chuyển sang cận hạn (HT01) nhưng còn hạn: không được làm kẹt đơn đã xác nhận/đã trả tiền."""
+    sp, o, don = await don_da_xac_nhan(dang_nhap_khach, dang_nhap_duoc_si, db, 3)
+    lo = await db.get(LoThuoc, (await db.scalar(select(PhanBoLo.lo_id).where(PhanBoLo.trang_thai == "dang_giu"))))
+    lo.trang_thai = "can_han"
+    lo.han_su_dung = hom_nay_vn() + timedelta(days=30)
+    await db.flush()
+    r = await dang_nhap_kho.post(f"{SH}/{don.id}/bat-dau")
+    assert r.status_code == 200, r.text
+    assert (await don_cua(db, o["ma_don"])).trang_thai == "dang_soan_hang"
+
+
 # --- KHO04: đóng gói, vận đơn ---
 
 

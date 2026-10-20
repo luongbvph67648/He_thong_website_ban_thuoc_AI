@@ -20,6 +20,7 @@ def _san_xuat(**ghi_de) -> Settings:
         VAN_CHUYEN_CHE_DO="ghn",
         GHN_WEBHOOK_TOKEN=SecretStr("t"),
         TIN_NHAN_CHE_DO="that",
+        AI_GIA_LAP=False,
     )
     return Settings(**{**mac_dinh, **ghi_de})
 
@@ -38,6 +39,7 @@ def test_san_xuat_day_du_thi_dat():
         {"THANH_TOAN_CHE_DO": "gia"},
         {"VAN_CHUYEN_CHE_DO": "gia"},
         {"TIN_NHAN_CHE_DO": "gia"},
+        {"AI_GIA_LAP": True},
         {"COOKIE_SECURE": False},
         {"JWT_SECRET": SecretStr("")},
         {"KHOA_MA_HOA": SecretStr("")},

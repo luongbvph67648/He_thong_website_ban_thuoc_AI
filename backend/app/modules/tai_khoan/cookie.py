@@ -18,14 +18,6 @@ _COOKIE: dict[LoaiPhien, tuple[str, str]] = {
 }
 
 
-def ten_cookie_refresh(loai: LoaiPhien) -> str:
-    return _COOKIE[loai][0]
-
-
-def duong_dan_cookie_refresh(loai: LoaiPhien) -> str:
-    return _COOKIE[loai][1]
-
-
 def dat_cookie_refresh(response: Response, refresh_token: str, loai: LoaiPhien = "khach") -> None:
     ten, duong_dan = _COOKIE[loai]
     response.set_cookie(

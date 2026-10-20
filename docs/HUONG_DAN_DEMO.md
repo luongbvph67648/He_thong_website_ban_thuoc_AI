@@ -67,13 +67,13 @@ Giao diện mô phỏng cổng thật (có dòng cảnh báo vàng "môi trườ
 
 **VNPay**
 1. **Khách**: thêm sản phẩm vào giỏ, vào thanh toán, chọn **VNPay**, bấm **Đặt hàng**.
-2. Trang cổng VNPay hiện số tiền, mã đơn và đồng hồ đếm ngược. Chọn **Thẻ nội địa và tài khoản ngân hàng**, bấm **Tiếp tục**.
+2. Hộp thoại **Quét mã để thanh toán** hiện mã QR, mã đơn, số tiền và hạn thanh toán. Bấm **Mở trang thanh toán** (mở tab mới). Trang cổng VNPay hiện số tiền, mã đơn và đồng hồ đếm ngược. Chọn **Thẻ nội địa và tài khoản ngân hàng**, bấm **Tiếp tục**.
 3. Nhập thẻ thử nghiệm (bảng gợi ý có ngay trên trang): số thẻ `9704198526191432198`, tên `NGUYEN VAN A`, ngày phát hành `07/15`. **Tiếp tục**.
 4. Nhập OTP `123456`, bấm **Xác nhận**. Hiện "Giao dịch thành công", rồi tự quay về trang đơn: **Thanh toán thành công**.
-5. Thử thất bại: dùng thẻ `9704195798459170488` (không đủ số dư) rồi OTP `123456`. Đơn vẫn chờ thanh toán, bấm **Thanh toán lại**.
+5. Thử thất bại: dùng thẻ `9704195798459170488` (không đủ số dư) rồi OTP `123456`. Đơn vẫn chờ thanh toán, bấm **Thanh toán lại** (cũng có nút **Thanh toán** ở trang chi tiết đơn trong Đơn hàng của tôi).
 
 **MoMo**
-1. Chọn **MoMo** khi đặt hàng. Trang hiện mã QR.
+1. Chọn **MoMo** khi đặt hàng, bấm **Mở trang thanh toán** ở hộp thoại QR. Tab mới hiện mã QR.
 2. Bấm **Mô phỏng: mở ứng dụng MoMo và quét mã**, nhập PIN `123456`, bấm **Xác nhận**.
 
 Điểm để nói: kết quả được báo cho server bằng IPN có chữ ký (không tin trình duyệt), server kiểm tra chữ ký, số tiền và chống xử lý trùng

@@ -39,7 +39,9 @@ async def gui(
     """Thành viên đã đăng nhập: gắn vào tài khoản, không cần OTP. Khách vãng lai: bắt buộc `so_dien_thoai` và `otp`
     (mục đích `don_thuoc_khach`)."""
     ten = (ho_ten or (khach.ho_ten if khach else "") or "").strip()
-    sdt_tho = so_dien_thoai or (khach.so_dien_thoai if khach else None)
+    # Thành viên luôn dùng SĐT của tài khoản (đã xác thực): nhận số tùy ý cho phép né giới hạn theo SĐT và gửi SMS
+    # tới số chưa xác thực
+    sdt_tho = khach.so_dien_thoai if khach else so_dien_thoai
     if not ten or not sdt_tho:
         raise LoiNghiepVu("DU_LIEU_KHONG_HOP_LE", "Cần họ tên và số điện thoại")
     try:
