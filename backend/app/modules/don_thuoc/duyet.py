@@ -18,7 +18,7 @@ from app.core.config import settings
 from app.core.loi import LoiNghiepVu
 from app.core.ma_chung_tu import ma_don_hang
 from app.core.phan_quyen import dam_bao_la_duoc_si
-from app.core.thoi_gian import bay_gio_utc
+from app.core.thoi_gian import VN_TZ, bay_gio_utc
 from app.models.ban_hang import CtYeuCauDonThuoc, DonHang, YeuCauDonThuoc
 from app.models.enums import KenhBan, MucDoTuongTac, TrangThaiDon, TrangThaiYeuCauDonThuoc
 from app.models.he_thong import NhanVien
@@ -485,7 +485,7 @@ async def tao_don(db: AsyncSession, nv: NhanVien, yc_id: int, vao: TaoDonVao, ke
     yc.checklist = {**vao.checklist.model_dump(), "ghi_chu_tu_van": ghi_chu}
     yc.updated_at = bay_gio
     await db.refresh(ls)
-    han = don.han_xac_nhan.astimezone().strftime("%H:%M %d/%m")
+    han = don.han_xac_nhan.astimezone(VN_TZ).strftime("%H:%M %d/%m")
     link = None
     if token is not None:
         link = f"{settings.FRONTEND_URL.rstrip('/')}/xac-nhan-don/{token}"

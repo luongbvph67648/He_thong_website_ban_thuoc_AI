@@ -304,8 +304,26 @@ async def _hoan_nhap_hang_da_xuat(db: AsyncSession, don: DonHang, tac_nhan: TacN
 
 
 async def _xuat_kho(db: AsyncSession, don: DonHang, tac_nhan: TacNhan) -> None:
-    """Bắt đầu soạn hàng: chốt lô, trừ tồn và giữ, thẻ kho `xuat_ban`."""
-    await ton_kho.xuat_theo_phan_bo(db, await _phan_bo(db, don, TrangThaiPhanBo.dang_giu), _chung_tu(don, tac_nhan))
+    """Bắt đầu soạn hàng: chốt lô, trừ tồn và giữ, thẻ kho `xuat_ban`.
+
+    Mỗi dòng phải còn giữ ĐỦ hàng: lô hết hạn/thu hồi mà không phân bổ lại được sẽ nhả phân bổ (HT01, thu hồi), khi đó
+    xuất kho rỗng sẽ giao hàng mà không trừ tồn, không ghi thẻ kho (bất biến 5, spec 04 mục 3.2)."""
+    giu = await _phan_bo(db, don, TrangThaiPhanBo.dang_giu)
+    da_giu: dict[int, int] = {}
+    for p in giu:
+        da_giu[p.ct_don_hang_id] = da_giu.get(p.ct_don_hang_id, 0) + p.so_luong_co_so
+    thieu = [
+        c.id
+        for c in (await db.execute(select(CtDonHang).where(CtDonHang.don_hang_id == don.id))).scalars()
+        if da_giu.get(c.id, 0) != c.so_luong * c.he_so
+    ]
+    if thieu:
+        raise _loi_trang_thai(
+            "Đơn chưa giữ đủ hàng (lô đã hết hạn hoặc bị thu hồi), không thể soạn hàng; hãy hủy đơn hoặc liên hệ khách",
+            dieu_kien="du_hang_giu",
+            dong_thieu=thieu,
+        )
+    await ton_kho.xuat_theo_phan_bo(db, giu, _chung_tu(don, tac_nhan))
 
 
 async def _danh_dau_da_thanh_toan(db: AsyncSession, don: DonHang, tac_nhan: TacNhan) -> None:
@@ -385,14 +403,15 @@ async def _tra_yeu_cau_don_thuoc(db: AsyncSession, don: DonHang, tac_nhan: TacNh
 dang_ky_hook(23, _ghi_nhan_cod)
 for _so in (10, 11):
     dang_ky_hook(_so, _danh_dau_da_thanh_toan)
+# Khóa mã giảm giá TRƯỚC khóa lô: đặt đơn khóa theo thứ tự này, hủy đơn khóa ngược lại sẽ deadlock
+for _so in (9, 12, 14, 15, 19, 21, 27):
+    dang_ky_hook(_so, tra_luot_khi_huy)
 for _so in (9, 12, 14, 15):
     dang_ky_hook(_so, _nha_hang_giu)
 dang_ky_hook(16, _xuat_kho)
 dang_ky_hook(16, _danh_dau_don_thuoc_da_su_dung)
 for _so in (9, 12, 14, 15, 19, 21, 27):
     dang_ky_hook(_so, _tra_yeu_cau_don_thuoc)
-for _so in (9, 12, 14, 15, 19, 21, 27):
-    dang_ky_hook(_so, tra_luot_khi_huy)
 for _so in (14, 15, 19, 21, 27):
     dang_ky_hook(_so, _tao_hoan_tien_khi_huy)
 for _so in (19, 21):

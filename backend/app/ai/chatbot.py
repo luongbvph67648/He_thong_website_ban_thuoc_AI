@@ -27,7 +27,7 @@ from app.models.san_pham import HoatChat, SanPham
 from app.modules.ai_quan_tri import cau_hinh_ai
 from app.modules.chuyen_mon.noi_dung import noi_dung_da_duyet
 from app.modules.cua_hang import tim_kiem, tim_kiem_lai
-from app.modules.cua_hang.loc_an_toan import di_ung_cua_khach, the_hop_le
+from app.modules.cua_hang.loc_an_toan import di_ung_cua_khach, loc_tri_thuc_san_pham, the_hop_le
 from app.modules.cua_hang.schemas import SanPhamThe
 
 logger = logging.getLogger(__name__)
@@ -215,6 +215,7 @@ async def tim_doan(db: AsyncSession, cau_hoi: str, nguon: list[NguonTriThuc], so
             TaiLieuTriThuc.mo_hinh_embedding == embedding.ten_mo_hinh(),
             TaiLieuTriThuc.nguon_loai.in_(nguon),
             TaiLieuTriThuc.metadata_["can_ke_don"].astext == "false",
+            await loc_tri_thuc_san_pham(db),
         )
         .order_by(kc)
         .limit(so_doan)

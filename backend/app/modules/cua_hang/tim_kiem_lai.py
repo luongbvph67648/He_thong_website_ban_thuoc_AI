@@ -18,6 +18,7 @@ from app.modules.ai_quan_tri.cau_hinh_ai import module_bat
 from app.modules.cua_hang import tim_kiem
 from app.modules.cua_hang.danh_sach import chon_the, dung_the
 from app.modules.cua_hang.hien_thi import CayHienThi, la_hien_thi, nap_cay_hien_thi
+from app.modules.cua_hang.loc_an_toan import loc_tri_thuc_san_pham
 from app.modules.cua_hang.schemas import SanPhamThe
 
 logger = logging.getLogger(__name__)
@@ -53,7 +54,7 @@ async def id_ngu_nghia(db: AsyncSession, q: str, *, chi_khong_ke_don: bool = Fal
         .limit(SO_DOAN_NGU_NGHIA)
     )
     if chi_khong_ke_don:  # ngữ cảnh chatbot: lọc ngay trong SQL (spec 07 mục 1.2)
-        cau = cau.where(TaiLieuTriThuc.metadata_["can_ke_don"].astext == "false")
+        cau = cau.where(TaiLieuTriThuc.metadata_["can_ke_don"].astext == "false", await loc_tri_thuc_san_pham(db))
     tot_nhat: dict[int, float] = {}
     for sp_id, khoang_cach in (await db.execute(cau)).all():
         if khoang_cach <= NGUONG_KHOANG_CACH:

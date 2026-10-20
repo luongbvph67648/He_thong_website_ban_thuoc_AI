@@ -4,11 +4,10 @@ import { useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { api } from '../../../api/client'
 import { goi, thongDiepChung } from '../../../api/goi'
-import { khachHuyDuoc } from '../../../lib/donHang'
+import { khachHuyDuoc, NHAN_PHUONG_THUC_DON } from '../../../lib/donHang'
 import { dinhDangNgay, dinhDangTien } from '../../../lib/dinhDang'
 import { nhanTrangThai } from '../../../lib/trangThai'
 import { usePhien } from '../../../stores/phien'
-import { NHAN_PHUONG_THUC } from '../gio-hang/thanhToan'
 import LichSuTrangThai from './LichSuTrangThai'
 import DoiTraNut from '../doi-tra/DoiTraNut'
 import XacNhanDonThanhVien from '../don-thuoc/XacNhanDonThanhVien'
@@ -66,6 +65,14 @@ export default function TrangChiTietDonCuaToi() {
           description="Nếu bạn hủy đơn, khoản đã thanh toán sẽ được chuyển sang quy trình hoàn tiền của nhà thuốc."
         />
       )}
+      {don.trang_thai === 'cho_thanh_toan' && (
+        <Alert
+          type="info"
+          showIcon
+          message={`Đơn đang chờ thanh toán${don.han_thanh_toan ? ` trước ${dinhDangNgay(don.han_thanh_toan, 'ngayGio')}` : ''}, quá hạn đơn sẽ tự hủy.`}
+          action={<Link to={`/thanh-toan/ket-qua?ma=${encodeURIComponent(don.ma_don)}`}><Button type="primary" size="small">Thanh toán</Button></Link>}
+        />
+      )}
       {don.trang_thai_tt === 'cho_hoan_tien' && (
         <Alert type="info" showIcon message="Nhà thuốc sẽ hoàn lại tiền cho đơn này. Bạn sẽ nhận được thông báo khi hoàn tất." />
       )}
@@ -73,7 +80,7 @@ export default function TrangChiTietDonCuaToi() {
       {don.ly_do_huy && <Alert type="warning" showIcon message={`Lý do hủy: ${don.ly_do_huy}`} />}
       <Descriptions bordered size="small" column={1}>
         <Descriptions.Item label="Ngày đặt">{dinhDangNgay(don.created_at, 'ngayGio')}</Descriptions.Item>
-        <Descriptions.Item label="Thanh toán">{don.phuong_thuc_tt ? (NHAN_PHUONG_THUC[don.phuong_thuc_tt as 'cod' | 'vnpay' | 'momo'] ?? don.phuong_thuc_tt) : '—'}</Descriptions.Item>
+        <Descriptions.Item label="Thanh toán">{don.phuong_thuc_tt ? (NHAN_PHUONG_THUC_DON[don.phuong_thuc_tt] ?? don.phuong_thuc_tt) : '—'}</Descriptions.Item>
         <Descriptions.Item label="Người nhận">{[don.ten_nguoi_nhan, don.sdt_nguoi_nhan].filter(Boolean).join(' · ') || '—'}</Descriptions.Item>
         <Descriptions.Item label="Địa chỉ giao">{don.dia_chi_giao ?? 'Nhận tại nhà thuốc'}</Descriptions.Item>
         {don.van_don.length > 0 && <Descriptions.Item label="Mã vận đơn">{don.van_don.map((v) => `${v.don_vi_van_chuyen} ${v.ma_van_don ?? ''}`.trim()).join(', ')}</Descriptions.Item>}

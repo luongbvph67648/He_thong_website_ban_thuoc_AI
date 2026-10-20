@@ -151,9 +151,6 @@ export function kiemTraThongTin(g: GiaTriThongTin): Partial<Record<keyof GiaTriT
 
 const TEN_O = Object.keys(THONG_TIN_MAC_DINH) as (keyof GiaTriThongTin)[]
 
-/** Tên trường API của một ô (ngược lại với `O_THEO_TRUONG_API`). */
-export const truongApiCuaO = (o: keyof GiaTriThongTin): string => Object.entries(O_THEO_TRUONG_API).find(([, ten]) => ten === o)?.[0] ?? o
-
 /**
  * Lỗi máy chủ (`loiTheoTruong`) về dạng của form thông tin: lỗi của ô nào vào ô đó; lỗi của đơn vị, thành phần hoặc
  * trường không có ô (ví dụ `phien_ban`) trả ở `khac` để trang hiện chung chứ không để mất.

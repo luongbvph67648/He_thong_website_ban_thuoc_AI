@@ -1,5 +1,5 @@
 import { Alert, App, Button, Input, Space, Typography } from 'antd'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { api } from '../../../api/client'
 import { goi, thongDiepChoDoiLai } from '../../../api/goi'
 import type { components } from '../../../api/schema'
@@ -11,16 +11,16 @@ export type KetQuaMa = components['schemas']['KetQuaKiemTraMa']
  * KTV04: ô nhập mã giảm giá. Chỉ XEM TRƯỚC số tiền giảm theo giỏ hiện tại (không dùng lượt mã); lượt chỉ bị tính khi
  * đặt hàng (T4.4). Thuốc kê đơn không bao giờ được giảm nên phần "được giảm" có thể nhỏ hơn tạm tính.
  */
-export function OMaGiamGia({ khiDoi }: { khiDoi?: (kq: KetQuaMa | null) => void }) {
+export function OMaGiamGia({ khiDoi, maBanDau }: { khiDoi?: (kq: KetQuaMa | null) => void; maBanDau?: string }) {
   const { message } = App.useApp()
-  const [ma, setMa] = useState('')
+  const [ma, setMa] = useState(maBanDau ?? '')
   const [dangKiemTra, setDangKiemTra] = useState(false)
   const [kq, setKq] = useState<KetQuaMa | null>(null)
 
-  async function kiemTra() {
-    if (!ma.trim()) return
+  async function kiemTra(maKiem: string = ma) {
+    if (!maKiem.trim()) return
     setDangKiemTra(true)
-    const r = await goi(() => api.POST('/api/v1/toi/ma-giam-gia/kiem-tra', { body: { ma: ma.trim() } }))
+    const r = await goi(() => api.POST('/api/v1/toi/ma-giam-gia/kiem-tra', { body: { ma: maKiem.trim() } }))
     setDangKiemTra(false)
     if (!r.ok) {
       void message.error(r.loi ? thongDiepChoDoiLai(r.loi) : 'Không kiểm tra được mã, vui lòng thử lại')
@@ -29,6 +29,15 @@ export function OMaGiamGia({ khiDoi }: { khiDoi?: (kq: KetQuaMa | null) => void 
     setKq(r.data)
     khiDoi?.(r.data.hop_le ? r.data : null)
   }
+  // Mã đã áp dụng ở giỏ hàng được chuyển sang đây: kiểm lại một lần để hiện số tiền giảm và báo cho trang cha
+  const daKiemBanDau = useRef(false)
+  useEffect(() => {
+    if (maBanDau && !daKiemBanDau.current) {
+      daKiemBanDau.current = true
+      void kiemTra(maBanDau)
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   return (
     <Space orientation="vertical" style={{ width: '100%' }}>
       <Space.Compact style={{ width: '100%', maxWidth: 360 }}>

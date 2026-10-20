@@ -118,7 +118,7 @@ export default function TrangGioHang() {
           {maDangDung && <Typography.Text type="success">Mã {maDangDung.ma}: giảm {dinhDangTien(maDangDung.giam)}</Typography.Text>}
           <Typography.Text type="secondary">Phí vận chuyển và giảm giá được tính ở bước thanh toán.</Typography.Text>
           {g.thanhVien ? (
-            <Link to="/thanh-toan"><Button type="primary" size="large" disabled={co_dong_hong || g.gio.tong_so_luong === 0}>Tiến hành thanh toán</Button></Link>
+            <Link to="/thanh-toan" state={maDangDung ? { maGiamGia: maDangDung.ma } : undefined}><Button type="primary" size="large" disabled={co_dong_hong || g.gio.tong_so_luong === 0}>Tiến hành thanh toán</Button></Link>
           ) : (
             <Link to="/dang-nhap?tiep=/gio-hang"><Button type="primary" size="large">Đăng nhập để thanh toán</Button></Link>
           )}

@@ -178,6 +178,16 @@ async def test_tra_toan_bo_don_hoan_them_phi_van_chuyen(dang_nhap_khach, dang_nh
     assert d["tong_da_thanh_toan"] == "35000.00"
 
 
+async def test_khach_doi_y_tra_toan_bo_khong_duoc_hoan_phi_van_chuyen(dang_nhap_khach, dang_nhap_duoc_si, db):
+    don, ct, _ = await _xin(dang_nhap_khach, db, so_luong=2, phi=15000)
+    ma = (await _gui(dang_nhap_khach, don.ma_don, ct, 2, ly_do="khac")).json()["ma_yeu_cau"]
+    yc = (await db.execute(select(YeuCauDoiTra).where(YeuCauDoiTra.ma_yeu_cau == ma))).scalars().one()
+    d = (
+        await dang_nhap_duoc_si.post(f"/api/v1/noi-bo/doi-tra/{yc.id}/duyet", json={"huong_xu_ly": "hoan_tien"})
+    ).json()
+    assert d["so_tien_hoan"] == "20000.00"  # chỉ tiền hàng 2 x 10.000, khách tự chịu phí ship 15.000
+
+
 async def test_lam_tron_tung_dong_khi_tra_mot_phan(dang_nhap_khach, dang_nhap_duoc_si, db):
     don, ct, _ = await _xin(dang_nhap_khach, db, so_luong=3, phi=0)
     ct.giam_gia_phan_bo = Decimal("20000")  # 3 hộp còn 10.000 sau giảm giá: 1/3 -> 3.333

@@ -83,6 +83,8 @@ async def _doanh_thu(db: AsyncSession, dau: datetime, cuoi: datetime) -> tuple[i
         select(func.coalesce(func.sum(ThanhToan.so_tien), 0)).where(
             ThanhToan.loai == LoaiGiaoDich.hoan_tien,
             ThanhToan.trang_thai == TrangThaiGiaoDich.thanh_cong,
+            # Đơn đã hủy chưa từng vào doanh thu: hoàn tiền của nó trả lại khoản trả trước, không phải giảm trừ
+            ThanhToan.don_hang_id.in_(select(DonHang.id).where(DonHang.trang_thai != TrangThaiDon.da_huy)),
             func.coalesce(ThanhToan.updated_at, ThanhToan.created_at) >= dau,
             func.coalesce(ThanhToan.updated_at, ThanhToan.created_at) < cuoi,
         )

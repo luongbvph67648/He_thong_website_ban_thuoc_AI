@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { kiemTraThongTin, loiThongTinTuApi, THONG_TIN_MAC_DINH, thongTinRaApi, thongTinRaSua, thongTinTuApi, truongApiCuaO, type GiaTriThongTin } from './thongTin'
+import { kiemTraThongTin, loiThongTinTuApi, THONG_TIN_MAC_DINH, thongTinRaApi, thongTinRaSua, thongTinTuApi, type GiaTriThongTin } from './thongTin'
 import type { SanPhamChiTiet } from './sanPham'
 
 const ban = (ghiDe: Partial<SanPhamChiTiet> = {}): SanPhamChiTiet => ({
@@ -126,7 +126,7 @@ describe('kiemTraThongTin (cùng quy tắc với backend schemas_san_pham.py)', 
   })
 })
 
-describe('loiThongTinTuApi / truongApiCuaO', () => {
+describe('loiThongTinTuApi', () => {
   it('lỗi theo trường API vào đúng ô (thuong_hieu_id thành thuong_hieu), phần còn lại ra ngoài; đơn vị và thành phần để các tab khác', () => {
     const r = loiThongTinTuApi({
       sku: 'SKU đã tồn tại',
@@ -137,11 +137,5 @@ describe('loiThongTinTuApi / truongApiCuaO', () => {
     })
     expect(r.theoO).toEqual({ sku: 'SKU đã tồn tại', thuong_hieu: 'Thương hiệu không tồn tại' })
     expect(r.khac).toEqual(['Sai định dạng'])
-  })
-
-  it('truongApiCuaO là nghịch đảo của ánh xạ', () => {
-    expect(truongApiCuaO('thuong_hieu')).toBe('thuong_hieu_id')
-    expect(truongApiCuaO('nha_san_xuat')).toBe('nha_san_xuat_id')
-    expect(truongApiCuaO('sku')).toBe('sku')
   })
 })

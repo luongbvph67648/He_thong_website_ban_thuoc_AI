@@ -1,7 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Alert, App, Button, Card, Descriptions, Empty, Input, Modal, QRCode, Radio, Select, Space, Spin, Typography } from 'antd'
 import { useRef, useState } from 'react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { api } from '../../../api/client'
 import { goi, thongDiepChung } from '../../../api/goi'
 import { dinhDangNgay, dinhDangTien } from '../../../lib/dinhDang'
@@ -33,6 +33,7 @@ export default function TrangThanhToan() {
 function NoiDung() {
   const { message } = App.useApp()
   const navigate = useNavigate()
+  const maTuGio = (useLocation().state as { maGiamGia?: string } | null)?.maGiamGia
   const qc = useQueryClient()
   const g = useGioHang()
   const [form, setForm] = useState<FormDat>({ hinhThuc: 'giao_tan_noi', phuongThuc: 'cod', diaChiId: null, maGiamGia: null, ghiChu: '' })
@@ -57,7 +58,8 @@ function NoiDung() {
   const sanSang = duDieuKien(dat) && g.gio.dong.length > 0 && g.gio.dong.every((d) => d.mua_duoc)
 
   const xemTruoc = useQuery({
-    queryKey: ['don-hang', 'xem-truoc', than, g.gio.tam_tinh],
+    // Ghi chú không ảnh hưởng giá: để ngoài khóa, gõ ghi chú không tính lại (tổng không nhảy, nút Đặt hàng không khóa)
+    queryKey: ['don-hang', 'xem-truoc', thanDatHang({ ...dat, ghiChu: '' }), g.gio.tam_tinh],
     enabled: sanSang,
     queryFn: () => goi(() => api.POST('/api/v1/toi/don-hang/xem-truoc', { body: than })),
   })
@@ -165,7 +167,7 @@ function NoiDung() {
       </Card>
       <Card title="Mã giảm giá và ghi chú" size="small">
         <Space orientation="vertical" style={{ width: '100%' }}>
-          <OMaGiamGia khiDoi={khiDoiMa} />
+          <OMaGiamGia khiDoi={khiDoiMa} maBanDau={maTuGio} />
           <Input.TextArea aria-label="Ghi chú cho đơn hàng" placeholder="Ghi chú cho đơn hàng (không bắt buộc)" maxLength={500} rows={2} value={form.ghiChu} onChange={(e) => doi({ ghiChu: e.target.value })} />
         </Space>
       </Card>

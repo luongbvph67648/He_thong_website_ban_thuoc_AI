@@ -5,7 +5,7 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { api } from '../../../api/client'
 import { goi, thongDiepChung } from '../../../api/goi'
 import { dinhDangNgay, dinhDangTien } from '../../../lib/dinhDang'
-import { NHAN_PHUONG_THUC } from './thanhToan'
+import { NHAN_PHUONG_THUC_DON } from '../../../lib/donHang'
 import { chuyenSangCong, layUrlThanhToan } from './thanhToanOnline'
 
 /**
@@ -92,7 +92,7 @@ export default function TrangKetQuaDatHang() {
         size="small"
         column={1}
         items={[
-          { key: 'pt', label: 'Thanh toán', children: don.phuong_thuc_tt ? NHAN_PHUONG_THUC[don.phuong_thuc_tt as 'cod' | 'vnpay' | 'momo'] : '—' },
+          { key: 'pt', label: 'Thanh toán', children: don.phuong_thuc_tt ? (NHAN_PHUONG_THUC_DON[don.phuong_thuc_tt] ?? don.phuong_thuc_tt) : '—' },
           { key: 'nhan', label: 'Nhận hàng', children: don.dia_chi_giao ? `${don.ten_nguoi_nhan} · ${don.sdt_nguoi_nhan} · ${don.dia_chi_giao}` : 'Nhận tại nhà thuốc' },
           { key: 'tt', label: 'Tạm tính', children: dinhDangTien(don.tam_tinh) },
           { key: 'gg', label: 'Giảm giá', children: `− ${dinhDangTien(don.giam_gia)}` },

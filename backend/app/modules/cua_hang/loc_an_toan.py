@@ -3,9 +3,10 @@
 Sản phẩm gợi ý phải hiển thị với khách, không phải thuốc kê đơn (quy tắc 6) và không chứa hoạt chất khách dị ứng (chỉ
 khi khách đã đồng ý dùng hồ sơ sức khỏe, quy tắc 7)."""
 
-from sqlalchemy import select
+from sqlalchemy import or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.models.ai import TaiLieuTriThuc
 from app.models.enums import LoaiSanPham
 from app.models.khach_hang import DiUng, HoSoSucKhoe, KhachHang
 from app.models.san_pham import SanPham, ThanhPhan
@@ -40,3 +41,14 @@ async def the_hop_le(db: AsyncSession, ids: list[int], ids_di_ung: list[int]) ->
         dieu_kien.append(loc_di_ung(ids_di_ung))
     the = {t.id: t for t in await dung_the(db, (await db.execute(chon_the().where(*dieu_kien))).all())}
     return [the[i] for i in ids if i in the]
+
+
+async def loc_tri_thuc_san_pham(db: AsyncSession):
+    """Điều kiện WHERE cho `tai_lieu_tri_thuc`: đoạn của sản phẩm phải CÒN hợp lệ ngay lúc truy vấn.
+
+    `metadata.can_ke_don` chỉ đúng tại lần đồng bộ gần nhất (HT AI07 chạy đêm): sản phẩm vừa đổi sang thuốc kê đơn,
+    ngừng bán hay bị xóa trong ngày vẫn còn đoạn cũ, nên phải kiểm lại với bảng `san_pham` trong SQL (quy tắc 6).
+    Đoạn không gắn sản phẩm (bài viết, hỏi đáp) không bị ràng buộc này."""
+    cay = await nap_cay_hien_thi(db)
+    hop_le = select(SanPham.id).where(la_hien_thi(cay.ids), SanPham.loai_san_pham != LoaiSanPham.thuoc_ke_don)
+    return or_(TaiLieuTriThuc.san_pham_id.is_(None), TaiLieuTriThuc.san_pham_id.in_(hop_le))

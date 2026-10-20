@@ -36,6 +36,8 @@ Trang tài khoản cá nhân `/nhan-vien/tai-khoan` (hồ sơ: họ tên, số �
 | `/tai-khoan` | Hồ sơ, đổi mật khẩu, sổ địa chỉ | KTV01 |
 | `/tai-khoan/don-hang`, `/tai-khoan/don-hang/:ma` | Đơn hàng, theo dõi, hủy, mua lại, đổi trả | KTV05, KTV06, KTV08, KTV09 |
 | `/tai-khoan/don-thuoc` | Đơn thuốc của tôi | KTV07 |
+| `/tai-khoan/doi-tra` | Yêu cầu đổi trả của tôi | KTV09 |
+| `/tai-khoan/danh-gia` | Đánh giá của tôi | KTV10 |
 | `/tai-khoan/suc-khoe` | Hồ sơ sức khỏe | KTV11 |
 | `/tai-khoan/thong-bao` | Thông báo | KTV13, KTV14 |
 | (widget) | Chat AI + chat dược sĩ | KVL05, KTV12 |

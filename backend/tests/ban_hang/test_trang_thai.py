@@ -13,9 +13,11 @@ from app.core.loi import LoiNghiepVu
 from app.core.thoi_gian import bay_gio_utc
 from app.models.ban_hang import CtDonHang, DonHang, LichSuTrangThai, PhanBoLo
 from app.models.enums import TrangThaiDon as TT
+from app.models.san_pham import SanPham
 from app.modules.ban_hang import trang_thai as mt
 from app.modules.ban_hang.trang_thai import BANG_CHUYEN, LoaiTacNhan, TacNhan
 from app.modules.kho import ton_kho
+from app.modules.kho.ton_kho import YeuCauGiu
 from tests.factories import tao_don, tao_khach, tao_lo, tao_nhan_vien, tao_san_pham
 
 _dem = itertools.count(1)
@@ -34,6 +36,15 @@ async def tac_nhan_loai(db, loai, khach=None):
         return TacNhan.he_thong()
     nv = await tao_nhan_vien(db, "PHARMACIST" if loai == LoaiTacNhan.duoc_si else "WAREHOUSE")
     return TacNhan(loai, nhan_vien_id=nv.id)
+
+
+async def giu_du_hang(db, don):
+    """Tạo lô và giữ đủ số lượng cho mọi dòng của `don` (không đọc quan hệ lười của đơn)."""
+    cts = (await db.execute(select(CtDonHang).where(CtDonHang.don_hang_id == don.id))).scalars().all()
+    for c in cts:
+        sp = await db.get(SanPham, c.san_pham_id)
+        await tao_lo(db, sp, so_luong=c.so_luong * c.he_so)
+    await ton_kho.giu_hang_nhieu(db, [YeuCauGiu(c.id, c.san_pham_id, c.so_luong * c.he_so) for c in cts])
 
 
 def thuoc_tinh_cho(chuyen, loai, nv_tao_id):
@@ -108,6 +119,8 @@ async def test_moi_dong_trong_bang_chay_duoc_voi_tac_nhan_hop_le(db, chuyen, tu)
     nv_tao = await tao_nhan_vien(db, "PHARMACIST")
     for loai in sorted(chuyen.tac_nhan):
         don = await tao_don(db, khach, trang_thai=tu.value, **thuoc_tinh_cho(chuyen, loai, nv_tao.id))
+        if 16 in chuyen.so:  # bắt đầu soạn hàng đòi mỗi dòng còn giữ đủ hàng (lô hết hạn mà không phân bổ lại thì chặn)
+            await giu_du_hang(db, don)
         tn = await tac_nhan_loai(db, loai, khach)
         nguon = next(iter(chuyen.nguon_he_thong)) if loai == LoaiTacNhan.he_thong else "nguoi_dung"
         ls = await mt.chuyen_trang_thai(db, don, chuyen.den, tn, nguon, "Lý do thử")
@@ -412,3 +425,17 @@ def test_bo_quet_bat_duoc_vi_pham_mau(tmp_path):
     mau = tmp_path / "x.py"
     mau.write_text("def f(don):\n    don.trang_thai = 1\n\ndef g():\n    return DonHang(trang_thai=1)\n")
     assert len(_tim_vi_pham(mau)) == 2
+
+
+async def test_khong_soan_hang_duoc_khi_don_mat_phan_bo_lo(db):
+    """Lô giữ hết hạn/bị thu hồi mà không phân bổ lại được thì đơn không còn giữ hàng: chặn thay vì xuất kho rỗng."""
+    khach = await tao_khach(db)
+    nv = await tao_nhan_vien(db, "WAREHOUSE")
+    don = await tao_don(db, khach, trang_thai="da_xac_nhan", kenh_ban="online")
+    with pytest.raises(LoiNghiepVu) as e:
+        await mt.chuyen_trang_thai(db, don, TT.dang_soan_hang, TacNhan.kho(nv.id), "nguoi_dung")
+    assert e.value.chi_tiet["dieu_kien"] == "du_hang_giu"
+    du = await tao_don(db, khach, trang_thai="da_xac_nhan", kenh_ban="online")
+    await giu_du_hang(db, du)
+    await mt.chuyen_trang_thai(db, du, TT.dang_soan_hang, TacNhan.kho(nv.id), "nguoi_dung")
+    assert du.trang_thai == TT.dang_soan_hang

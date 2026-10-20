@@ -6,6 +6,7 @@ import { thongDiepChung, type KetQuaGoi } from '../../../api/goi'
 import type { components } from '../../../api/schema'
 import { chuanHoaSdt } from '../../../lib/dienThoai'
 import { dinhDangNgay, dinhDangTien } from '../../../lib/dinhDang'
+import { nhanTrangThai } from '../../../lib/trangThai'
 import { NHAN_PHUONG_THUC } from '../gio-hang/thanhToan'
 import { chuyenSangCong } from '../gio-hang/thanhToanOnline'
 
@@ -115,7 +116,7 @@ export default function XacNhanDon({ duLieu, thanhVien, xacNhan, tuChoi, thanhTo
         column={1}
         items={[
           { key: 'ma', label: 'Mã đơn', children: don.ma_don },
-          { key: 'tt', label: 'Trạng thái', children: don.trang_thai },
+          { key: 'tt', label: 'Trạng thái', children: nhanTrangThai('don_hang', don.trang_thai).nhan },
           ...(don.han_xac_nhan && duLieu.co_the_xac_nhan ? [{ key: 'han', label: 'Xác nhận trước', children: dinhDangNgay(don.han_xac_nhan, 'ngayGio') }] : []),
           ...(don.ghi_chu ? [{ key: 'gc', label: 'Lời dặn của dược sĩ', children: don.ghi_chu }] : []),
           { key: 'tam', label: 'Tạm tính', children: dinhDangTien(don.tam_tinh) },

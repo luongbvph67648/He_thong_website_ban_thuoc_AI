@@ -1,7 +1,6 @@
 /** Kiểu dữ liệu và khóa query của phần nội dung website phía khách (KVL11). */
 import type { components } from '../../api/schema'
 
-export type BaiVietTomTatCongKhai = components['schemas']['BaiVietCongKhaiTomTat']
 export type BaiVietCongKhai = components['schemas']['BaiVietCongKhai']
 export type LoaiBaiCongKhai = BaiVietCongKhai['loai']
 

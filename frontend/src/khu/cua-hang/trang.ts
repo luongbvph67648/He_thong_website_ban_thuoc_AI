@@ -27,6 +27,8 @@ export const TRANG_CUA_HANG: readonly TrangCuaHang[] = [
   { duong: '/tai-khoan/don-hang', ten: 'Đơn hàng của tôi', chucNang: ['KTV05', 'KTV06', 'KTV08', 'KTV09'] },
   { duong: '/tai-khoan/don-hang/:ma', ten: 'Chi tiết đơn hàng', chucNang: ['KTV05', 'KTV06', 'KTV08', 'KTV09'] },
   { duong: '/tai-khoan/don-thuoc', ten: 'Đơn thuốc của tôi', chucNang: ['KTV07'] },
+  { duong: '/tai-khoan/doi-tra', ten: 'Yêu cầu đổi trả của tôi', chucNang: ['KTV09'] },
+  { duong: '/tai-khoan/danh-gia', ten: 'Đánh giá của tôi', chucNang: ['KTV10'] },
   { duong: '/tai-khoan/suc-khoe', ten: 'Hồ sơ sức khỏe', chucNang: ['KTV11'] },
   { duong: '/tai-khoan/thong-bao', ten: 'Thông báo', chucNang: ['KTV13', 'KTV14'] },
 ]

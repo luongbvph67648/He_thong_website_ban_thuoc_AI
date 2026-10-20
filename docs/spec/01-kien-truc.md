@@ -114,7 +114,6 @@ docker-compose.yml
 | `TIN_NHAN_CHE_DO` | `gia` | `gia` = log + Mailpit; `that` = nhà cung cấp SMS/SMTP |
 | `SMTP_HOST`, `SMTP_PORT` | `localhost`, `1025` | Mailpit khi dev |
 | `LUU_TRU_THU_MUC` | `./storage` | |
-| `LUU_TRU_KHOA_KY` | (chuỗi ngẫu nhiên) | Ký URL file riêng tư |
 
 ## 6. Chạy dev bằng docker-compose
 `docker-compose.yml` chỉ chứa hạ tầng:

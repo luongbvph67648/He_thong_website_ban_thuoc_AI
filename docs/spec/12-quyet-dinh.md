@@ -474,6 +474,7 @@ Mỗi quyết định ảnh hưởng đến thiết kế, nghiệp vụ hoặc c
 
 ## QĐ-51 · Báo cáo (T8.1)
 - **Một đơn tính vào kỳ lúc vào `hoan_tat`**, không phải lúc tạo: doanh thu chỉ chốt khi hết thời hạn đổi trả (spec 04 dòng 29). Đơn đã giao nhưng chưa hoàn tất chưa vào doanh thu.
+- **Hoàn tiền của đơn đã hủy không trừ vào doanh thu thuần** (sửa sau rà soát): đơn hủy không vào `doanh_thu`, trừ khoản hoàn của nó sẽ làm doanh thu thuần âm sai.
 - **Hoàn tiền trừ theo kỳ phát sinh**, không truy ngược về kỳ của đơn gốc: số liệu kỳ cũ không đổi sau khi đã báo cáo, đổi lại một kỳ có thể có doanh thu thuần âm nếu hoàn nhiều đơn kỳ trước.
 - **Lợi nhuận gộp = doanh thu thuần − giá vốn**, phí vận chuyển nằm trong doanh thu (chưa có chi phí giao hàng nên không trừ). Hàng khách trả được hoàn nhập thì không tính giá vốn (phân bổ `da_hoan_nhap`).
 - **Báo cáo ca chỉ tính việc của chính dược sĩ**; "do mình xử lý" = đơn mình tạo hoặc xác nhận. Đơn khách tự đặt mà dược sĩ khác xác nhận không vào ca của người tạo (không có người tạo).

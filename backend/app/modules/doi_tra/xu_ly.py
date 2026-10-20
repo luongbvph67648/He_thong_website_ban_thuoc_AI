@@ -22,6 +22,7 @@ from app.models.enums import (
     KenhBan,
     LoaiGiaoDich,
     LoaiVanDon,
+    LyDoDoiTra,
     PhuongThucThanhToan,
     TrangThaiDoiTra,
     TrangThaiDon,
@@ -125,15 +126,21 @@ async def chi_tiet(db: AsyncSession, nv: NhanVien, yc_id: int) -> DoiTraNoiBoChi
     )
 
 
+# Spec 04 mục 5: phí vận chuyển chỉ hoàn khi trả toàn bộ do lỗi nhà thuốc (khách đổi ý thì tự chịu phí giao)
+LY_DO_LOI_NHA_THUOC = frozenset(
+    {LyDoDoiTra.giao_sai_san_pham, LyDoDoiTra.sai_so_luong, LyDoDoiTra.hu_hong, LyDoDoiTra.het_han_can_han}
+)
+
+
 async def _tinh_hoan(db: AsyncSession, yc: YeuCauDoiTra, don: DonHang) -> Decimal:
-    """Số tiền hoàn (spec 04 mục 5), cộng phí vận chuyển khi trả toàn bộ các dòng; không vượt tổng đã trả."""
+    """Số tiền hoàn (spec 04 mục 5), cộng phí vận chuyển khi trả toàn bộ do lỗi nhà thuốc; không vượt số đã trả."""
     cts = {c.id: c for c in (await db.execute(select(CtDonHang).where(CtDonHang.don_hang_id == don.id))).scalars()}
     ds = (await db.execute(select(CtYeuCauDoiTra).where(CtYeuCauDoiTra.yeu_cau_id == yc.id))).scalars().all()
     # Kho đã nhận thì hoàn theo số thực nhận (không vượt số khách yêu cầu trả).
     tra = {r.ct_don_hang_id: r.so_luong if r.so_luong_nhan is None else min(r.so_luong, r.so_luong_nhan) for r in ds}
     tra = {i: sl for i, sl in tra.items() if sl > 0}
     so = dich_vu.tien_hoan([(cts[i], sl) for i, sl in tra.items()])
-    if all(tra.get(i) == c.so_luong for i, c in cts.items()):
+    if yc.ly_do in LY_DO_LOI_NHA_THUOC and all(tra.get(i) == c.so_luong for i, c in cts.items()):
         so += don.phi_van_chuyen
     so = lam_tron_vnd(so)
     con = await tong_da_thanh_toan(db, don.id) - await _tong_hoan(db, don.id, yc.id)
